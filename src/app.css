@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+
+/* Bearprompt Color Palette */
+/* 
+ * Core Brand Colors:
+ * - Deep Espresso: #271105
+ * - Dark Cocoa Brown: #4D2C15
+ * - Golden Amber (Primary): #FCA238
+ * - Pumpkin Orange: #F1862D
+ * - Warm Chestnut: #BD6D38
+ * - Honey Cream: #F7C792
+ * - Parchment Beige: #F2E3C3
+ * - Almost White: #FDFCFD
+ */
+
+/* Light Mode */
+:root {
+	--color-bg-primary: #FDFCFD;
+	--color-bg-secondary: #F2E3C3;
+	--color-bg-tertiary: #F7C792;
+	--color-bg-hover: #F7C792;
+	--color-text-primary: #271105;
+	--color-text-secondary: #4D2C15;
+	--color-text-muted: #BD6D38;
+	--color-border: #E8D4B8;
+	--color-border-hover: #BD6D38;
+	--color-accent: #FCA238;
+	--color-accent-hover: #F1862D;
+	--color-success: #10b981;
+	--color-danger: #ef4444;
+	--color-danger-hover: #dc2626;
+}
+
+/* Dark Mode - Dark gray base with amber accents */
+.dark {
+	--color-bg-primary: #1a1a1a;
+	--color-bg-secondary: #252525;
+	--color-bg-tertiary: #333333;
+	--color-bg-hover: #3d2a1a;
+	--color-text-primary: #FDFCFD;
+	--color-text-secondary: #F2E3C3;
+	--color-text-muted: #9ca3af;
+	--color-border: #404040;
+	--color-border-hover: #BD6D38;
+	--color-accent: #FCA238;
+	--color-accent-hover: #F7C792;
+	--color-success: #10b981;
+	--color-danger: #ef4444;
+	--color-danger-hover: #f87171;
+}
+
+/* Base styles */
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background-color: var(--color-bg-primary);
+	color: var(--color-text-primary);
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-border);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-border-hover);
+}
