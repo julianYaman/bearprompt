@@ -15,6 +15,38 @@
 
 	const prompt = data.prompt;
 
+	// SEO: Generate meta description
+	const metaDescription = prompt.description || `AI prompt for ${prompt.title}`;
+
+	// SEO: Generate page title
+	const pageTitle = `${prompt.title} | Bearprompt`;
+
+	// SEO: Canonical URL
+	const canonicalUrl = prompt.author
+		? `https://bearprompt.com/prompts/${prompt.author.slug}/${prompt.slug}`
+		: `https://bearprompt.com/prompts`;
+
+	// SEO: JSON-LD structured data
+	const jsonLd = JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'CreativeWork',
+		name: prompt.title,
+		description: metaDescription,
+		url: canonicalUrl,
+		datePublished: prompt.created_at,
+		...(prompt.author && {
+			author: {
+				'@type': 'Thing',
+				name: prompt.author.name,
+				url: `https://bearprompt.com/prompts/${prompt.author.slug}`,
+				...(prompt.author.avatar_url && { image: prompt.author.avatar_url })
+			}
+		}),
+		...(prompt.tags.length > 0 && {
+			keywords: prompt.tags.map((tag) => tag.name).join(', ')
+		})
+	});
+
 	// Generate AI provider URLs
 	const providerUrls = $derived({
 		chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(prompt.prompt)}`,
@@ -88,7 +120,25 @@
 </script>
 
 <svelte:head>
-	<title>{prompt.title} | Public Library | Bearprompt</title>
+	<title>{pageTitle}</title>
+	<meta name="description" content={metaDescription} />
+	<link rel="canonical" href={canonicalUrl} />
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content={pageTitle} />
+	<meta property="og:description" content={metaDescription} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:type" content="article" />
+	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	
+	<!-- Twitter -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={pageTitle} />
+	<meta name="twitter:description" content={metaDescription} />
+	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
+	
+	<!-- JSON-LD Structured Data -->
+	{@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
 
 <div class="mx-auto max-w-4xl px-4 py-6">

@@ -9,6 +9,36 @@
 
 	let { data } = $props();
 
+	// SEO: Generate meta description
+	const metaDescription = $derived(
+		data.author.public_description ||
+			`Browse ${data.totalPrompts} AI prompt${data.totalPrompts === 1 ? '' : 's'} by ${data.author.name} on Bearprompt.`
+	);
+
+	// SEO: Generate page title
+	const pageTitle = $derived(`${data.author.name} | Bearprompt`);
+
+	// SEO: Canonical URL
+	const canonicalUrl = $derived(`https://bearprompt.com/prompts/${data.author.slug}`);
+
+	// SEO: JSON-LD structured data
+	const jsonLd = $derived(
+		JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'ProfilePage',
+			name: `${data.author.name}'s Prompts`,
+			description: metaDescription,
+			url: canonicalUrl,
+			mainEntity: {
+				'@type': 'Thing',
+				name: data.author.name,
+				url: canonicalUrl,
+				...(data.author.avatar_url && { image: data.author.avatar_url }),
+				...(data.author.public_description && { description: data.author.public_description })
+			}
+		})
+	);
+
 	async function handleAddToLibrary(prompt: PublicPrompt) {
 		// Get all existing tags
 		const existingTags = await getAllTags();
@@ -41,7 +71,25 @@
 </script>
 
 <svelte:head>
-	<title>{data.author.name} | Public Library | Bearprompt</title>
+	<title>{pageTitle}</title>
+	<meta name="description" content={metaDescription} />
+	<link rel="canonical" href={canonicalUrl} />
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="{data.author.name} | Bearprompt" />
+	<meta property="og:description" content={metaDescription} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:type" content="profile" />
+	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	
+	<!-- Twitter -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="{data.author.name} | Bearprompt" />
+	<meta name="twitter:description" content={metaDescription} />
+	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
+	
+	<!-- JSON-LD Structured Data -->
+	{@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
 
 <div class="mx-auto max-w-7xl px-4 py-6">

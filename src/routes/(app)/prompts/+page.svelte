@@ -87,7 +87,22 @@
 </script>
 
 <svelte:head>
-	<title>Public Library | Bearprompt</title>
+	<title>Public Prompt Library | Bearprompt</title>
+	<meta name="description" content="Browse and discover AI prompts for your personal and business AI chats. Add prompts to your local library or use them directly with ChatGPT, Claude, and more." />
+	<link rel="canonical" href="https://bearprompt.com/prompts" />
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="Public Prompt Library | Bearprompt" />
+	<meta property="og:description" content="Browse and discover AI prompts for your personal and business AI chats. Add prompts to your local library or use them directly with ChatGPT, Claude, and more." />
+	<meta property="og:url" content="https://bearprompt.com/prompts" />
+	<meta property="og:type" content="website" />
+	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	
+	<!-- Twitter -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Public Prompt Library | Bearprompt" />
+	<meta name="twitter:description" content="Browse and discover AI prompts for your personal and business AI chats. Add prompts to your local library or use them directly with ChatGPT, Claude, and more." />
+	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
 </svelte:head>
 
 <div class="mx-auto max-w-7xl px-4 py-6">
