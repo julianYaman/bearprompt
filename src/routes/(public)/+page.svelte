@@ -3,7 +3,6 @@
 	import { theme } from '$lib/stores';
 	import type { ThemeMode } from '$lib/types';
 
-	// FAQ data
 	const faqs = [
 		{
 			question: 'How do I create prompts?',
@@ -28,9 +27,18 @@
 	];
 
 	let openFaqIndex = $state<number | null>(null);
+	let mobileMenuOpen = $state(false);
 
 	function toggleFaq(index: number) {
 		openFaqIndex = openFaqIndex === index ? null : index;
+	}
+
+	function toggleMobileMenu() {
+		mobileMenuOpen = !mobileMenuOpen;
+	}
+
+	function closeMobileMenu() {
+		mobileMenuOpen = false;
 	}
 
 	function cycleTheme() {
@@ -88,7 +96,30 @@
 				<Icon name="arrow-right" size={16} />
 			</a>
 		</div>
+		<button
+			type="button"
+			class="navbar-hamburger"
+			onclick={toggleMobileMenu}
+			aria-label="Toggle menu"
+			aria-expanded={mobileMenuOpen}
+		>
+			<Icon name={mobileMenuOpen ? 'x' : 'menu'} size={24} />
+		</button>
 	</div>
+	{#if mobileMenuOpen}
+		<div class="navbar-mobile-menu">
+			<a href="#how-it-works" class="navbar-mobile-link" onclick={closeMobileMenu}>How it works</a>
+			<a href="#faq" class="navbar-mobile-link" onclick={closeMobileMenu}>FAQ</a>
+			<a href="https://github.com/julianyaman/bearprompt" target="_blank" rel="noopener noreferrer" class="navbar-mobile-link">
+				<Icon name="github" size={16} />
+				GitHub
+			</a>
+			<a href="/library" class="navbar-mobile-cta">
+				Create your library
+				<Icon name="arrow-right" size={16} />
+			</a>
+		</div>
+	{/if}
 </nav>
 
 <!-- Hero Section -->
@@ -344,6 +375,79 @@
 	.navbar-cta:hover {
 		background-color: #e8922e;
 		transform: translateY(-1px);
+	}
+
+	.navbar-hamburger {
+		display: none;
+		padding: 0.5rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--color-text-primary);
+		border-radius: 0.5rem;
+	}
+
+	.navbar-hamburger:hover {
+		background-color: var(--color-bg-tertiary);
+	}
+
+	.navbar-mobile-menu {
+		display: none;
+		flex-direction: column;
+		padding: 0.75rem 1.5rem 1rem;
+		border-top: 1px solid var(--color-border);
+		background-color: var(--color-bg-primary);
+	}
+
+	.navbar-mobile-link {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.75rem 0;
+		font-size: 0.9375rem;
+		color: var(--color-text-secondary);
+		text-decoration: none;
+		transition: color 0.2s;
+	}
+
+	.navbar-mobile-link:hover {
+		color: var(--color-text-primary);
+	}
+
+	.navbar-mobile-cta {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		padding: 0.75rem 1rem;
+		background-color: var(--color-accent);
+		color: #271105;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		border-radius: 0.5rem;
+		text-decoration: none;
+		transition: background-color 0.2s;
+	}
+
+	.navbar-mobile-cta:hover {
+		background-color: #e8922e;
+	}
+
+	@media (max-width: 767px) {
+		.navbar-links {
+			display: none;
+		}
+
+		.navbar-hamburger {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.navbar-mobile-menu {
+			display: flex;
+		}
 	}
 
 	/* Hero Section */
