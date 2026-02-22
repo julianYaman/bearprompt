@@ -70,37 +70,49 @@
 
 	<!-- Prompts row with fade indicator -->
 	<div class="prompts-row-container relative">
-		<div class="prompts-scroll flex gap-4 overflow-x-auto pb-2">
-			{#each author.prompts as prompt}
-				<div class="w-64 shrink-0">
-					<PublicPromptCard {prompt} author={author} {onAddToLibrary} />
-				</div>
-			{/each}
-
-			<!-- See All card -->
-			{#if showSeeAll}
-				<a
-					href="/prompts/{author.slug || author.id}"
-					class="see-all-card flex w-48 shrink-0 flex-col items-center justify-center rounded-xl border transition-all duration-200"
-					style="background-color: var(--color-bg-secondary); border-color: var(--color-border); min-height: 16rem;"
-				>
-					<div
-						class="mb-2 flex h-12 w-12 items-center justify-center rounded-full"
-						style="background-color: var(--color-bg-tertiary);"
-					>
-						<Icon name="arrow-right" size={24} />
+		{#if author.prompts.length > 0}
+			<div class="prompts-scroll flex gap-4 overflow-x-auto pb-2">
+				{#each author.prompts as prompt}
+					<div class="w-64 shrink-0">
+						<PublicPromptCard {prompt} author={author} {onAddToLibrary} />
 					</div>
-					<span class="text-sm font-medium" style="color: var(--color-text-primary);">
-						See All
-					</span>
-					<span class="text-xs" style="color: var(--color-text-muted);">
-						{author.totalPrompts} prompts
-					</span>
-				</a>
-			{/if}
-		</div>
-		<!-- Right fade indicator -->
-		<div class="fade-indicator pointer-events-none absolute right-0 top-0 h-full w-16"></div>
+				{/each}
+
+				<!-- See All card -->
+				{#if showSeeAll}
+					<a
+						href="/prompts/{author.slug || author.id}"
+						class="see-all-card flex w-48 shrink-0 flex-col items-center justify-center rounded-xl border transition-all duration-200"
+						style="background-color: var(--color-bg-secondary); border-color: var(--color-border); min-height: 16rem;"
+					>
+						<div
+							class="mb-2 flex h-12 w-12 items-center justify-center rounded-full"
+							style="background-color: var(--color-bg-tertiary);"
+						>
+							<Icon name="arrow-right" size={24} />
+						</div>
+						<span class="text-sm font-medium" style="color: var(--color-text-primary);">
+							See All
+						</span>
+						<span class="text-xs" style="color: var(--color-text-muted);">
+							{author.totalPrompts} prompts
+						</span>
+					</a>
+				{/if}
+			</div>
+			<!-- Right fade indicator -->
+			<div class="fade-indicator pointer-events-none absolute right-0 top-0 h-full w-16"></div>
+		{:else}
+			<!-- Empty state -->
+			<div
+				class="flex items-center justify-center rounded-xl border py-8"
+				style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
+			>
+				<p class="text-sm" style="color: var(--color-text-muted);">
+					No prompts available yet
+				</p>
+			</div>
+		{/if}
 	</div>
 </section>
 
