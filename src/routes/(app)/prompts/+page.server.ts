@@ -1,10 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { supabase } from '$lib/supabase';
+import { getSupabase } from '$lib/supabase';
 import { getPublicLibraryData, searchPrompts } from '$lib/server/queries';
 import { getCachedLibraryData, getCachedSearchResults, CACHE_CONTROL } from '$lib/server/cache';
 
 export const load: PageServerLoad = async ({ url, setHeaders }) => {
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
+	const supabase = getSupabase();
 	const query = url.searchParams.get('q') || '';
 
 	if (query.trim()) {

@@ -1,10 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { supabase } from '$lib/supabase';
+import { getSupabase } from '$lib/supabase';
 import { getAuthorPageDataBySlug } from '$lib/server/queries';
 import { getCachedAuthorData, CACHE_CONTROL } from '$lib/server/cache';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
+	const supabase = getSupabase();
 	const page = parseInt(url.searchParams.get('page') || '1', 10);
 	const authorSlug = params.authorSlug;
 

@@ -1,10 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { supabase } from '$lib/supabase';
+import { getSupabase } from '$lib/supabase';
 import { getPromptBySlug } from '$lib/server/queries';
 import { getCachedPromptData, CACHE_CONTROL } from '$lib/server/cache';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
+	const supabase = getSupabase();
 	const { authorSlug, promptSlug } = params;
 
 	// Set cache headers
