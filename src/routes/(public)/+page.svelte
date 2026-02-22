@@ -17,6 +17,10 @@
 			answer: 'Yes! You can export all your prompts at any time. This makes it easy to back up your library or transfer it to another browser or device.'
 		},
 		{
+			question: 'How do I add my prompt to the public library?',
+			answer: 'Click "Add my Prompt" in the navigation bar. This will open GitHub with a pre-filled template where you can submit your prompt. Once reviewed, your prompt will be added to the public library for everyone to discover and use.'
+		},
+		{
 			question: 'Is Bearprompt really free?',
 			answer: 'Yes, Bearprompt is completely free and open-source. There are no premium tiers, no subscriptions, and no hidden costs. You can even self-host it if you prefer.'
 		},
@@ -167,11 +171,11 @@
 			</div>
 			<div class="feature-card">
 				<div class="feature-icon">
-					<Icon name="tag" size={28} />
+					<Icon name="globe" size={28} />
 				</div>
-				<h3 class="feature-title">Search & Tags</h3>
+				<h3 class="feature-title">Public Library</h3>
 				<p class="feature-description">
-					Find any prompt instantly with search and flexible tagging.
+					Discover and add prompts from our public library to jumpstart your collection.
 				</p>
 			</div>
 			<div class="feature-card">
