@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { theme, settingsOpen, mobileMenuOpen, sidebarOpen, importExportOpen } from '$lib/stores';
+	import { page } from '$app/stores';
+	import { theme, settingsOpen, mobileMenuOpen, sidebarOpen, prompts, tags } from '$lib/stores';
+	import { exportLibrary, importLibrary, validateImportData, getAllPrompts, getAllTags } from '$lib/db';
 	import type { ThemeMode } from '$lib/types';
 
 	interface Props {
@@ -8,6 +10,11 @@
 	}
 
 	let { isMobile = false }: Props = $props();
+	let fileInput: HTMLInputElement;
+	let isExporting = $state(false);
+	let isImporting = $state(false);
+
+	let isLibraryRoute = $derived($page.url.pathname === '/library' || $page.url.pathname === '/');
 
 	function cycleTheme() {
 		theme.update((current) => {
@@ -44,11 +51,71 @@
 		mobileMenuOpen.set(false);
 	}
 
-	function handleImportExport() {
-		importExportOpen.set(true);
-		mobileMenuOpen.set(false);
+	async function handleSave() {
+		isExporting = true;
+		try {
+			const data = await exportLibrary();
+			const json = JSON.stringify(data, null, 2);
+			const blob = new Blob([json], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+			const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+			const filename = `promptlib-export-v1-${date}.json`;
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error('Export failed:', error);
+			alert('Failed to save library. Please try again.');
+		} finally {
+			isExporting = false;
+		}
+	}
+
+	function handleLoadClick() {
+		fileInput?.click();
+	}
+
+	async function handleFileChange(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		isImporting = true;
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+
+			if (!validateImportData(data)) {
+				alert('Invalid file format. Please select a valid Prompt Library export file.');
+				return;
+			}
+
+			await importLibrary(data);
+			const [newPrompts, newTags] = await Promise.all([getAllPrompts(), getAllTags()]);
+			prompts.set(newPrompts);
+			tags.set(newTags);
+			alert('Library loaded successfully!');
+		} catch (error) {
+			console.error('Import failed:', error);
+			alert('Failed to load library. Please try again.');
+		} finally {
+			isImporting = false;
+			if (input) input.value = '';
+		}
 	}
 </script>
+
+<input
+	bind:this={fileInput}
+	type="file"
+	accept=".json"
+	onchange={handleFileChange}
+	class="hidden"
+/>
 
 {#if isMobile}
 	<!-- Mobile Navbar -->
@@ -97,16 +164,30 @@
 			role="menu"
 		>
 			<div class="p-2">
-				<button
-					type="button"
-					onclick={handleImportExport}
-					class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
-					style="color: var(--color-text-secondary);"
-					role="menuitem"
-				>
-					<Icon name="download" size={18} />
-					Import / Export
-				</button>
+				{#if isLibraryRoute}
+					<button
+						type="button"
+						onclick={handleSave}
+						disabled={isExporting}
+						class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors disabled:opacity-50"
+						style="color: var(--color-text-secondary);"
+						role="menuitem"
+					>
+						<Icon name="download" size={18} />
+						{isExporting ? 'Saving...' : 'Save'}
+					</button>
+					<button
+						type="button"
+						onclick={handleLoadClick}
+						disabled={isImporting}
+						class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors disabled:opacity-50"
+						style="color: var(--color-text-secondary);"
+						role="menuitem"
+					>
+						<Icon name="upload" size={18} />
+						{isImporting ? 'Loading...' : 'Load'}
+					</button>
+				{/if}
 				<a
 					href="https://github.com/julianyaman"
 					target="_blank"
@@ -148,15 +229,28 @@
 		class="hidden h-16 items-center justify-end gap-1 border-b px-4 md:flex"
 		style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
 	>
-		<button
-			type="button"
-			onclick={handleImportExport}
-			class="flex h-10 w-10 items-center justify-center rounded-lg transition-colors"
-			style="color: var(--color-text-secondary);"
-			aria-label="Import / Export"
-		>
-			<Icon name="download" size={20} />
-		</button>
+		{#if isLibraryRoute}
+			<button
+				type="button"
+				onclick={handleSave}
+				disabled={isExporting}
+				class="flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors disabled:opacity-50"
+				style="color: var(--color-text-secondary);"
+			>
+				<Icon name="download" size={18} />
+				{isExporting ? 'Saving...' : 'Save'}
+			</button>
+			<button
+				type="button"
+				onclick={handleLoadClick}
+				disabled={isImporting}
+				class="flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors disabled:opacity-50"
+				style="color: var(--color-text-secondary);"
+			>
+				<Icon name="upload" size={18} />
+				{isImporting ? 'Loading...' : 'Load'}
+			</button>
+		{/if}
 		<a
 			href="https://github.com/julianyaman"
 			target="_blank"
