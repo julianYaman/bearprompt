@@ -1,0 +1,13 @@
+name: Add New Prompt
+description: Suggest a new prompt to add to the public library
+labels:
+  - prompt-suggestion
+body:
+  - type: textarea
+    attributes:
+      label: Prompt
+      placeholder: Write your prompt here...
+  - type: textarea
+    attributes:
+      label: Tags
+      placeholder: Write a comma-separated list of tags that fit this prompt (e.g., coding, debugging, refactoring)
