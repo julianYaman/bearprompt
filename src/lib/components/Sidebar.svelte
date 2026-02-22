@@ -3,7 +3,7 @@
 	import { sidebarOpen, aboutOpen } from '$lib/stores';
 
 	interface Props {
-		currentView: 'library' | 'public' | 'tags';
+		currentView: 'library' | 'prompts' | 'tags';
 	}
 
 	let { currentView }: Props = $props();
@@ -53,16 +53,16 @@
 			</li>
 			<li>
 				<a
-					href="/public"
+					href="/prompts"
 					onclick={handleLinkClick}
 					class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-					class:active={currentView === 'public'}
-					style="color: {currentView === 'public'
+					class:active={currentView === 'prompts'}
+					style="color: {currentView === 'prompts'
 						? 'var(--color-text-primary)'
-						: 'var(--color-text-secondary)'}; background-color: {currentView === 'public'
+						: 'var(--color-text-secondary)'}; background-color: {currentView === 'prompts'
 						? 'var(--color-bg-tertiary)'
 						: 'transparent'};"
-					aria-current={currentView === 'public' ? 'page' : undefined}
+					aria-current={currentView === 'prompts' ? 'page' : undefined}
 				>
 					<Icon name="globe" size={18} />
 					Public Library

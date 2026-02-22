@@ -15,6 +15,9 @@
 	let isImporting = $state(false);
 
 	let isLibraryRoute = $derived($page.url.pathname === '/library' || $page.url.pathname === '/');
+	let isPublicRoute = $derived($page.url.pathname === '/prompts' || $page.url.pathname.startsWith('/prompts/'));
+
+	const ADD_PROMPT_URL = 'https://github.com/julianyaman/bearprompt/issues/new?template=add-prompt.yml';
 
 	function cycleTheme() {
 		theme.update((current) => {
@@ -164,6 +167,19 @@
 			role="menu"
 		>
 			<div class="p-2">
+		{#if isPublicRoute}
+			<a
+				href={ADD_PROMPT_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors"
+				style="border-color: var(--color-border); color: var(--color-text-secondary);"
+				role="menuitem"
+			>
+				<Icon name="plus" size={18} />
+				Add my Prompt
+			</a>
+		{/if}
 				{#if isLibraryRoute}
 					<button
 						type="button"
@@ -229,6 +245,18 @@
 		class="hidden h-16 items-center justify-end gap-1 border-b px-4 md:flex"
 		style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
 	>
+		{#if isPublicRoute}
+			<a
+				href={ADD_PROMPT_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="add-prompt-btn flex h-10 items-center gap-2 rounded-lg border px-4 text-sm transition-colors"
+				style="border-color: var(--color-border); color: var(--color-text-secondary);"
+			>
+				<Icon name="plus" size={18} />
+				Add my Prompt
+			</a>
+		{/if}
 		{#if isLibraryRoute}
 			<button
 				type="button"

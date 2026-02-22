@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { Prompt, Tag, ThemeMode, SortOption } from './types';
+import { getAllPrompts, getAllTags } from './db';
 
 // UI State
 export const sidebarOpen = writable(false);
@@ -74,4 +75,15 @@ export const filteredPrompts = derived(
 // Helper to get tags by IDs
 export function getTagsForPrompt(tagIds: string[], allTags: Tag[]): Tag[] {
 	return tagIds.map((id) => allTags.find((t) => t.id === id)).filter((t): t is Tag => !!t);
+}
+
+// Load functions for refreshing stores from IndexedDB
+export async function loadPrompts(): Promise<void> {
+	const allPrompts = await getAllPrompts();
+	prompts.set(allPrompts);
+}
+
+export async function loadTags(): Promise<void> {
+	const allTags = await getAllTags();
+	tags.set(allTags);
 }

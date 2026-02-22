@@ -259,7 +259,7 @@
 							<button
 								type="button"
 								onclick={() => startEditing(tag)}
-								class="rounded-lg p-2 transition-colors"
+								class="icon-btn rounded-lg p-2 transition-colors"
 								style="color: var(--color-text-muted);"
 								aria-label="Edit tag"
 							>
@@ -268,7 +268,7 @@
 							<button
 								type="button"
 								onclick={() => handleDeleteTag(tag)}
-								class="rounded-lg p-2 transition-colors"
+								class="icon-btn rounded-lg p-2 transition-colors"
 								style="color: var(--color-text-muted);"
 								aria-label="Delete tag"
 							>
@@ -283,6 +283,14 @@
 </div>
 
 <style>
+	.icon-btn {
+		cursor: pointer;
+	}
+
+	.icon-btn:hover {
+		background-color: var(--color-bg-tertiary);
+	}
+
 	button:hover:not(:disabled) {
 		opacity: 0.9;
 	}

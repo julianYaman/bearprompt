@@ -112,10 +112,10 @@
 		<button
 			type="button"
 			onclick={onClose}
-			class="flex items-center gap-1 text-sm transition-colors"
-			style="color: var(--color-text-muted);"
+			class="back-btn flex items-center gap-1 text-sm transition-colors"
+			style="color: var(--color-text-secondary);"
 		>
-			<Icon name="chevron-left" size={18} />
+			<Icon name="chevron-left" size={16} />
 			Back to Library
 		</button>
 	</div>
@@ -240,6 +240,14 @@
 	input:focus,
 	textarea:focus {
 		border-color: var(--color-accent);
+	}
+
+	.back-btn {
+		cursor: pointer;
+	}
+
+	.back-btn:hover {
+		color: var(--color-accent) !important;
 	}
 
 	button:hover:not(:disabled) {

@@ -19,10 +19,10 @@
 	let isInitialized = $state(false);
 
 	// Derive current view from the URL path
-	let currentView: 'library' | 'public' | 'tags' = $derived.by(() => {
+	let currentView: 'library' | 'prompts' | 'tags' = $derived.by(() => {
 		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/tags')) return 'tags';
-		if (pathname.startsWith('/public')) return 'public';
+		if (pathname.startsWith('/prompts')) return 'prompts';
 		return 'library'; // default for / and /library
 	});
 

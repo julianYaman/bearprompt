@@ -24,7 +24,9 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"@supabase/supabase-js": "^2.97.0",
 		"idb": "^8.0.3",
+		"lru-cache": "^11.2.6",
 		"uuid": "^13.0.0"
 	}
 }
