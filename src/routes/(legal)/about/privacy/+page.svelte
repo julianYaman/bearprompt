@@ -51,7 +51,7 @@
 
 	<h2>4. Third-Party Services</h2>
 	<p>
-		Apart from Plausible Analytics, we do not integrate any third-party services that would 
+		Apart from Umami Analytics, we do not integrate any third-party services that would 
 		collect your data. We do not use advertising networks, social media trackers, or any 
 		other external services that could compromise your privacy.
 	</p>
