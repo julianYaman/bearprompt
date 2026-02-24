@@ -8,7 +8,7 @@
 	let { data } = $props();
 
 	let copyState: 'idle' | 'copied' = $state('idle');
-	let addState: 'idle' | 'adding' | 'added' = $state('idle');
+	let addState: 'idle' | 'added' = $state('idle');
 	let dropdownOpen = $state(false);
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 	let addTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -79,9 +79,7 @@
 	}
 
 	async function handleAddToLibrary() {
-		if (addState === 'adding' || addState === 'added') return;
-
-		addState = 'adding';
+		if (addState === 'added') return;
 
 		try {
 			const existingTags = await getAllTags();
@@ -113,7 +111,6 @@
 			}, 2000);
 		} catch (error) {
 			console.error('Failed to add to library:', error);
-			addState = 'idle';
 			alert('Failed to add prompt to library.');
 		}
 	}
@@ -197,16 +194,12 @@
 			<!-- Add to library button -->
 			<button
 				onclick={handleAddToLibrary}
-				disabled={addState === 'adding'}
 				class="flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all"
 				style="background-color: {addState === 'added'
 					? 'var(--color-success)'
 					: 'var(--color-accent)'}; color: white;"
 			>
-				{#if addState === 'adding'}
-					<span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-					Adding...
-				{:else if addState === 'added'}
+				{#if addState === 'added'}
 					<Icon name="check" size={16} />
 					Added to Library!
 				{:else}
