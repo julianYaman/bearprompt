@@ -283,6 +283,7 @@
 			<a href="/about/privacy">Privacy Policy</a>
 			<a href="/about/terms">Terms of Service</a>
 			<a href="/about/legal">Legal Notice</a>
+			<a href="https://status.yaman.pro" target="_blank" rel="noopener noreferrer">Status</a>
 			<a href="https://github.com/julianyaman/bearprompt" target="_blank" rel="noopener noreferrer">
 				<Icon name="github" size={16} />
 				GitHub

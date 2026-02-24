@@ -3,9 +3,16 @@
 	import CreateCard from '$lib/components/CreateCard.svelte';
 	import PromptForm from '$lib/components/PromptForm.svelte';
 	import SearchFilter from '$lib/components/SearchFilter.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { filteredPrompts, isCreating, editingPromptId, searchQuery, selectedTagIds } from '$lib/stores';
 
+	const CHATGPT_PROMPT = `Based on my previous chats, give me my 10 most used prompts that I can copy & paste into a prompt library. 
+Format them in a way that I know where I have to enter custom instructions or text for this prompt. For each prompt, give me a title and a few tags. 
+	
+Format the result so each prompt can be directly copied into a prompt library.`;
+
 	let showForm = $derived($isCreating || $editingPromptId !== null);
+	let showCopyModal = $state(false);
 
 	function handleCreateNew() {
 		editingPromptId.set(null);
@@ -22,9 +29,77 @@
 		editingPromptId.set(null);
 	}
 
+	async function handleCopyPrompt() {
+		await navigator.clipboard.writeText(CHATGPT_PROMPT);
+		showCopyModal = true;
+	}
+
+	function handleCloseCopyModal() {
+		showCopyModal = false;
+	}
+
+	function handleCopyModalBackdropClick(event: MouseEvent) {
+		if (event.target === event.currentTarget) {
+			handleCloseCopyModal();
+		}
+	}
+
+	function handleCopyModalKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			handleCloseCopyModal();
+		}
+	}
+
 	// Check if there are active filters
 	let hasActiveFilters = $derived($searchQuery || $selectedTagIds.length > 0);
 </script>
+
+<svelte:window onkeydown={handleCopyModalKeydown} />
+
+{#if showCopyModal}
+	<!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		onclick={handleCopyModalBackdropClick}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="copy-modal-title"
+	>
+		<div
+			class="w-full max-w-lg rounded-xl shadow-xl"
+			style="background-color: var(--color-bg-primary);"
+		>
+			<div class="p-6">
+				<div
+					class="mb-4 mx-auto flex h-12 w-12 items-center justify-center rounded-full"
+					style="background-color: var(--color-accent); color: #271105;"
+				>
+					<Icon name="check" size={24} />
+				</div>
+				<h2 id="copy-modal-title" class="mb-2 text-lg font-semibold text-center" style="color: var(--color-text-primary);">
+					Prompt copied!
+				</h2>
+				<p class="mb-4 text-sm text-center" style="color: var(--color-text-secondary);">
+					Paste this prompt in ChatGPT to get your most used prompts and add them to your library.
+				</p>
+				<pre
+					class="prompt-content overflow-x-auto whitespace-pre-wrap rounded-lg p-4 text-sm leading-relaxed mb-4"
+					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
+				>{CHATGPT_PROMPT}</pre>
+				<div class="text-center">
+					<button
+						type="button"
+						onclick={handleCloseCopyModal}
+						class="rounded-lg px-6 py-2.5 text-sm font-medium transition-colors"
+						style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
+					>
+						Close
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
 
 {#if showForm}
 	<PromptForm promptId={$editingPromptId} onClose={handleCloseForm} />
@@ -77,6 +152,27 @@
 				>
 					Create Your First Prompt
 				</button>
+
+				<!-- Getting started section -->
+				<div class="mt-8 w-full max-w-md">
+					<div class="border-t pt-6 text-center" style="border-color: var(--color-border);">
+						<h3 class="mb-2 text-base font-semibold" style="color: var(--color-text-primary);">
+							Getting started
+						</h3>
+						<p class="mb-4 text-sm" style="color: var(--color-text-secondary);">
+							Get your 10 most used prompts from ChatGPT. Copy the prompt below, paste it in ChatGPT, and then add the results to your library.
+						</p>
+						<button
+							type="button"
+							onclick={handleCopyPrompt}
+							class="inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
+							style="background-color: var(--color-accent);"
+						>
+							<Icon name="copy" size={16} />
+							Copy prompt
+						</button>
+					</div>
+				</div>
 			</div>
 		{:else if $filteredPrompts.length === 0 && hasActiveFilters}
 			<!-- Empty state - no results -->
@@ -123,6 +219,10 @@
 {/if}
 
 <style>
+	button {
+		cursor: pointer;
+	}
+
 	button:hover {
 		opacity: 0.9;
 	}
@@ -130,5 +230,9 @@
 	button:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 2px;
+	}
+
+	.prompt-content {
+		font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 	}
 </style>

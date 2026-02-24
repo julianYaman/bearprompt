@@ -129,6 +129,21 @@
 						</a>
 					</div>
 				</div>
+
+				<!-- Status Link -->
+				<div class="border-t pt-4" style="border-color: var(--color-border);">
+					<div class="flex justify-center">
+						<a
+							href="https://status.yaman.pro"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-sm transition-colors"
+							style="color: var(--color-text-secondary);"
+						>
+							Status
+						</a>
+					</div>
+				</div>
 			</div>
 
 			<!-- Footer -->

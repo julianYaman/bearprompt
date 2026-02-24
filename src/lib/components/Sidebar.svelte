@@ -3,7 +3,7 @@
 	import { sidebarOpen, aboutOpen } from '$lib/stores';
 
 	interface Props {
-		currentView: 'library' | 'prompts' | 'tags';
+		currentView: 'library' | 'prompts' | 'tags' | 'help';
 	}
 
 	let { currentView }: Props = $props();
@@ -96,7 +96,22 @@
 		>
 			<Icon name="info" size={18} />
 			About
-		</button>
+	</button>
+		<a
+			href="/help"
+			onclick={handleLinkClick}
+			class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
+			class:active={currentView === 'help'}
+			style="color: {currentView === 'help'
+				? 'var(--color-text-primary)'
+				: 'var(--color-text-secondary)'}; background-color: {currentView === 'help'
+				? 'var(--color-bg-tertiary)'
+				: 'transparent'};"
+			aria-current={currentView === 'help' ? 'page' : undefined}
+		>
+			<Icon name="help-circle" size={18} />
+			Help
+		</a>
 	</div>
 </aside>
 
