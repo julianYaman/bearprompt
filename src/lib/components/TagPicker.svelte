@@ -121,7 +121,7 @@
 			<button
 				type="button"
 				onclick={startCreating}
-				class="flex items-center gap-1 rounded-full border-2 border-dashed px-3 py-1.5 text-sm transition-colors"
+				class="dashed-add flex items-center gap-1 rounded-full border-2 border-dashed px-3 py-1.5 text-sm transition-colors"
 				style="border-color: var(--color-border); color: var(--color-text-muted);"
 			>
 				<Icon name="plus" size={14} />
@@ -132,8 +132,24 @@
 </div>
 
 <style>
+	button {
+		cursor: pointer;
+	}
+
 	button:not(.selected):hover {
 		background-color: var(--color-bg-tertiary);
+		filter: brightness(0.9);
+	}
+
+	button.selected:hover {
+		filter: brightness(0.9);
+	}
+
+	button.dashed-add:hover {
+		background-color: transparent;
+		filter: none;
+		border-color: var(--color-accent);
+		color: var(--color-accent);
 	}
 
 	button:focus-visible {

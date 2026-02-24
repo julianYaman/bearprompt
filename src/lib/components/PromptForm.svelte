@@ -250,6 +250,10 @@
 		color: var(--color-accent) !important;
 	}
 
+	button {
+		cursor: pointer;
+	}
+
 	button:hover:not(:disabled) {
 		opacity: 0.9;
 	}

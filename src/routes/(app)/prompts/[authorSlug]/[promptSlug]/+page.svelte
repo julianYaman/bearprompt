@@ -365,7 +365,7 @@
 </div>
 
 <style>
-	a:hover {
+	a:hover:not(.use-btn):not(.dropdown-item) {
 		color: var(--color-accent) !important;
 	}
 
@@ -373,16 +373,20 @@
 		cursor: pointer;
 	}
 
-	button:hover:not(:disabled) {
-		filter: brightness(1.05);
-	}
-
 	.use-btn:hover {
 		background-color: var(--color-bg-tertiary) !important;
 	}
 
+	:global(.dark) .use-btn:hover {
+		color: var(--color-accent) !important;
+	}
+
 	.dropdown-item:hover {
-		background-color: var(--color-bg-secondary);
+		background-color: var(--color-bg-tertiary);
+	}
+
+	:global(.dark) .dropdown-item:hover {
+		color: var(--color-accent) !important;
 	}
 
 	.prompt-content {

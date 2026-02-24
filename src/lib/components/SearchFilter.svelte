@@ -170,6 +170,10 @@
 		color: var(--color-text-primary);
 	}
 
+	button {
+		cursor: pointer;
+	}
+
 	button:hover:not(.selected) {
 		background-color: var(--color-bg-tertiary);
 	}
