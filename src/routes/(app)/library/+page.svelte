@@ -14,6 +14,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let showForm = $derived($isCreating || $editingPromptId !== null);
 	let showCopyModal = $state(false);
 
+	const chatgptUrl = $derived(`https://chat.openai.com/?q=${encodeURIComponent(CHATGPT_PROMPT)}`);
+
 	function handleCreateNew() {
 		editingPromptId.set(null);
 		isCreating.set(true);
@@ -86,7 +88,17 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					class="prompt-content overflow-x-auto whitespace-pre-wrap rounded-lg p-4 text-sm leading-relaxed mb-4"
 					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
 				>{CHATGPT_PROMPT}</pre>
-				<div class="text-center">
+				<div class="flex items-center justify-center gap-3">
+					<a
+						href={chatgptUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
+						style="background-color: var(--color-accent);"
+					>
+						<Icon name="chatgpt" size={16} />
+						Open in ChatGPT
+					</a>
 					<button
 						type="button"
 						onclick={handleCloseCopyModal}
@@ -227,7 +239,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		opacity: 0.9;
 	}
 
-	button:focus-visible {
+	button:focus-visible,
+	a:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 2px;
 	}
