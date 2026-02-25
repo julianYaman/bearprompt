@@ -43,6 +43,15 @@
 			]
 		},
 		{
+			title: 'Agent Library',
+			questions: [
+				{
+					question: 'What is the Agent Library?',
+					answer: 'The Agent Library contains a collection of propmpts designed to create AI agents that can perform specific tasks. These prompts often include instructions for the AI to interact with tools, APIs, or external data sources to accomplish complex goals.'
+				}
+			]
+		},
+		{
 			title: 'Other',
 			questions: [
 				{

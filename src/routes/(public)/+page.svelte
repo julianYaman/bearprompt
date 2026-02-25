@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { theme } from '$lib/stores';
+	import { browser } from '$app/environment';
 	import type { ThemeMode } from '$lib/types';
 
 	const faqs = [
@@ -17,8 +18,8 @@
 			answer: 'Yes! You can export all your prompts at any time. This makes it easy to back up your library or transfer it to another browser or device.'
 		},
 		{
-			question: 'How do I add my prompt to the public library?',
-			answer: 'Click "Add my Prompt" in the navigation bar. This will open GitHub with a pre-filled template where you can submit your prompt. Once reviewed, your prompt will be added to the public library for everyone to discover and use.'
+			question: 'How do I add my prompt or agent to the public libraries?',
+			answer: 'Click "Add my Prompt" or "Add my Agent Prompt" in the navigation bar. This will open GitHub with a pre-filled template where you can submit your prompt or agent. Once reviewed, your submission will be added to the public library for everyone to discover and use.'
 		},
 		{
 			question: 'Is Bearprompt really free?',
@@ -32,6 +33,18 @@
 
 	let openFaqIndex = $state<number | null>(null);
 	let mobileMenuOpen = $state(false);
+
+	// Track system dark-mode preference so isDark stays reactive when theme = 'system'
+	let systemDark = $state(browser ? window.matchMedia('(prefers-color-scheme: dark)').matches : false);
+	if (browser) {
+		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+			systemDark = e.matches;
+		});
+	}
+
+	const isDark = $derived(
+		$theme === 'dark' || ($theme === 'system' && systemDark)
+	);
 
 	function toggleFaq(index: number) {
 		openFaqIndex = openFaqIndex === index ? null : index;
@@ -77,7 +90,7 @@
 </script>
 
 <svelte:head>
-	<title>Bearprompt - Your Private Prompt Library for AI</title>
+	<title>Bearprompt - Your Private Prompt Library for AI & AI Agents</title>
 	<meta name="description" content="Organize, search, and manage your AI prompts privately. Free, open-source, and your data never leaves your device." />
 </svelte:head>
 
@@ -141,7 +154,11 @@
 			</a>
 		</div>
 		<div class="hero-image-wrapper">
-			<img src="/hero-image.png" alt="Bearprompt app screenshot" class="hero-image" />
+			<img
+				src={isDark ? '/hero-image-dark.png' : '/hero-image.png'}
+				alt="Bearprompt app screenshot"
+				class="hero-image"
+			/>
 		</div>
 	</div>
 </section>
@@ -166,7 +183,7 @@
 				</div>
 				<h3 class="feature-title">Organize prompts</h3>
 				<p class="feature-description">
-					Build your personal collection of prompts for any AI tool or use case. Keep everything in one place.
+					Build your personal collection of prompts for AI chats, agents or other use cases. Keep everything in one place.
 				</p>
 			</div>
 			<div class="feature-card">
@@ -175,7 +192,7 @@
 				</div>
 				<h3 class="feature-title">Public Library</h3>
 				<p class="feature-description">
-					Discover and add prompts from our public library to jumpstart your collection.
+					Discover and add prompts and agents from our public library to your collection.
 				</p>
 			</div>
 			<div class="feature-card">
