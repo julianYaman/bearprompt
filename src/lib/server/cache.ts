@@ -17,11 +17,13 @@ const TTL = {
 };
 
 // HTTP Cache-Control header values (in seconds)
+// max-age=0: browser must revalidate on every navigation (fixes stale SPA state)
+// s-maxage: CDN/edge cache is kept intact at original durations
 export const CACHE_CONTROL = {
-	MAIN_PAGE: 'public, max-age=1800, s-maxage=10800, stale-while-revalidate=3600',     // 30min browser, 3h CDN
-	AUTHOR_PAGE: 'public, max-age=900, s-maxage=3600, stale-while-revalidate=1800',     // 15min browser, 1h CDN
-	PROMPT_PAGE: 'public, max-age=3600, s-maxage=43200, stale-while-revalidate=7200',   // 1h browser, 12h CDN
-	SEARCH: 'public, max-age=900, s-maxage=3600, stale-while-revalidate=1800'           // 15min browser, 1h CDN
+	MAIN_PAGE:   'public, max-age=0, s-maxage=10800, stale-while-revalidate=3600',   // no browser cache, 3h CDN
+	AUTHOR_PAGE: 'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800',   // no browser cache, 1h CDN
+	PROMPT_PAGE: 'public, max-age=0, s-maxage=43200, stale-while-revalidate=7200',   // no browser cache, 12h CDN
+	SEARCH:      'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800'    // no browser cache, 1h CDN
 };
 
 // Cache for main library page data
