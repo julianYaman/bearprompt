@@ -3,6 +3,8 @@ import type {
 	PublicLibraryData,
 	SearchResults,
 	AuthorPageData,
+	AuthorPageDataGrouped,
+	AgentLibraryData,
 	PublicPrompt
 } from '$lib/types/public';
 
@@ -44,6 +46,24 @@ const promptCache = new LRUCache<string, PublicPrompt>({
 const searchCache = new LRUCache<string, SearchResults>({
 	max: 100,       // Max 100 search queries cached
 	ttl: TTL.SEARCH
+});
+
+// Cache for agent library page data
+const agentLibraryCache = new LRUCache<string, AgentLibraryData>({
+	max: 50,        // Max 50 pages cached
+	ttl: TTL.MAIN_PAGE
+});
+
+// Cache for agent search results
+const agentSearchCache = new LRUCache<string, SearchResults>({
+	max: 100,       // Max 100 search queries cached
+	ttl: TTL.SEARCH
+});
+
+// Cache for author pages with grouped prompts
+const authorGroupedCache = new LRUCache<string, AuthorPageDataGrouped>({
+	max: 100,       // Max 100 authors cached
+	ttl: TTL.AUTHOR_PAGE
 });
 
 /**
@@ -130,6 +150,67 @@ export async function getCachedSearchResults(
 }
 
 /**
+ * Get cached agent library data or fetch fresh
+ */
+export async function getCachedAgentLibraryData(
+	page: number,
+	fetcher: () => Promise<AgentLibraryData>
+): Promise<AgentLibraryData> {
+	const key = `agent-page:${page}`;
+	
+	const cached = agentLibraryCache.get(key);
+	if (cached) {
+		return cached;
+	}
+	
+	const data = await fetcher();
+	agentLibraryCache.set(key, data);
+	return data;
+}
+
+/**
+ * Get cached agent search results or fetch fresh
+ */
+export async function getCachedAgentSearchResults(
+	query: string,
+	page: number,
+	fetcher: () => Promise<SearchResults>
+): Promise<SearchResults> {
+	const key = `agent-search:${query.toLowerCase()}:page:${page}`;
+	
+	const cached = agentSearchCache.get(key);
+	if (cached) {
+		return cached;
+	}
+	
+	const data = await fetcher();
+	agentSearchCache.set(key, data);
+	return data;
+}
+
+/**
+ * Get cached author page data with grouped prompts or fetch fresh
+ */
+export async function getCachedAuthorDataGrouped(
+	authorSlug: string,
+	page: number,
+	fetcher: () => Promise<AuthorPageDataGrouped | null>
+): Promise<AuthorPageDataGrouped | null> {
+	const key = `author-grouped:${authorSlug}:page:${page}`;
+	
+	const cached = authorGroupedCache.get(key);
+	if (cached) {
+		return cached;
+	}
+	
+	const data = await fetcher();
+	if (data) {
+		authorGroupedCache.set(key, data);
+	}
+	return data;
+}
+
+/**
  * Clear all caches (useful for manual cache invalidation)
  */
 export function clearAllCaches(): void {
@@ -137,6 +218,9 @@ export function clearAllCaches(): void {
 	authorCache.clear();
 	promptCache.clear();
 	searchCache.clear();
+	agentLibraryCache.clear();
+	agentSearchCache.clear();
+	authorGroupedCache.clear();
 }
 
 /**
@@ -177,6 +261,26 @@ export function clearSearchCache(): void {
 	searchCache.clear();
 }
 
+export function clearAgentLibraryCache(): void {
+	agentLibraryCache.clear();
+}
+
+export function clearAgentSearchCache(): void {
+	agentSearchCache.clear();
+}
+
+export function clearAuthorGroupedCache(authorSlug?: string): void {
+	if (authorSlug) {
+		for (const key of authorGroupedCache.keys()) {
+			if (key.startsWith(`author-grouped:${authorSlug}:`)) {
+				authorGroupedCache.delete(key);
+			}
+		}
+	} else {
+		authorGroupedCache.clear();
+	}
+}
+
 /**
  * Get cache stats for debugging
  */
@@ -185,6 +289,9 @@ export function getCacheStats() {
 		library: { size: libraryCache.size, max: 50 },
 		author: { size: authorCache.size, max: 100 },
 		prompt: { size: promptCache.size, max: 500 },
-		search: { size: searchCache.size, max: 100 }
+		search: { size: searchCache.size, max: 100 },
+		agentLibrary: { size: agentLibraryCache.size, max: 50 },
+		agentSearch: { size: agentSearchCache.size, max: 100 },
+		authorGrouped: { size: authorGroupedCache.size, max: 100 }
 	};
 }

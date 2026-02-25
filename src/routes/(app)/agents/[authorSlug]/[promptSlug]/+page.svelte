@@ -1,15 +1,16 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
+	import AgentToolLinks from '$lib/components/public/AgentToolLinks.svelte';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
 	import { loadPrompts, loadTags } from '$lib/stores';
-	import type { PublicPrompt } from '$lib/types/public';
+
+	const BASE_PATH = '/agents';
 
 	let { data } = $props();
 
 	let copyState: 'idle' | 'copied' = $state('idle');
 	let addState: 'idle' | 'added' = $state('idle');
-	let dropdownOpen = $state(false);
 	let promptExpanded = $state(false);
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 	let addTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -22,15 +23,15 @@
 	);
 
 	// SEO: Generate meta description
-	const metaDescription = prompt.description || `AI prompt for ${prompt.title}`;
+	const metaDescription = prompt.description || `AI agent prompt for ${prompt.title}`;
 
 	// SEO: Generate page title
-	const pageTitle = `${prompt.title} | Bearprompt`;
+	const pageTitle = `${prompt.title} | Agent Prompts | Bearprompt`;
 
 	// SEO: Canonical URL
 	const canonicalUrl = prompt.author
-		? `https://bearprompt.com/prompts/${prompt.author.slug}/${prompt.slug}`
-		: `https://bearprompt.com/prompts`;
+		? `https://bearprompt.com/agents/${prompt.author.slug}/${prompt.slug}`
+		: `https://bearprompt.com/agents`;
 
 	// SEO: JSON-LD structured data
 	const jsonLd = JSON.stringify({
@@ -44,7 +45,7 @@
 			author: {
 				'@type': 'Thing',
 				name: prompt.author.name,
-				url: `https://bearprompt.com/prompts/${prompt.author.slug}`,
+				url: `https://bearprompt.com/agents/${prompt.author.slug}`,
 				...(prompt.author.avatar_url && { image: prompt.author.avatar_url })
 			}
 		}),
@@ -52,18 +53,6 @@
 			keywords: prompt.tags.map((tag) => tag.name).join(', ')
 		})
 	});
-
-	// Generate AI provider URLs
-	const providerUrls = $derived({
-		chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(prompt.prompt)}`,
-		claude: `https://claude.ai/new?q=${encodeURIComponent(prompt.prompt)}`,
-		perplexity: `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt.prompt)}`,
-		grok: `https://grok.com/?q=${encodeURIComponent(prompt.prompt)}`
-	});
-
-	function closeDropdown() {
-		dropdownOpen = false;
-	}
 
 	async function handleCopy() {
 		if (!navigator.clipboard) {
@@ -147,12 +136,12 @@
 <div class="mx-auto max-w-4xl px-4 py-6">
 	<!-- Back link -->
 	<a
-		href="/prompts"
+		href={BASE_PATH}
 		class="mb-6 inline-flex items-center gap-2 text-sm transition-colors"
 		style="color: var(--color-text-secondary);"
 	>
 		<Icon name="chevron-left" size={16} />
-		Back to Public Library
+		Back to Agent Library
 	</a>
 
 	<!-- Main content card -->
@@ -166,6 +155,14 @@
 			style="border-color: var(--color-border);"
 		>
 			<div class="flex-1 min-w-0">
+				<div class="flex items-center gap-2 mb-1">
+					<span
+						class="rounded-full px-2 py-0.5 text-xs font-medium"
+						style="background-color: var(--color-accent); color: white;"
+					>
+						Agent
+					</span>
+				</div>
 				<h1
 					class="text-xl font-bold sm:text-2xl"
 					style="color: var(--color-text-primary);"
@@ -184,7 +181,7 @@
 							/>
 						{/if}
 						<a
-							href="/prompts/{prompt.author.slug}"
+							href="{BASE_PATH}/{prompt.author.slug}"
 							class="text-sm transition-colors"
 							style="color: var(--color-text-secondary);"
 						>
@@ -269,6 +266,21 @@
 			{/if}
 		</section>
 
+		<!-- Additional Information (markdown) -->
+		{#if data.additionalInfoHtml}
+			<section class="border-b p-6" style="border-color: var(--color-border);">
+				<h2
+					class="mb-3 text-sm font-semibold uppercase tracking-wide"
+					style="color: var(--color-text-muted);"
+				>
+					Additional Information
+				</h2>
+				<div class="prose prose-sm max-w-none">
+					{@html data.additionalInfoHtml}
+				</div>
+			</section>
+		{/if}
+
 		<!-- Tags -->
 		{#if prompt.tags && prompt.tags.length > 0}
 			<section class="border-b p-6" style="border-color: var(--color-border);">
@@ -291,86 +303,10 @@
 			</section>
 		{/if}
 
-		<!-- Use it now section -->
-		<section class="p-6">
-			<h2
-				class="mb-4 text-sm font-semibold uppercase tracking-wide"
-				style="color: var(--color-text-muted);"
-			>
-				Use it now
-			</h2>
-			<div class="flex flex-wrap gap-3">
-				<a
-					href={providerUrls.chatgpt}
-					target="_blank"
-					rel="noopener noreferrer"
-					class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
-				>
-					<Icon name="chatgpt" size={18} />
-					ChatGPT
-					<Icon name="external-link" size={14} class="opacity-50" />
-				</a>
-				<a
-					href={providerUrls.claude}
-					target="_blank"
-					rel="noopener noreferrer"
-					class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
-				>
-					<Icon name="claude" size={18} />
-					Claude
-					<Icon name="external-link" size={14} class="opacity-50" />
-				</a>
-
-				<!-- More providers dropdown -->
-				<div class="relative">
-					<button
-						type="button"
-						onclick={() => (dropdownOpen = !dropdownOpen)}
-						class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-						style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
-					>
-						<Icon name="sparkles" size={18} />
-						More
-						<Icon name="chevron-down" size={14} />
-					</button>
-
-					{#if dropdownOpen}
-						<div
-							class="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border shadow-lg"
-							style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
-							onmouseleave={closeDropdown}
-						>
-							<a
-								href={providerUrls.perplexity}
-								target="_blank"
-								rel="noopener noreferrer"
-								onclick={closeDropdown}
-								class="dropdown-item flex items-center gap-2 px-4 py-2.5 text-sm transition-colors"
-								style="color: var(--color-text-primary);"
-							>
-								<Icon name="perplexity" size={18} />
-								Perplexity
-								<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-							</a>
-							<a
-								href={providerUrls.grok}
-								target="_blank"
-								rel="noopener noreferrer"
-								onclick={closeDropdown}
-								class="dropdown-item flex items-center gap-2 px-4 py-2.5 text-sm transition-colors"
-								style="color: var(--color-text-primary);"
-							>
-								<Icon name="grok" size={18} />
-								Grok
-								<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-							</a>
-						</div>
-					{/if}
-				</div>
-			</div>
-		</section>
+		<!-- Use with section (agent tools) -->
+		{#if prompt.tools && prompt.tools.length > 0}
+			<AgentToolLinks tools={prompt.tools} />
+		{/if}
 	</article>
 </div>
 
@@ -381,22 +317,6 @@
 
 	button {
 		cursor: pointer;
-	}
-
-	.use-btn:hover {
-		background-color: var(--color-bg-tertiary) !important;
-	}
-
-	:global(.dark) .use-btn:hover {
-		color: var(--color-accent) !important;
-	}
-
-	.dropdown-item:hover {
-		background-color: var(--color-bg-tertiary);
-	}
-
-	:global(.dark) .dropdown-item:hover {
-		color: var(--color-accent) !important;
 	}
 
 	.prompt-content {

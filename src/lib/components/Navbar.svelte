@@ -16,6 +16,7 @@
 
 	let isLibraryRoute = $derived($page.url.pathname === '/library' || $page.url.pathname === '/');
 	let isPublicRoute = $derived($page.url.pathname === '/prompts' || $page.url.pathname.startsWith('/prompts/'));
+	let isAgentRoute = $derived($page.url.pathname.startsWith('/agents'));
 
 	const ADD_PROMPT_URL = 'https://github.com/julianyaman/bearprompt/issues/new?template=add-prompt.yml';
 
@@ -167,7 +168,7 @@
 			role="menu"
 		>
 			<div class="p-2">
-		{#if isPublicRoute}
+		{#if isPublicRoute || isAgentRoute}
 			<a
 				href={ADD_PROMPT_URL}
 				target="_blank"
@@ -177,7 +178,7 @@
 				role="menuitem"
 			>
 				<Icon name="plus" size={18} />
-				Add my Prompt
+				{isAgentRoute ? 'Add my Agent Prompt' : 'Add my Prompt'}
 			</a>
 		{/if}
 				{#if isLibraryRoute}
@@ -245,7 +246,7 @@
 		class="hidden h-16 items-center justify-end gap-1 border-b px-4 md:flex"
 		style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
 	>
-		{#if isPublicRoute}
+		{#if isPublicRoute || isAgentRoute}
 			<a
 				href={ADD_PROMPT_URL}
 				target="_blank"
@@ -254,7 +255,7 @@
 				style="border-color: var(--color-border); color: var(--color-text-secondary);"
 			>
 				<Icon name="plus" size={18} />
-				Add my Prompt
+				{isAgentRoute ? 'Add my Agent Prompt' : 'Add my Prompt'}
 			</a>
 		{/if}
 		{#if isLibraryRoute}

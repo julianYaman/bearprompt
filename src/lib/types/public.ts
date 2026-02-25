@@ -17,6 +17,8 @@ export interface PublicTag {
 	name: string;
 }
 
+export type PromptType = 'prompt' | 'agent' | 'skill';
+
 export interface PublicPrompt {
 	id: string;
 	created_at: string;
@@ -24,9 +26,23 @@ export interface PublicPrompt {
 	slug: string;
 	prompt: string;
 	description: string | null;
+	additional_information: string | null;
 	author_id: string;
+	type: PromptType;
 	author?: PublicAuthor;
 	tags: PublicTag[];
+	tools?: AgentToolWithSetupUrl[];
+}
+
+export interface AgentTool {
+	id: string;
+	name: string;
+	slug: string;
+	url: string | null;
+}
+
+export interface AgentToolWithSetupUrl extends AgentTool {
+	setup_url: string | null;
 }
 
 export interface AuthorWithPrompts extends PublicAuthor {
@@ -57,3 +73,17 @@ export interface AuthorPageData {
 	currentPage: number;
 	totalPages: number;
 }
+
+// Extended author page data with prompts grouped by type
+export interface AuthorPageDataGrouped {
+	author: PublicAuthor;
+	regularPrompts: PublicPrompt[];
+	agentPrompts: PublicPrompt[];
+	totalRegularPrompts: number;
+	totalAgentPrompts: number;
+	currentPage: number;
+	totalPages: number;
+}
+
+// Agent library uses same structure as public library
+export type AgentLibraryData = PublicLibraryData;

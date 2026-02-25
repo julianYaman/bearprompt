@@ -7,10 +7,11 @@
 		prompt: PublicPrompt;
 		author?: PublicAuthor; // Optional author override (useful when prompt.author is not populated)
 		showAuthor?: boolean;
+		basePath?: string; // Base path for links (e.g., '/prompts' or '/agents')
 		onAddToLibrary?: (prompt: PublicPrompt) => Promise<void>;
 	}
 
-	let { prompt, author, showAuthor = false, onAddToLibrary }: Props = $props();
+	let { prompt, author, showAuthor = false, basePath = '/prompts', onAddToLibrary }: Props = $props();
 
 	let copyState: 'idle' | 'copied' = $state('idle');
 	let addState: 'idle' | 'added' = $state('idle');
@@ -24,8 +25,8 @@
 	// URL for the prompt detail page (using slug-based URL)
 	let promptDetailUrl = $derived(
 		resolvedAuthor?.slug && prompt.slug
-			? `/prompts/${resolvedAuthor.slug}/${prompt.slug}`
-			: `/prompts/prompt/${prompt.id}` // Fallback for prompts without slugs
+			? `${basePath}/${resolvedAuthor.slug}/${prompt.slug}`
+			: `${basePath}/prompt/${prompt.id}` // Fallback for prompts without slugs
 	);
 
 	// Generate preview text (strip markdown and truncate)

@@ -19,12 +19,31 @@
 	let isInitialized = $state(false);
 
 	// Derive current view from the URL path
-	let currentView: 'library' | 'prompts' | 'tags' | 'help' = $derived.by(() => {
+	let currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' = $derived.by(() => {
 		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/tags')) return 'tags';
+		if (pathname.startsWith('/agents')) return 'agents';
 		if (pathname.startsWith('/prompts')) return 'prompts';
 		if (pathname.startsWith('/help')) return 'help';
-		return 'library'; // default for / and /library
+		return 'library';
+	});
+
+	// Derive page title from current view
+	let pageTitle = $derived.by(() => {
+		switch (currentView) {
+			case 'library':
+				return 'My Library | Bearprompt';
+			case 'prompts':
+				return 'Prompt Library | Bearprompt';
+			case 'agents':
+				return 'Agent Library | Bearprompt';
+			case 'tags':
+				return 'Tags | Bearprompt';
+			case 'help':
+				return 'Help | Bearprompt';
+			default:
+				return 'Bearprompt';
+		}
 	});
 
 	onMount(async () => {
@@ -54,7 +73,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Prompt Library</title>
+	<title>{pageTitle}</title>
 	<meta name="description" content="Your private prompt library for managing your AI prompts. Increase your productivity for your AI work." />
 </svelte:head>
 

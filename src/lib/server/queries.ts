@@ -5,7 +5,11 @@ import type {
 	AuthorWithPrompts,
 	PublicLibraryData,
 	SearchResults,
-	AuthorPageData
+	AuthorPageData,
+	AuthorPageDataGrouped,
+	AgentLibraryData,
+	AgentToolWithSetupUrl,
+	PromptType
 } from '$lib/types/public';
 
 const AUTHORS_PER_PAGE = 10;
@@ -75,18 +79,26 @@ async function attachTagsToPrompts(
 /**
  * Get prompt counts for multiple authors in a single query
  * Returns a map of author_id -> prompt count
+ * Optionally filter by prompt type
  */
 async function getPromptCountsForAuthors(
 	supabase: SupabaseClient,
-	authorIds: string[]
+	authorIds: string[],
+	promptType?: PromptType
 ): Promise<Map<string, number>> {
 	if (authorIds.length === 0) return new Map();
 
 	// Use a raw query to get counts grouped by author_id
-	const { data, error } = await supabase
+	let query = supabase
 		.from('prompts')
 		.select('author_id')
 		.in('author_id', authorIds);
+	
+	if (promptType) {
+		query = query.eq('type', promptType);
+	}
+
+	const { data, error } = await query;
 
 	if (error) throw error;
 
@@ -103,20 +115,28 @@ async function getPromptCountsForAuthors(
 /**
  * Get prompts for multiple authors in a single query
  * Uses window functions to get the first N prompts per author
+ * Optionally filter by prompt type
  */
 async function getPromptsForAuthors(
 	supabase: SupabaseClient,
 	authorIds: string[],
-	limit: number = PROMPTS_PREVIEW_LIMIT
+	limit: number = PROMPTS_PREVIEW_LIMIT,
+	promptType?: PromptType
 ): Promise<Map<string, PublicPrompt[]>> {
 	if (authorIds.length === 0) return new Map();
 
 	// Fetch all prompts for these authors, ordered by created_at
-	const { data, error } = await supabase
+	let query = supabase
 		.from('prompts')
 		.select('*')
 		.in('author_id', authorIds)
 		.order('created_at', { ascending: false });
+	
+	if (promptType) {
+		query = query.eq('type', promptType);
+	}
+
+	const { data, error } = await query;
 
 	if (error) throw error;
 
@@ -136,6 +156,7 @@ async function getPromptsForAuthors(
 
 /**
  * Build authors with prompts from fetched data
+ * Filters out authors with no prompts
  */
 async function buildAuthorsWithPrompts(
 	supabase: SupabaseClient,
@@ -158,26 +179,32 @@ async function buildAuthorsWithPrompts(
 		promptsWithTagsMap.set(prompt.id, prompt);
 	}
 
-	// Build the final result
-	return authors.map((author) => {
-		const authorPrompts = promptsByAuthor.get(author.id) || [];
-		const promptsWithTagsForAuthor = authorPrompts.map(
-			(p) => promptsWithTagsMap.get(p.id) || p
-		);
+	// Build the final result, filtering out authors with no prompts
+	return authors
+		.map((author) => {
+			const authorPrompts = promptsByAuthor.get(author.id) || [];
+			const promptsWithTagsForAuthor = authorPrompts.map(
+				(p) => promptsWithTagsMap.get(p.id) || p
+			);
 
-		return {
-			...author,
-			prompts: promptsWithTagsForAuthor,
-			totalPrompts: countsByAuthor.get(author.id) || 0
-		};
-	});
+			return {
+				...author,
+				prompts: promptsWithTagsForAuthor,
+				totalPrompts: countsByAuthor.get(author.id) || 0
+			};
+		})
+		.filter((author) => author.totalPrompts > 0);
 }
 
 /**
  * Get highlighted authors with their first 6 prompts
  * Optimized: Uses 3 queries total instead of N+1
+ * Optionally filter prompts by type
  */
-export async function getHighlightedAuthors(supabase: SupabaseClient): Promise<AuthorWithPrompts[]> {
+export async function getHighlightedAuthors(
+	supabase: SupabaseClient,
+	promptType?: PromptType
+): Promise<AuthorWithPrompts[]> {
 	// Query 1: Get highlighted authors
 	const { data: authors, error: authorsError } = await supabase
 		.from('authors')
@@ -192,8 +219,8 @@ export async function getHighlightedAuthors(supabase: SupabaseClient): Promise<A
 
 	// Query 2 & 3: Get all prompts and counts in parallel
 	const [promptsByAuthor, countsByAuthor] = await Promise.all([
-		getPromptsForAuthors(supabase, authorIds),
-		getPromptCountsForAuthors(supabase, authorIds)
+		getPromptsForAuthors(supabase, authorIds, PROMPTS_PREVIEW_LIMIT, promptType),
+		getPromptCountsForAuthors(supabase, authorIds, promptType)
 	]);
 
 	// Query 4: Get all tags (done inside buildAuthorsWithPrompts)
@@ -203,10 +230,12 @@ export async function getHighlightedAuthors(supabase: SupabaseClient): Promise<A
 /**
  * Get paginated non-highlighted authors with their first 6 prompts
  * Optimized: Uses 4 queries total instead of N+1
+ * Optionally filter prompts by type
  */
 export async function getAuthors(
 	supabase: SupabaseClient,
-	page: number = 1
+	page: number = 1,
+	promptType?: PromptType
 ): Promise<{ authors: AuthorWithPrompts[]; total: number }> {
 	const offset = (page - 1) * AUTHORS_PER_PAGE;
 
@@ -236,8 +265,8 @@ export async function getAuthors(
 
 	// Query 2 & 3: Get all prompts and counts in parallel
 	const [promptsByAuthor, countsByAuthor] = await Promise.all([
-		getPromptsForAuthors(supabase, authorIds),
-		getPromptCountsForAuthors(supabase, authorIds)
+		getPromptsForAuthors(supabase, authorIds, PROMPTS_PREVIEW_LIMIT, promptType),
+		getPromptCountsForAuthors(supabase, authorIds, promptType)
 	]);
 
 	// Query 4: Get all tags (done inside buildAuthorsWithPrompts)
@@ -253,6 +282,7 @@ export async function getAuthors(
 
 /**
  * Get public library data for the main page
+ * Only includes prompts with type='prompt'
  */
 export async function getPublicLibraryData(
 	supabase: SupabaseClient,
@@ -260,8 +290,33 @@ export async function getPublicLibraryData(
 ): Promise<PublicLibraryData> {
 	// Run both queries in parallel for better performance
 	const [highlightedAuthors, { authors, total }] = await Promise.all([
-		getHighlightedAuthors(supabase),
-		getAuthors(supabase, page)
+		getHighlightedAuthors(supabase, 'prompt'),
+		getAuthors(supabase, page, 'prompt')
+	]);
+
+	const totalPages = Math.ceil(total / AUTHORS_PER_PAGE);
+
+	return {
+		highlightedAuthors,
+		authors,
+		totalAuthors: total,
+		currentPage: page,
+		totalPages
+	};
+}
+
+/**
+ * Get agent library data for the agents page
+ * Only includes prompts with type='agent'
+ */
+export async function getAgentLibraryData(
+	supabase: SupabaseClient,
+	page: number = 1
+): Promise<AgentLibraryData> {
+	// Run both queries in parallel for better performance
+	const [highlightedAuthors, { authors, total }] = await Promise.all([
+		getHighlightedAuthors(supabase, 'agent'),
+		getAuthors(supabase, page, 'agent')
 	]);
 
 	const totalPages = Math.ceil(total / AUTHORS_PER_PAGE);
@@ -277,31 +332,42 @@ export async function getPublicLibraryData(
 
 /**
  * Search prompts across all authors
+ * Optionally filter by prompt type
  */
 export async function searchPrompts(
 	supabase: SupabaseClient,
 	query: string,
-	page: number = 1
+	page: number = 1,
+	promptType?: PromptType
 ): Promise<SearchResults> {
 	const offset = (page - 1) * SEARCH_RESULTS_PER_PAGE;
 	const searchPattern = `%${query}%`;
 
+	// Build base query
+	const baseFilter = `title.ilike.${searchPattern},description.ilike.${searchPattern},prompt.ilike.${searchPattern}`;
+
 	// Run count and data queries in parallel
-	const [countResult, dataResult] = await Promise.all([
-		supabase
-			.from('prompts')
-			.select('*', { count: 'exact', head: true })
-			.or(`title.ilike.${searchPattern},description.ilike.${searchPattern},prompt.ilike.${searchPattern}`),
-		supabase
-			.from('prompts')
-			.select(`
-				*,
-				author:author_id (*)
-			`)
-			.or(`title.ilike.${searchPattern},description.ilike.${searchPattern},prompt.ilike.${searchPattern}`)
-			.order('created_at', { ascending: false })
-			.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1)
-	]);
+	let countQuery = supabase
+		.from('prompts')
+		.select('*', { count: 'exact', head: true })
+		.or(baseFilter);
+	
+	let dataQuery = supabase
+		.from('prompts')
+		.select(`
+			*,
+			author:author_id (*)
+		`)
+		.or(baseFilter)
+		.order('created_at', { ascending: false })
+		.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1);
+
+	if (promptType) {
+		countQuery = countQuery.eq('type', promptType);
+		dataQuery = dataQuery.eq('type', promptType);
+	}
+
+	const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
 
 	if (dataResult.error) throw dataResult.error;
 
@@ -316,6 +382,17 @@ export async function searchPrompts(
 		totalPages,
 		query
 	};
+}
+
+/**
+ * Search agent prompts across all authors
+ */
+export async function searchAgents(
+	supabase: SupabaseClient,
+	query: string,
+	page: number = 1
+): Promise<SearchResults> {
+	return searchPrompts(supabase, query, page, 'agent');
 }
 
 /**
@@ -494,5 +571,82 @@ export async function getPromptBySlug(
 	}
 
 	const promptsWithTags = await attachTagsToPrompts(supabase, [prompt]);
-	return promptsWithTags[0] || null;
+	const result = promptsWithTags[0] || null;
+
+	// If it's an agent prompt, also fetch the tools
+	if (result && result.type === 'agent') {
+		result.tools = await getToolsForPrompt(supabase, result.id);
+	}
+
+	return result;
+}
+
+/**
+ * Get tools associated with an agent prompt
+ */
+export async function getToolsForPrompt(
+	supabase: SupabaseClient,
+	promptId: string
+): Promise<AgentToolWithSetupUrl[]> {
+	const { data, error } = await supabase
+		.from('agent_tool_to_prompt')
+		.select(`
+			setup_url,
+			tool:tool_id (
+				id,
+				name,
+				slug,
+				url
+			)
+		`)
+		.eq('prompt_id', promptId);
+
+	if (error) throw error;
+
+	return (data || []).map((row) => {
+		const tool = row.tool as unknown as { id: string; name: string; slug: string; url: string | null };
+		return {
+			...tool,
+			setup_url: row.setup_url
+		};
+	});
+}
+
+/**
+ * Get author page data by slug with prompts grouped by type
+ */
+export async function getAuthorPageDataGroupedBySlug(
+	supabase: SupabaseClient,
+	authorSlug: string,
+	page: number = 1
+): Promise<AuthorPageDataGrouped | null> {
+	const author = await getAuthorBySlug(supabase, authorSlug);
+	if (!author) return null;
+
+	// Fetch all prompts for this author (no pagination, we need to group by type)
+	const { data: allPrompts, error } = await supabase
+		.from('prompts')
+		.select('*')
+		.eq('author_id', author.id)
+		.order('created_at', { ascending: false });
+
+	if (error) throw error;
+
+	const promptsWithTags = await attachTagsToPrompts(supabase, allPrompts || []);
+
+	// Split by type
+	const regularPrompts = promptsWithTags.filter((p) => p.type === 'prompt');
+	const agentPrompts = promptsWithTags.filter((p) => p.type === 'agent');
+
+	// For now, return all (no pagination within groups)
+	// Pagination can be added later if needed
+	return {
+		author,
+		regularPrompts,
+		agentPrompts,
+		totalRegularPrompts: regularPrompts.length,
+		totalAgentPrompts: agentPrompts.length,
+		currentPage: page,
+		totalPages: 1 // No pagination for now
+	};
 }

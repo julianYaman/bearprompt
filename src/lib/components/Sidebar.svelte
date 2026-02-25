@@ -3,7 +3,7 @@
 	import { sidebarOpen, aboutOpen } from '$lib/stores';
 
 	interface Props {
-		currentView: 'library' | 'prompts' | 'tags' | 'help';
+		currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help';
 	}
 
 	let { currentView }: Props = $props();
@@ -66,6 +66,23 @@
 				>
 					<Icon name="globe" size={18} />
 					Public Library
+				</a>
+			</li>
+			<li>
+				<a
+					href="/agents"
+					onclick={handleLinkClick}
+					class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+					class:active={currentView === 'agents'}
+					style="color: {currentView === 'agents'
+						? 'var(--color-text-primary)'
+						: 'var(--color-text-secondary)'}; background-color: {currentView === 'agents'
+						? 'var(--color-bg-tertiary)'
+						: 'transparent'};"
+					aria-current={currentView === 'agents' ? 'page' : undefined}
+				>
+					<Icon name="bot" size={18} />
+					Agent Library
 				</a>
 			</li>
 		</ul>
