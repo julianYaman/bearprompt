@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import ConfirmPopover from './ConfirmPopover.svelte';
 	import { tags as tagsStore, prompts as promptsStore } from '$lib/stores';
 	import { createTag, updateTag, deleteTag, deleteTags } from '$lib/db';
 	import type { Tag } from '$lib/types';
@@ -12,6 +13,10 @@
 	// Multi-select state (local — distinct from the filter store's selectedTagIds)
 	let isSelectMode = $state(false);
 	let selectedIds = $state(new Set<string>());
+
+	// Confirmation popover state
+	let confirmingTagId = $state<string | null>(null); // per-row delete
+	let confirmingBulkDelete = $state(false);          // bulk delete
 
 	// Get usage count for each tag
 	function getTagUsageCount(tagId: string): number {
@@ -76,14 +81,6 @@
 	}
 
 	async function handleDeleteTag(tag: Tag) {
-		const usageCount = getTagUsageCount(tag.id);
-		const message =
-			usageCount > 0
-				? `Are you sure you want to delete "${tag.name}"? It is used by ${usageCount} prompt${usageCount === 1 ? '' : 's'}.`
-				: `Are you sure you want to delete "${tag.name}"?`;
-
-		if (!confirm(message)) return;
-
 		try {
 			await deleteTag(tag.id);
 			tagsStore.update((tags) => tags.filter((t) => t.id !== tag.id));
@@ -97,7 +94,6 @@
 			);
 		} catch (error) {
 			console.error('Failed to delete tag:', error);
-			alert('Failed to delete tag. Please try again.');
 		}
 	}
 
@@ -148,10 +144,6 @@
 		const ids = [...selectedIds];
 		if (ids.length === 0) return;
 
-		const count = ids.length;
-		const label = count === 1 ? '1 tag' : `${count} tags`;
-		if (!confirm(`Delete ${label}? This will also remove them from all prompts.`)) return;
-
 		try {
 			await deleteTags(ids);
 			tagsStore.update((tags) => tags.filter((t) => !selectedIds.has(t.id)));
@@ -163,8 +155,8 @@
 			isSelectMode = false;
 		} catch (error) {
 			console.error('Failed to delete tags:', error);
-			alert('Failed to delete tags. Please try again.');
 		}
+		confirmingBulkDelete = false;
 	}
 </script>
 
@@ -274,9 +266,10 @@
 					</button>
 				{/if}
 			</div>
+			<div class="relative">
 			<button
 				type="button"
-				onclick={handleDeleteSelected}
+				onclick={() => (confirmingBulkDelete = true)}
 				disabled={selectedIds.size === 0}
 				class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-40"
 				style="background-color: var(--color-danger);"
@@ -284,6 +277,15 @@
 				<Icon name="trash" size={15} />
 				Delete ({selectedIds.size})
 			</button>
+			{#if confirmingBulkDelete}
+				{@const count = selectedIds.size}
+				<ConfirmPopover
+					message="Delete {count} {count === 1 ? 'tag' : 'tags'}? This will also remove them from all prompts."
+					onconfirm={handleDeleteSelected}
+					oncancel={() => (confirmingBulkDelete = false)}
+				/>
+			{/if}
+		</div>
 		</div>
 	{/if}
 
@@ -389,15 +391,27 @@
 							>
 								<Icon name="edit" size={16} />
 							</button>
-							<button
-								type="button"
-								onclick={() => handleDeleteTag(tag)}
-								class="icon-btn rounded-lg p-2 transition-colors"
-								style="color: var(--color-text-muted);"
-								aria-label="Delete tag"
-							>
-								<Icon name="trash" size={16} />
-							</button>
+							<div class="relative">
+								<button
+									type="button"
+									onclick={() => (confirmingTagId = tag.id)}
+									class="icon-btn rounded-lg p-2 transition-colors"
+									style="color: var(--color-text-muted);"
+									aria-label="Delete tag"
+								>
+									<Icon name="trash" size={16} />
+								</button>
+								{#if confirmingTagId === tag.id}
+									{@const usageCount = getTagUsageCount(tag.id)}
+									<ConfirmPopover
+										message={usageCount > 0
+											? `Delete "${tag.name}"? It's used by ${usageCount} prompt${usageCount === 1 ? '' : 's'}.`
+											: `Delete "${tag.name}"?`}
+										onconfirm={() => { confirmingTagId = null; handleDeleteTag(tag); }}
+										oncancel={() => (confirmingTagId = null)}
+									/>
+								{/if}
+							</div>
 						</div>
 					{/if}
 				{/if}

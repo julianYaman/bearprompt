@@ -4,6 +4,7 @@
 	import PromptForm from '$lib/components/PromptForm.svelte';
 	import SearchFilter from '$lib/components/SearchFilter.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import {
 		filteredPrompts,
 		isCreating,
@@ -23,6 +24,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 	let showForm = $derived($isCreating || $editingPromptId !== null);
 	let showCopyModal = $state(false);
+	let confirmingBulkDelete = $state(false);
 
 	const chatgptUrl = $derived(`https://chat.openai.com/?q=${encodeURIComponent(CHATGPT_PROMPT)}`);
 
@@ -67,14 +69,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		const ids = [...$selectedPromptIds];
 		if (ids.length === 0) return;
 
-		const count = ids.length;
-		const label = count === 1 ? '1 prompt' : `${count} prompts`;
-		if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
-
 		await deletePrompts(ids);
 		prompts.update((all) => all.filter((p) => !$selectedPromptIds.has(p.id)));
 		selectedPromptIds.set(new Set());
 		isPromptSelectMode.set(false);
+		confirmingBulkDelete = false;
 	}
 
 	async function handleCopyPrompt() {
@@ -291,9 +290,10 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							</button>
 						{/if}
 					</div>
+				<div class="relative">
 					<button
 						type="button"
-						onclick={handleDeleteSelected}
+						onclick={() => (confirmingBulkDelete = true)}
 						disabled={$selectedPromptIds.size === 0}
 						class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-40"
 						style="background-color: var(--color-danger);"
@@ -301,6 +301,15 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						<Icon name="trash" size={15} />
 						Delete ({$selectedPromptIds.size})
 					</button>
+					{#if confirmingBulkDelete}
+						{@const count = $selectedPromptIds.size}
+						<ConfirmPopover
+							message="Delete {count} {count === 1 ? 'prompt' : 'prompts'}? This cannot be undone."
+							onconfirm={handleDeleteSelected}
+							oncancel={() => (confirmingBulkDelete = false)}
+						/>
+					{/if}
+				</div>
 				</div>
 			{/if}
 
