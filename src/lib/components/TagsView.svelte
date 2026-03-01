@@ -1,13 +1,17 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import { tags as tagsStore, prompts as promptsStore } from '$lib/stores';
-	import { createTag, updateTag, deleteTag } from '$lib/db';
+	import { createTag, updateTag, deleteTag, deleteTags } from '$lib/db';
 	import type { Tag } from '$lib/types';
 
 	let newTagName = $state('');
 	let editingTagId = $state<string | null>(null);
 	let editingTagName = $state('');
 	let isCreating = $state(false);
+
+	// Multi-select state (local — distinct from the filter store's selectedTagIds)
+	let isSelectMode = $state(false);
+	let selectedIds = $state(new Set<string>());
 
 	// Get usage count for each tag
 	function getTagUsageCount(tagId: string): number {
@@ -114,6 +118,54 @@
 			}
 		}
 	}
+
+	// --- Multi-select ---
+
+	function handleToggleSelectMode() {
+		isSelectMode = !isSelectMode;
+		if (!isSelectMode) selectedIds = new Set();
+	}
+
+	function handleToggleTagSelect(id: string) {
+		const next = new Set(selectedIds);
+		if (next.has(id)) {
+			next.delete(id);
+		} else {
+			next.add(id);
+		}
+		selectedIds = next;
+	}
+
+	function handleSelectAll() {
+		selectedIds = new Set($tagsStore.map((t) => t.id));
+	}
+
+	function handleDeselectAll() {
+		selectedIds = new Set();
+	}
+
+	async function handleDeleteSelected() {
+		const ids = [...selectedIds];
+		if (ids.length === 0) return;
+
+		const count = ids.length;
+		const label = count === 1 ? '1 tag' : `${count} tags`;
+		if (!confirm(`Delete ${label}? This will also remove them from all prompts.`)) return;
+
+		try {
+			await deleteTags(ids);
+			tagsStore.update((tags) => tags.filter((t) => !selectedIds.has(t.id)));
+			// Remove deleted tag IDs from every prompt in the store
+			promptsStore.update((ps) =>
+				ps.map((p) => ({ ...p, tagIds: p.tagIds.filter((id) => !selectedIds.has(id)) }))
+			);
+			selectedIds = new Set();
+			isSelectMode = false;
+		} catch (error) {
+			console.error('Failed to delete tags:', error);
+			alert('Failed to delete tags. Please try again.');
+		}
+	}
 </script>
 
 <div class="h-full p-4 md:p-6">
@@ -122,17 +174,31 @@
 		<h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">
 			Tags
 		</h1>
-		{#if !isCreating}
-			<button
-				type="button"
-				onclick={() => (isCreating = true)}
-				class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-				style="background-color: var(--color-accent);"
-			>
-				<Icon name="plus" size={16} />
-				New Tag
-			</button>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if $tagsStore.length > 0}
+				<button
+					type="button"
+					onclick={handleToggleSelectMode}
+					class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+					style="background-color: {isSelectMode ? 'var(--color-bg-tertiary)' : 'transparent'}; border-color: var(--color-border); color: {isSelectMode ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'};"
+					aria-pressed={isSelectMode}
+				>
+					<Icon name={isSelectMode ? 'x' : 'square-check'} size={16} />
+					{isSelectMode ? 'Cancel' : 'Select'}
+				</button>
+			{/if}
+			{#if !isCreating && !isSelectMode}
+				<button
+					type="button"
+					onclick={() => (isCreating = true)}
+					class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+					style="background-color: var(--color-accent);"
+				>
+					<Icon name="plus" size={16} />
+					New Tag
+				</button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Create Tag Form -->
@@ -179,6 +245,48 @@
 	{/if}
 
 	<!-- Tags List -->
+	{#if isSelectMode && $tagsStore.length > 0}
+		<!-- Bulk-action bar -->
+		<div
+			class="mb-4 flex items-center justify-between rounded-lg border px-4 py-3"
+			style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
+		>
+			<div class="flex items-center gap-3">
+				<span class="text-sm font-medium" style="color: var(--color-text-primary);">
+					{selectedIds.size} selected
+				</span>
+				<button
+					type="button"
+					onclick={handleSelectAll}
+					class="text-sm transition-colors"
+					style="color: var(--color-text-secondary);"
+				>
+					Select all ({$tagsStore.length})
+				</button>
+				{#if selectedIds.size > 0}
+					<button
+						type="button"
+						onclick={handleDeselectAll}
+						class="text-sm transition-colors"
+						style="color: var(--color-text-secondary);"
+					>
+						Deselect all
+					</button>
+				{/if}
+			</div>
+			<button
+				type="button"
+				onclick={handleDeleteSelected}
+				disabled={selectedIds.size === 0}
+				class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-40"
+				style="background-color: var(--color-danger);"
+			>
+				<Icon name="trash" size={15} />
+				Delete ({selectedIds.size})
+			</button>
+		</div>
+	{/if}
+
 	{#if $tagsStore.length === 0}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<div
@@ -208,54 +316,69 @@
 		<div class="space-y-2">
 			{#each $tagsStore as tag (tag.id)}
 				<div
-					class="flex items-center justify-between rounded-lg border p-3 transition-colors"
-					style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
-				>
-					{#if editingTagId === tag.id}
-						<!-- Edit Mode -->
-						<div class="flex flex-1 items-center gap-2">
-							<input
-								type="text"
-								bind:value={editingTagName}
-								onkeydown={(e) => handleKeydown(e, 'edit')}
-								class="flex-1 rounded-lg border px-3 py-1.5 text-sm outline-none transition-colors"
-								style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary);"
-								autofocus
-							/>
-							<button
-								type="button"
-								onclick={handleUpdateTag}
-								disabled={!editingTagName.trim()}
-								class="rounded-lg p-1.5 transition-colors disabled:opacity-50"
-								style="color: var(--color-success);"
-								aria-label="Save"
+				class="flex items-center justify-between rounded-lg border p-3 transition-colors {isSelectMode ? 'cursor-pointer' : ''}"
+				style="background-color: {isSelectMode && selectedIds.has(tag.id) ? 'var(--color-bg-tertiary)' : 'var(--color-bg-secondary)'}; border-color: {isSelectMode && selectedIds.has(tag.id) ? 'var(--color-accent)' : 'var(--color-border)'};"
+				onclick={isSelectMode ? () => handleToggleTagSelect(tag.id) : undefined}
+				role={isSelectMode ? 'checkbox' : undefined}
+				aria-checked={isSelectMode ? selectedIds.has(tag.id) : undefined}
+			>
+				{#if editingTagId === tag.id}
+					<!-- Edit Mode -->
+					<div class="flex flex-1 items-center gap-2">
+						<input
+							type="text"
+							bind:value={editingTagName}
+							onkeydown={(e) => handleKeydown(e, 'edit')}
+							class="flex-1 rounded-lg border px-3 py-1.5 text-sm outline-none transition-colors"
+							style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary);"
+							autofocus
+						/>
+						<button
+							type="button"
+							onclick={handleUpdateTag}
+							disabled={!editingTagName.trim()}
+							class="rounded-lg p-1.5 transition-colors disabled:opacity-50"
+							style="color: var(--color-success);"
+							aria-label="Save"
+						>
+							<Icon name="check" size={18} />
+						</button>
+						<button
+							type="button"
+							onclick={cancelEditing}
+							class="rounded-lg p-1.5 transition-colors"
+							style="color: var(--color-text-muted);"
+							aria-label="Cancel"
+						>
+							<Icon name="x" size={18} />
+						</button>
+					</div>
+			{:else}
+					<!-- View Mode -->
+					{@const usageCount = getTagUsageCount(tag.id)}
+					<div class="flex items-center gap-3">
+						{#if isSelectMode}
+							<!-- Checkbox -->
+							<div
+								class="pointer-events-none flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors"
+								style="background-color: {selectedIds.has(tag.id) ? 'var(--color-accent)' : 'var(--color-bg-primary)'}; border-color: {selectedIds.has(tag.id) ? 'var(--color-accent)' : 'var(--color-border-hover)'};"
 							>
-								<Icon name="check" size={18} />
-							</button>
-							<button
-								type="button"
-								onclick={cancelEditing}
-								class="rounded-lg p-1.5 transition-colors"
-								style="color: var(--color-text-muted);"
-								aria-label="Cancel"
-							>
-								<Icon name="x" size={18} />
-							</button>
-						</div>
-				{:else}
-						<!-- View Mode -->
-						{@const usageCount = getTagUsageCount(tag.id)}
-						<div class="flex items-center gap-3">
-							<span
-								class="rounded-full px-3 py-1 text-sm font-medium"
-								style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
-							>
-								{tag.name}
-							</span>
-							<span class="text-xs" style="color: var(--color-text-muted);">
-								{usageCount} prompt{usageCount === 1 ? '' : 's'}
-							</span>
-						</div>
+								{#if selectedIds.has(tag.id)}
+									<Icon name="check" size={12} class="text-white" />
+								{/if}
+							</div>
+						{/if}
+						<span
+							class="rounded-full px-3 py-1 text-sm font-medium"
+							style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
+						>
+							{tag.name}
+						</span>
+						<span class="text-xs" style="color: var(--color-text-muted);">
+							{usageCount} prompt{usageCount === 1 ? '' : 's'}
+						</span>
+					</div>
+					{#if !isSelectMode}
 						<div class="flex items-center gap-1">
 							<button
 								type="button"
@@ -277,7 +400,8 @@
 							</button>
 						</div>
 					{/if}
-				</div>
+				{/if}
+			</div>
 			{/each}
 		</div>
 	{/if}

@@ -40,7 +40,8 @@
 			| 'notion'
 			| 'ms-copilot'
 			| 'cursor'
-			| 'bot';
+			| 'bot'
+		| 'square-check';
 		size?: number;
 		class?: string;
 	}
@@ -151,5 +152,7 @@
 		<path d="M20 14h2" />
 		<path d="M15 13v2" />
 		<path d="M9 13v2" />
+	{:else if name === 'square-check'}
+		<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12l2 2l4-4"/></g>
 	{/if}
 </svg>

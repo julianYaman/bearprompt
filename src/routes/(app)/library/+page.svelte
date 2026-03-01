@@ -4,7 +4,17 @@
 	import PromptForm from '$lib/components/PromptForm.svelte';
 	import SearchFilter from '$lib/components/SearchFilter.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { filteredPrompts, isCreating, editingPromptId, searchQuery, selectedTagIds } from '$lib/stores';
+	import {
+		filteredPrompts,
+		isCreating,
+		editingPromptId,
+		searchQuery,
+		selectedTagIds,
+		isPromptSelectMode,
+		selectedPromptIds,
+		prompts
+	} from '$lib/stores';
+	import { deletePrompts } from '$lib/db';
 
 	const CHATGPT_PROMPT = `Based on my previous chats, give me my 10 most used prompts that I can copy & paste into a prompt library. 
 Format them in a way that I know where I have to enter custom instructions or text for this prompt. For each prompt, give me a title and a few tags. 
@@ -29,6 +39,42 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	function handleCloseForm() {
 		isCreating.set(false);
 		editingPromptId.set(null);
+	}
+
+	// --- Select mode ---
+
+	function handleSelectPrompt(id: string) {
+		selectedPromptIds.update((set: Set<string>) => {
+			const next = new Set(set);
+			if (next.has(id)) {
+				next.delete(id);
+			} else {
+				next.add(id);
+			}
+			return next;
+		});
+	}
+
+	function handleSelectAll() {
+		selectedPromptIds.set(new Set($filteredPrompts.map((p) => p.id)));
+	}
+
+	function handleDeselectAll() {
+		selectedPromptIds.set(new Set());
+	}
+
+	async function handleDeleteSelected() {
+		const ids = [...$selectedPromptIds];
+		if (ids.length === 0) return;
+
+		const count = ids.length;
+		const label = count === 1 ? '1 prompt' : `${count} prompts`;
+		if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
+
+		await deletePrompts(ids);
+		prompts.update((all) => all.filter((p) => !$selectedPromptIds.has(p.id)));
+		selectedPromptIds.set(new Set());
+		isPromptSelectMode.set(false);
 	}
 
 	async function handleCopyPrompt() {
@@ -216,14 +262,64 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 				</p>
 			</div>
 		{:else}
+			<!-- Bulk-action bar (select mode) -->
+			{#if $isPromptSelectMode}
+				<div
+					class="mb-4 flex items-center justify-between rounded-lg border px-4 py-3"
+					style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
+				>
+					<div class="flex items-center gap-3">
+						<span class="text-sm font-medium" style="color: var(--color-text-primary);">
+							{$selectedPromptIds.size} selected
+						</span>
+						<button
+							type="button"
+							onclick={handleSelectAll}
+							class="text-sm transition-colors"
+							style="color: var(--color-text-secondary);"
+						>
+							Select all ({$filteredPrompts.length})
+						</button>
+						{#if $selectedPromptIds.size > 0}
+							<button
+								type="button"
+								onclick={handleDeselectAll}
+								class="text-sm transition-colors"
+								style="color: var(--color-text-secondary);"
+							>
+								Deselect all
+							</button>
+						{/if}
+					</div>
+					<button
+						type="button"
+						onclick={handleDeleteSelected}
+						disabled={$selectedPromptIds.size === 0}
+						class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-40"
+						style="background-color: var(--color-danger);"
+					>
+						<Icon name="trash" size={15} />
+						Delete ({$selectedPromptIds.size})
+					</button>
+				</div>
+			{/if}
+
 			<!-- Grid of cards -->
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				<!-- Create new card (always first) -->
-				<CreateCard onClick={handleCreateNew} />
+				<!-- Create new card (hidden in select mode) -->
+				{#if !$isPromptSelectMode}
+					<CreateCard onClick={handleCreateNew} />
+				{/if}
 
 				<!-- Prompt cards -->
 				{#each $filteredPrompts as prompt (prompt.id)}
-					<PromptCard {prompt} onEdit={handleEdit} />
+					<PromptCard
+						{prompt}
+						onEdit={handleEdit}
+						selectMode={$isPromptSelectMode}
+						selected={$selectedPromptIds.has(prompt.id)}
+						onSelect={handleSelectPrompt}
+					/>
 				{/each}
 			</div>
 		{/if}

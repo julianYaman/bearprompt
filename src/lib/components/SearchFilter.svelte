@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	import { searchQuery, selectedTagIds, tags as tagsStore, sortOption } from '$lib/stores';
+	import { searchQuery, selectedTagIds, tags as tagsStore, sortOption, isPromptSelectMode, selectedPromptIds } from '$lib/stores';
 	import type { SortField, SortDirection } from '$lib/types';
 
 	let localQuery = $state($searchQuery);
@@ -67,6 +67,13 @@
 	});
 
 	let hasActiveFilters = $derived($searchQuery || $selectedTagIds.length > 0);
+
+	function handleToggleSelectMode() {
+		isPromptSelectMode.update((v: boolean) => {
+			if (v) selectedPromptIds.set(new Set());
+			return !v;
+		});
+	}
 </script>
 
 <div class="space-y-3">
@@ -116,6 +123,18 @@
 				<Icon name="chevron-down" size={16} />
 			</div>
 		</div>
+
+		<!-- Select mode toggle -->
+		<button
+			type="button"
+			onclick={handleToggleSelectMode}
+			class="flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors"
+			style="background-color: {$isPromptSelectMode ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)'}; border-color: var(--color-border); color: {$isPromptSelectMode ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'};"
+			aria-pressed={$isPromptSelectMode}
+		>
+			<Icon name={$isPromptSelectMode ? 'x' : 'square-check'} size={15} />
+			{$isPromptSelectMode ? 'Cancel' : 'Select'}
+		</button>
 	</div>
 
 	<!-- Tag Filters -->

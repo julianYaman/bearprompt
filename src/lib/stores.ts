@@ -29,6 +29,10 @@ export const isCreating = writable(false);
 // Copy feedback
 export const copiedPromptId = writable<string | null>(null);
 
+// Multi-select state for prompt cards
+export const isPromptSelectMode = writable(false);
+export const selectedPromptIds = writable<Set<string>>(new Set());
+
 
 // Filtered and sorted prompts (derived)
 export const filteredPrompts = derived(

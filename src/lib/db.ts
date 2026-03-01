@@ -198,6 +198,25 @@ export async function deleteTag(id: string): Promise<boolean> {
 	return true;
 }
 
+export async function getTagByName(name: string): Promise<Tag | undefined> {
+	const db = await getDB();
+	return db.getFromIndex('tags', 'by-name', name.trim());
+}
+
+export async function deletePrompts(ids: string[]): Promise<void> {
+	const db = await getDB();
+	const tx = db.transaction('prompts', 'readwrite');
+	await Promise.all(ids.map((id) => tx.store.delete(id)));
+	await tx.done;
+}
+
+export async function deleteTags(ids: string[]): Promise<void> {
+	const db = await getDB();
+	const tx = db.transaction('tags', 'readwrite');
+	await Promise.all(ids.map((id) => tx.store.delete(id)));
+	await tx.done;
+}
+
 // ============ SETTINGS ============
 
 const DEFAULT_SETTINGS: Settings = {
@@ -256,6 +275,8 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 	const existingTags = await getAllTags();
 	const existingPromptIds = new Set(existingPrompts.map((p) => p.id));
 	const existingTagIds = new Set(existingTags.map((t) => t.id));
+	// Build a name→id map for deduplication by name
+	const existingTagsByName = new Map(existingTags.map((t) => [t.name.toLowerCase(), t.id]));
 
 	const result: ImportResult = {
 		promptsImported: 0,
@@ -268,6 +289,16 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 	const tagIdMap = new Map<string, string>(); // old ID -> new ID
 
 	for (const tag of data.data.tags) {
+		// Deduplicate by name first (case-insensitive)
+		const nameKey = tag.name.trim().toLowerCase();
+		const existingByName = existingTagsByName.get(nameKey);
+		if (existingByName) {
+			// Map the incoming ID to the existing tag — skip writing
+			tagIdMap.set(tag.id, existingByName);
+			result.tagsSkipped++;
+			continue;
+		}
+
 		let newId = tag.id;
 		if (existingTagIds.has(newId)) {
 			newId = uuidv4();
@@ -280,6 +311,7 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 		};
 		await db.put('tags', newTag);
 		existingTagIds.add(newId);
+		existingTagsByName.set(nameKey, newId);
 		result.tagsImported++;
 	}
 

@@ -7,9 +7,12 @@
 	interface Props {
 		prompt: Prompt;
 		onEdit: (id: string) => void;
+		selectMode?: boolean;
+		selected?: boolean;
+		onSelect?: (id: string) => void;
 	}
 
-	let { prompt, onEdit }: Props = $props();
+	let { prompt, onEdit, selectMode = false, selected = false, onSelect }: Props = $props();
 
 	let copyState: 'idle' | 'copied' = $state('idle');
 	let isPreviewHovering = $state(false);
@@ -33,6 +36,7 @@
 	let previewText = $derived(stripMarkdown(prompt.markdown));
 
 	async function handleCopy(event: MouseEvent | KeyboardEvent) {
+		if (selectMode) return;
 		event.stopPropagation();
 
 		if (!navigator.clipboard) {
@@ -58,8 +62,14 @@
 	}
 
 	function handleEdit(event: MouseEvent | KeyboardEvent) {
+		if (selectMode) return;
 		event.stopPropagation();
 		onEdit(prompt.id);
+	}
+
+	function handleSelectToggle(event: MouseEvent | KeyboardEvent) {
+		event.stopPropagation();
+		onSelect?.(prompt.id);
 	}
 
 	function handlePreviewKeydown(event: KeyboardEvent) {
@@ -77,21 +87,41 @@
 	}
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <article
 	class="group relative flex h-64 flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-200"
-	style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
+	style="background-color: var(--color-bg-primary); border-color: {selected ? 'var(--color-accent)' : 'var(--color-border)'}; {selected ? 'box-shadow: 0 0 0 2px var(--color-accent);' : ''}"
+	onclick={selectMode ? handleSelectToggle : undefined}
+	onkeydown={selectMode ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectToggle(e); } } : undefined}
+	tabindex={selectMode ? 0 : undefined}
+	role={selectMode ? 'checkbox' : undefined}
+	aria-checked={selectMode ? selected : undefined}
+	aria-label={selectMode ? (selected ? `Deselect prompt: ${prompt.title}` : `Select prompt: ${prompt.title}`) : undefined}
 >
+	<!-- Checkbox overlay (select mode) -->
+	{#if selectMode}
+		<div class="pointer-events-none absolute left-3 top-3 z-10">
+			<div
+				class="flex h-5 w-5 items-center justify-center rounded border-2 transition-colors"
+				style="background-color: {selected ? 'var(--color-accent)' : 'var(--color-bg-primary)'}; border-color: {selected ? 'var(--color-accent)' : 'var(--color-border-hover)'};"
+			>
+				{#if selected}
+					<Icon name="check" size={12} class="text-white" />
+				{/if}
+			</div>
+		</div>
+	{/if}
 	<!-- Preview Section - Click to Copy -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_to_interactive_role -->
 	<div
-		class="preview-section relative flex-1 cursor-pointer overflow-hidden p-4"
-		onmouseenter={() => (isPreviewHovering = true)}
+		class="preview-section relative flex-1 overflow-hidden p-4 {selectMode ? '' : 'cursor-pointer'}"
+		onmouseenter={() => { if (!selectMode) isPreviewHovering = true; }}
 		onmouseleave={() => (isPreviewHovering = false)}
-		onclick={handleCopy}
-		onkeydown={handlePreviewKeydown}
-		tabindex="0"
-		role="button"
-		aria-label="Copy prompt: {prompt.title}"
+		onclick={selectMode ? undefined : handleCopy}
+		onkeydown={selectMode ? undefined : handlePreviewKeydown}
+		tabindex={selectMode ? undefined : 0}
+		role={selectMode ? undefined : 'button'}
+		aria-label={selectMode ? undefined : `Copy prompt: ${prompt.title}`}
 	>
 		<!-- Preview text with fade -->
 		<div class="preview-fade h-full select-none whitespace-pre-line text-sm leading-relaxed" style="color: var(--color-text-secondary);">
@@ -118,13 +148,13 @@
 	<!-- Content Section - Click to Edit -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_to_interactive_role -->
 	<div
-		class="content-section cursor-pointer border-t p-4 transition-colors"
+		class="content-section border-t p-4 transition-colors {selectMode ? '' : 'cursor-pointer'}"
 		style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
-		onclick={handleEdit}
-		onkeydown={handleContentKeydown}
-		tabindex="0"
-		role="button"
-		aria-label="Edit prompt: {prompt.title}"
+		onclick={selectMode ? undefined : handleEdit}
+		onkeydown={selectMode ? undefined : handleContentKeydown}
+		tabindex={selectMode ? undefined : 0}
+		role={selectMode ? undefined : 'button'}
+		aria-label={selectMode ? undefined : `Edit prompt: ${prompt.title}`}
 	>
 		<div class="flex items-start justify-between gap-2">
 			<h3
