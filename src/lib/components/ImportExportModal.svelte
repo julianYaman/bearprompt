@@ -9,6 +9,7 @@
 		getAllTags,
 		type ImportResult
 	} from '$lib/db';
+	import { downloadJson, buildExportFilename } from '$lib/utils';
 
 	let activeTab: 'export' | 'import' = $state('export');
 	let isExporting = $state(false);
@@ -40,22 +41,7 @@
 		isExporting = true;
 		try {
 			const data = await exportLibrary();
-			const json = JSON.stringify(data, null, 2);
-			const blob = new Blob([json], { type: 'application/json' });
-			const url = URL.createObjectURL(blob);
-
-			// Generate filename with date
-			const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-			const filename = `promptlib-export-v1-${date}.json`;
-
-			// Trigger download
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = filename;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			downloadJson(data, buildExportFilename());
 		} catch (error) {
 			console.error('Export failed:', error);
 			alert('Failed to export library. Please try again.');
@@ -150,7 +136,6 @@
 					type="button"
 					onclick={() => (activeTab = 'export')}
 					class="flex-1 border-b-2 py-3 text-sm font-medium transition-colors"
-					class:active={activeTab === 'export'}
 					style="border-color: {activeTab === 'export'
 						? 'var(--color-accent)'
 						: 'transparent'}; color: {activeTab === 'export'
@@ -165,7 +150,6 @@
 					type="button"
 					onclick={() => (activeTab = 'import')}
 					class="flex-1 border-b-2 py-3 text-sm font-medium transition-colors"
-					class:active={activeTab === 'import'}
 					style="border-color: {activeTab === 'import'
 						? 'var(--color-accent)'
 						: 'transparent'}; color: {activeTab === 'import'

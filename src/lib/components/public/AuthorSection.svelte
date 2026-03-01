@@ -2,6 +2,7 @@
 	import Icon from '../Icon.svelte';
 	import VerifiedBadge from './VerifiedBadge.svelte';
 	import PublicPromptCard from './PublicPromptCard.svelte';
+	import { AUTHOR_ROW_LIMIT } from '$lib/utils';
 	import type { AuthorWithPrompts, PublicPrompt } from '$lib/types/public';
 
 	interface Props {
@@ -13,7 +14,7 @@
 
 	let { author, basePath = '/prompts', itemLabel = 'prompts', onAddToLibrary }: Props = $props();
 
-	let showSeeAll = $derived(author.totalPrompts > 6);
+	let showSeeAll = $derived(author.totalPrompts > AUTHOR_ROW_LIMIT);
 	
 	// Don't render anything if author has no prompts
 	let hasPrompts = $derived(author.prompts.length > 0 || author.totalPrompts > 0);

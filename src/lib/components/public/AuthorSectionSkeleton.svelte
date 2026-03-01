@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PromptCardSkeleton from './PromptCardSkeleton.svelte';
+	import { AUTHOR_ROW_LIMIT } from '$lib/utils';
 </script>
 
 <section class="mb-8">
@@ -20,7 +21,7 @@
 
 	<!-- Prompts row skeleton -->
 	<div class="flex gap-4 overflow-x-auto pb-2">
-		{#each Array(6) as _}
+		{#each Array(AUTHOR_ROW_LIMIT) as _}
 			<div class="w-64 shrink-0">
 				<PromptCardSkeleton />
 			</div>
@@ -38,14 +39,5 @@
 		);
 		background-size: 200% 100%;
 		animation: shimmer 1.5s infinite;
-	}
-
-	@keyframes shimmer {
-		0% {
-			background-position: 200% 0;
-		}
-		100% {
-			background-position: -200% 0;
-		}
 	}
 </style>

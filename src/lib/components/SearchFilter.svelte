@@ -6,6 +6,13 @@
 	let localQuery = $state($searchQuery);
 	let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
+	// Cancel any pending debounce when the component is destroyed
+	$effect(() => {
+		return () => {
+			if (debounceTimeout) clearTimeout(debounceTimeout);
+		};
+	});
+
 	// Sort options for the dropdown
 	const sortOptions: { label: string; field: SortField; direction: SortDirection }[] = [
 		{ label: 'Newest first', field: 'createdAt', direction: 'desc' },
@@ -13,14 +20,6 @@
 		{ label: 'Title A-Z', field: 'title', direction: 'asc' },
 		{ label: 'Title Z-A', field: 'title', direction: 'desc' }
 	];
-
-	// Get current sort label
-	let currentSortLabel = $derived(() => {
-		const current = sortOptions.find(
-			(opt) => opt.field === $sortOption.field && opt.direction === $sortOption.direction
-		);
-		return current?.label || 'Sort by';
-	});
 
 	// Debounced search
 	function handleSearchInput() {
@@ -61,7 +60,7 @@
 	}
 
 	// Get current sort index for select value
-	let currentSortIndex = $derived(() => {
+	let currentSortIndex = $derived.by(() => {
 		return sortOptions.findIndex(
 			(opt) => opt.field === $sortOption.field && opt.direction === $sortOption.direction
 		);
@@ -104,7 +103,7 @@
 		<div class="relative">
 			<select
 				onchange={handleSortChange}
-				value={currentSortIndex()}
+				value={currentSortIndex}
 				class="sort-select appearance-none rounded-lg border py-2.5 pr-8 pl-3 text-sm outline-none transition-colors"
 				style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary);"
 				aria-label="Sort prompts"

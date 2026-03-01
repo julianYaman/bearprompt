@@ -242,8 +242,9 @@
 								<Icon name="x" size={18} />
 							</button>
 						</div>
-					{:else}
+				{:else}
 						<!-- View Mode -->
+						{@const usageCount = getTagUsageCount(tag.id)}
 						<div class="flex items-center gap-3">
 							<span
 								class="rounded-full px-3 py-1 text-sm font-medium"
@@ -252,7 +253,7 @@
 								{tag.name}
 							</span>
 							<span class="text-xs" style="color: var(--color-text-muted);">
-								{getTagUsageCount(tag.id)} prompt{getTagUsageCount(tag.id) === 1 ? '' : 's'}
+								{usageCount} prompt{usageCount === 1 ? '' : 's'}
 							</span>
 						</div>
 						<div class="flex items-center gap-1">
@@ -302,9 +303,5 @@
 
 	input:focus {
 		border-color: var(--color-accent);
-	}
-
-	.text-muted {
-		color: var(--color-text-muted);
 	}
 </style>

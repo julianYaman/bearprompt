@@ -35,52 +35,49 @@
 	<nav class="flex-1 p-3" aria-label="Main navigation">
 		<ul class="space-y-1">
 			<li>
-				<a
-					href="/library"
-					onclick={handleLinkClick}
-					class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-					class:active={currentView === 'library'}
-					style="color: {currentView === 'library'
-						? 'var(--color-text-primary)'
-						: 'var(--color-text-secondary)'}; background-color: {currentView === 'library'
-						? 'var(--color-bg-tertiary)'
-						: 'transparent'};"
-					aria-current={currentView === 'library' ? 'page' : undefined}
-				>
+			<a
+				href="/library"
+				onclick={handleLinkClick}
+				class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+				style="color: {currentView === 'library'
+					? 'var(--color-text-primary)'
+					: 'var(--color-text-secondary)'}; background-color: {currentView === 'library'
+					? 'var(--color-bg-tertiary)'
+					: 'transparent'};"
+				aria-current={currentView === 'library' ? 'page' : undefined}
+			>
 					<Icon name="library" size={18} />
 					My Library
 				</a>
 			</li>
 			<li>
-				<a
-					href="/prompts"
-					onclick={handleLinkClick}
-					class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-					class:active={currentView === 'prompts'}
-					style="color: {currentView === 'prompts'
-						? 'var(--color-text-primary)'
-						: 'var(--color-text-secondary)'}; background-color: {currentView === 'prompts'
-						? 'var(--color-bg-tertiary)'
-						: 'transparent'};"
-					aria-current={currentView === 'prompts' ? 'page' : undefined}
-				>
+			<a
+				href="/prompts"
+				onclick={handleLinkClick}
+				class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+				style="color: {currentView === 'prompts'
+					? 'var(--color-text-primary)'
+					: 'var(--color-text-secondary)'}; background-color: {currentView === 'prompts'
+					? 'var(--color-bg-tertiary)'
+					: 'transparent'};"
+				aria-current={currentView === 'prompts' ? 'page' : undefined}
+			>
 					<Icon name="globe" size={18} />
 					Public Library
 				</a>
 			</li>
 			<li>
-				<a
-					href="/agents"
-					onclick={handleLinkClick}
-					class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-					class:active={currentView === 'agents'}
-					style="color: {currentView === 'agents'
-						? 'var(--color-text-primary)'
-						: 'var(--color-text-secondary)'}; background-color: {currentView === 'agents'
-						? 'var(--color-bg-tertiary)'
-						: 'transparent'};"
-					aria-current={currentView === 'agents' ? 'page' : undefined}
-				>
+			<a
+				href="/agents"
+				onclick={handleLinkClick}
+				class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+				style="color: {currentView === 'agents'
+					? 'var(--color-text-primary)'
+					: 'var(--color-text-secondary)'}; background-color: {currentView === 'agents'
+					? 'var(--color-bg-tertiary)'
+					: 'transparent'};"
+				aria-current={currentView === 'agents' ? 'page' : undefined}
+			>
 					<Icon name="bot" size={18} />
 					Agent Library
 				</a>
@@ -94,7 +91,6 @@
 			href="/tags"
 			onclick={handleLinkClick}
 			class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-			class:active={currentView === 'tags'}
 			style="color: {currentView === 'tags'
 				? 'var(--color-text-primary)'
 				: 'var(--color-text-secondary)'}; background-color: {currentView === 'tags'
@@ -118,7 +114,6 @@
 			href="/help"
 			onclick={handleLinkClick}
 			class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
-			class:active={currentView === 'help'}
 			style="color: {currentView === 'help'
 				? 'var(--color-text-primary)'
 				: 'var(--color-text-secondary)'}; background-color: {currentView === 'help'

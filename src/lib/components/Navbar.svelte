@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { theme, settingsOpen, mobileMenuOpen, sidebarOpen, prompts, tags } from '$lib/stores';
 	import { exportLibrary, importLibrary, validateImportData, getAllPrompts, getAllTags } from '$lib/db';
+	import { downloadJson, buildExportFilename } from '$lib/utils';
 	import type { ThemeMode } from '$lib/types';
 
 	interface Props {
@@ -59,18 +60,7 @@
 		isExporting = true;
 		try {
 			const data = await exportLibrary();
-			const json = JSON.stringify(data, null, 2);
-			const blob = new Blob([json], { type: 'application/json' });
-			const url = URL.createObjectURL(blob);
-			const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-			const filename = `promptlib-export-v1-${date}.json`;
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = filename;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			downloadJson(data, buildExportFilename());
 		} catch (error) {
 			console.error('Export failed:', error);
 			alert('Failed to save library. Please try again.');

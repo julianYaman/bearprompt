@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import Icon from './Icon.svelte';
 	import { tags as tagsStore } from '$lib/stores';
 	import { createTag } from '$lib/db';
@@ -38,10 +39,16 @@
 				onSelect([...selectedIds, existing.id]);
 			}
 		} else {
-			// Create new tag
-			const newTag = await createTag(trimmed);
-			tagsStore.update((tags) => [...tags, newTag]);
-			onSelect([...selectedIds, newTag.id]);
+			try {
+				// Create new tag
+				const newTag = await createTag(trimmed);
+				tagsStore.update((tags) => [...tags, newTag]);
+				onSelect([...selectedIds, newTag.id]);
+			} catch (error) {
+				console.error('Failed to create tag:', error);
+				alert('Failed to create tag. Please try again.');
+				return;
+			}
 		}
 
 		newTagName = '';
@@ -58,10 +65,11 @@
 		}
 	}
 
-	function startCreating() {
+	async function startCreating() {
 		isCreating = true;
-		// Focus input after DOM update
-		setTimeout(() => inputElement?.focus(), 0);
+		// Wait for DOM update, then focus the input
+		await tick();
+		inputElement?.focus();
 	}
 </script>
 

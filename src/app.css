@@ -109,3 +109,18 @@ body {
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--color-border-hover);
 }
+
+/* Skeleton shimmer animation (shared by PromptCardSkeleton and AuthorSectionSkeleton) */
+@keyframes shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+/* Utility: muted text colour used on Icon components */
+.text-muted {
+	color: var(--color-text-muted);
+}

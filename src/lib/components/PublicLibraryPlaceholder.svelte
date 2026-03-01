@@ -22,9 +22,3 @@
 		Coming Soon
 	</span>
 </div>
-
-<style>
-	.text-muted {
-		color: var(--color-text-muted);
-	}
-</style>

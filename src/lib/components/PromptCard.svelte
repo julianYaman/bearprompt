@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import { copiedPromptId, tags as tagsStore } from '$lib/stores';
+	import { stripMarkdown, COPY_TIMEOUT_MS, MAX_VISIBLE_TAGS } from '$lib/utils';
 	import type { Prompt, Tag } from '$lib/types';
 
 	interface Props {
@@ -11,9 +12,15 @@
 	let { prompt, onEdit }: Props = $props();
 
 	let copyState: 'idle' | 'copied' = $state('idle');
-	let isHovering = $state(false);
 	let isPreviewHovering = $state(false);
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Clear the copy-reset timer when the card is unmounted
+	$effect(() => {
+		return () => {
+			if (copyTimeout) clearTimeout(copyTimeout);
+		};
+	});
 
 	// Get tags for this prompt
 	let promptTags = $derived.by(() => {
@@ -23,19 +30,7 @@
 	});
 
 	// Generate preview text (strip markdown and truncate)
-	let previewText = $derived.by(() => {
-		// Basic markdown stripping
-		const plain = prompt.markdown
-			.replace(/#{1,6}\s/g, '') // headers
-			.replace(/\*\*|__/g, '') // bold
-			.replace(/\*|_/g, '') // italic
-			.replace(/`{1,3}[^`]*`{1,3}/g, '') // code
-			.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
-			.replace(/^\s*[-*+]\s/gm, '') // list items
-			.replace(/^\s*\d+\.\s/gm, '') // numbered lists
-			.trim();
-		return plain;
-	});
+	let previewText = $derived(stripMarkdown(prompt.markdown));
 
 	async function handleCopy(event: MouseEvent | KeyboardEvent) {
 		event.stopPropagation();
@@ -53,10 +48,10 @@
 			// Clear previous timeout
 			if (copyTimeout) clearTimeout(copyTimeout);
 
-			copyTimeout = setTimeout(() => {
-				copyState = 'idle';
-				copiedPromptId.set(null);
-			}, 1500);
+		copyTimeout = setTimeout(() => {
+			copyState = 'idle';
+			copiedPromptId.set(null);
+		}, COPY_TIMEOUT_MS);
 		} catch {
 			alert('Failed to copy to clipboard.');
 		}
@@ -85,8 +80,6 @@
 <article
 	class="group relative flex h-64 flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-200"
 	style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
-	onmouseenter={() => (isHovering = true)}
-	onmouseleave={() => (isHovering = false)}
 >
 	<!-- Preview Section - Click to Copy -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_to_interactive_role -->
@@ -151,22 +144,22 @@
 		<!-- Tags -->
 		{#if promptTags.length > 0}
 			<div class="mt-2 flex flex-wrap gap-1">
-				{#each promptTags.slice(0, 3) as tag}
-					<span
-						class="rounded-full px-2 py-0.5 text-xs"
-						style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
-					>
-						{tag.name}
-					</span>
-				{/each}
-				{#if promptTags.length > 3}
-					<span
-						class="rounded-full px-2 py-0.5 text-xs"
-						style="background-color: var(--color-bg-tertiary); color: var(--color-text-muted);"
-					>
-						+{promptTags.length - 3}
-					</span>
-				{/if}
+			{#each promptTags.slice(0, MAX_VISIBLE_TAGS) as tag}
+				<span
+					class="rounded-full px-2 py-0.5 text-xs"
+					style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
+				>
+					{tag.name}
+				</span>
+			{/each}
+			{#if promptTags.length > MAX_VISIBLE_TAGS}
+				<span
+					class="rounded-full px-2 py-0.5 text-xs"
+					style="background-color: var(--color-bg-tertiary); color: var(--color-text-muted);"
+				>
+					+{promptTags.length - MAX_VISIBLE_TAGS}
+				</span>
+			{/if}
 			</div>
 		{/if}
 	</div>

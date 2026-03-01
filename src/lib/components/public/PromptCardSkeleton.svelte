@@ -45,13 +45,4 @@
 		background-size: 200% 100%;
 		animation: shimmer 1.5s infinite;
 	}
-
-	@keyframes shimmer {
-		0% {
-			background-position: 200% 0;
-		}
-		100% {
-			background-position: -200% 0;
-		}
-	}
 </style>

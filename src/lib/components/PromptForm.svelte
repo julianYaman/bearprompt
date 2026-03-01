@@ -3,6 +3,7 @@
 	import TagPicker from './TagPicker.svelte';
 	import { createPrompt, updatePrompt, deletePrompt, getPromptById } from '$lib/db';
 	import { prompts } from '$lib/stores';
+	import { MAX_TITLE_LENGTH } from '$lib/utils';
 	import type { Prompt } from '$lib/types';
 
 	interface Props {
@@ -25,14 +26,20 @@
 	// Load existing prompt data
 	$effect(() => {
 		if (promptId) {
-			getPromptById(promptId).then((prompt) => {
-				if (prompt) {
-					title = prompt.title;
-					markdown = prompt.markdown;
-					tagIds = [...prompt.tagIds];
-				}
-				isLoading = false;
-			});
+			getPromptById(promptId)
+				.then((prompt) => {
+					if (prompt) {
+						title = prompt.title;
+						markdown = prompt.markdown;
+						tagIds = [...prompt.tagIds];
+					}
+					isLoading = false;
+				})
+				.catch((error) => {
+					console.error('Failed to load prompt:', error);
+					alert('Failed to load prompt. Please try again.');
+					isLoading = false;
+				});
 		} else {
 			isLoading = false;
 		}
@@ -44,8 +51,8 @@
 			titleError = 'Title is required';
 			return false;
 		}
-		if (trimmed.length > 200) {
-			titleError = 'Title must be 200 characters or less';
+		if (trimmed.length > MAX_TITLE_LENGTH) {
+			titleError = `Title must be ${MAX_TITLE_LENGTH} characters or less`;
 			return false;
 		}
 		titleError = '';
@@ -60,13 +67,11 @@
 		try {
 			if (isEditing && promptId) {
 				// Update existing
-				console.log('Updating prompt:', promptId);
 				const updated = await updatePrompt(promptId, {
 					title: title.trim(),
 					markdown,
 					tagIds
 				});
-				console.log('Update result:', updated);
 				if (updated) {
 					prompts.update((list) =>
 						list.map((p) => (p.id === promptId ? updated : p))
@@ -74,9 +79,7 @@
 				}
 			} else {
 				// Create new
-				console.log('Creating new prompt with title:', title.trim());
 				const newPrompt = await createPrompt(title.trim(), markdown, tagIds);
-				console.log('Created prompt:', newPrompt);
 				prompts.update((list) => [newPrompt, ...list]);
 			}
 			onClose();

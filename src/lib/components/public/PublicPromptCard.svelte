@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '../Icon.svelte';
 	import VerifiedBadge from './VerifiedBadge.svelte';
+	import { stripMarkdown, COPY_TIMEOUT_MS, MAX_VISIBLE_TAGS } from '$lib/utils';
 	import type { PublicPrompt, PublicAuthor } from '$lib/types/public';
 
 	interface Props {
@@ -30,20 +31,7 @@
 	);
 
 	// Generate preview text (strip markdown and truncate)
-	let previewText = $derived.by(() => {
-		const text = prompt.description || prompt.prompt;
-		// Basic markdown stripping
-		const plain = text
-			.replace(/#{1,6}\s/g, '') // headers
-			.replace(/\*\*|__/g, '') // bold
-			.replace(/\*|_/g, '') // italic
-			.replace(/`{1,3}[^`]*`{1,3}/g, '') // code
-			.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
-			.replace(/^\s*[-*+]\s/gm, '') // list items
-			.replace(/^\s*\d+\.\s/gm, '') // numbered lists
-			.trim();
-		return plain;
-	});
+	let previewText = $derived(stripMarkdown(prompt.description || prompt.prompt));
 
 	async function handleCopy(event: MouseEvent | KeyboardEvent) {
 		event.stopPropagation();
@@ -57,10 +45,10 @@
 			await navigator.clipboard.writeText(prompt.prompt);
 			copyState = 'copied';
 
-			if (copyTimeout) clearTimeout(copyTimeout);
-			copyTimeout = setTimeout(() => {
-				copyState = 'idle';
-			}, 1500);
+		if (copyTimeout) clearTimeout(copyTimeout);
+		copyTimeout = setTimeout(() => {
+			copyState = 'idle';
+		}, COPY_TIMEOUT_MS);
 		} catch {
 			alert('Failed to copy to clipboard.');
 		}
@@ -193,7 +181,7 @@
 		<!-- Tags -->
 		{#if prompt.tags && prompt.tags.length > 0}
 			<div class="mt-2 flex flex-wrap gap-1">
-				{#each prompt.tags.slice(0, 3) as tag}
+				{#each prompt.tags.slice(0, MAX_VISIBLE_TAGS) as tag}
 					<span
 						class="rounded-full px-2 py-0.5 text-xs"
 						style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
@@ -201,12 +189,12 @@
 						{tag.name}
 					</span>
 				{/each}
-				{#if prompt.tags.length > 3}
+				{#if prompt.tags.length > MAX_VISIBLE_TAGS}
 					<span
 						class="rounded-full px-2 py-0.5 text-xs"
 						style="background-color: var(--color-bg-tertiary); color: var(--color-text-muted);"
 					>
-						+{prompt.tags.length - 3}
+						+{prompt.tags.length - MAX_VISIBLE_TAGS}
 					</span>
 				{/if}
 			</div>
