@@ -29,8 +29,6 @@ export const isCreating = writable(false);
 // Copy feedback
 export const copiedPromptId = writable<string | null>(null);
 
-// Import/Export modal
-export const importExportOpen = writable(false);
 
 // Filtered and sorted prompts (derived)
 export const filteredPrompts = derived(

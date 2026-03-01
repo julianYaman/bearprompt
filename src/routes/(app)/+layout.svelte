@@ -7,7 +7,6 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import MobileDrawer from '$lib/components/MobileDrawer.svelte';
 	import SettingsModal from '$lib/components/SettingsModal.svelte';
-	import ImportExportModal from '$lib/components/ImportExportModal.svelte';
 	import AboutModal from '$lib/components/AboutModal.svelte';
 	import CopyAnnouncer from '$lib/components/CopyAnnouncer.svelte';
 	import { initializeTheme } from '$lib/theme';
@@ -113,7 +112,6 @@
 
 <!-- Modals -->
 <SettingsModal />
-<ImportExportModal />
 <AboutModal />
 
 <!-- Accessibility -->
