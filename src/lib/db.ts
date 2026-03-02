@@ -1,20 +1,25 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { v4 as uuidv4 } from 'uuid';
-import type { Prompt, Tag, Settings, ExportData } from './types';
+import type { Prompt, Tag, Folder, Settings, ExportData } from './types';
 
 const DB_NAME = 'promptlib';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface PromptLibDB extends DBSchema {
 	prompts: {
 		key: string;
 		value: Prompt;
-		indexes: { 'by-title': string; 'by-updated': string };
+		indexes: { 'by-title': string; 'by-updated': string; 'by-folder': string };
 	};
 	tags: {
 		key: string;
 		value: Tag;
 		indexes: { 'by-name': string; 'by-slug': string };
+	};
+	folders: {
+		key: string;
+		value: Folder;
+		indexes: { 'by-name': string };
 	};
 	settings: {
 		key: number;
@@ -28,12 +33,13 @@ async function getDB(): Promise<IDBPDatabase<PromptLibDB>> {
 	if (dbInstance) return dbInstance;
 
 	dbInstance = await openDB<PromptLibDB>(DB_NAME, DB_VERSION, {
-		upgrade(db) {
+		upgrade(db, oldVersion, _newVersion, transaction) {
 			// Prompts store
 			if (!db.objectStoreNames.contains('prompts')) {
 				const promptStore = db.createObjectStore('prompts', { keyPath: 'id' });
 				promptStore.createIndex('by-title', 'title');
 				promptStore.createIndex('by-updated', 'updatedAt');
+				promptStore.createIndex('by-folder', 'folderId');
 			}
 
 			// Tags store
@@ -46,6 +52,21 @@ async function getDB(): Promise<IDBPDatabase<PromptLibDB>> {
 			// Settings store
 			if (!db.objectStoreNames.contains('settings')) {
 				db.createObjectStore('settings', { keyPath: 'version' });
+			}
+
+			// Folders store (added in version 2)
+			if (oldVersion < 2) {
+				if (!db.objectStoreNames.contains('folders')) {
+					const folderStore = db.createObjectStore('folders', { keyPath: 'id' });
+					folderStore.createIndex('by-name', 'name');
+				}
+				// Add by-folder index to existing prompts store if upgrading
+				if (db.objectStoreNames.contains('prompts') && transaction) {
+					const promptStore = transaction.objectStore('prompts');
+					if (!promptStore.indexNames.contains('by-folder')) {
+						promptStore.createIndex('by-folder', 'folderId');
+					}
+				}
 			}
 		}
 	});
@@ -79,7 +100,8 @@ export async function getPromptById(id: string): Promise<Prompt | undefined> {
 export async function createPrompt(
 	title: string,
 	markdown: string,
-	tagIds: string[]
+	tagIds: string[],
+	folderId: string | null = null
 ): Promise<Prompt> {
 	const db = await getDB();
 	const now = new Date().toISOString();
@@ -88,6 +110,7 @@ export async function createPrompt(
 		title,
 		markdown,
 		tagIds: [...tagIds], // Convert to plain array (handles Svelte 5 Proxy)
+		folderId,
 		createdAt: now,
 		updatedAt: now
 	};
@@ -97,7 +120,7 @@ export async function createPrompt(
 
 export async function updatePrompt(
 	id: string,
-	updates: Partial<Pick<Prompt, 'title' | 'markdown' | 'tagIds'>>
+	updates: Partial<Pick<Prompt, 'title' | 'markdown' | 'tagIds' | 'folderId'>>
 ): Promise<Prompt | undefined> {
 	const db = await getDB();
 	const existing = await db.get('prompts', id);
@@ -108,6 +131,8 @@ export async function updatePrompt(
 		...updates,
 		// Ensure tagIds is a plain array (handles Svelte 5 Proxy)
 		tagIds: updates.tagIds ? [...updates.tagIds] : existing.tagIds,
+		// Preserve existing folderId if not in updates, handle undefined vs null
+		folderId: 'folderId' in updates ? updates.folderId! : (existing.folderId ?? null),
 		updatedAt: new Date().toISOString()
 	};
 	await db.put('prompts', updated);
@@ -210,11 +235,89 @@ export async function deletePrompts(ids: string[]): Promise<void> {
 	await tx.done;
 }
 
+export async function movePrompts(ids: string[], folderId: string | null): Promise<void> {
+	const db = await getDB();
+	const tx = db.transaction('prompts', 'readwrite');
+	await Promise.all(
+		ids.map(async (id) => {
+			const prompt = await tx.store.get(id);
+			if (prompt) {
+				await tx.store.put({ ...prompt, folderId });
+			}
+		})
+	);
+	await tx.done;
+}
+
 export async function deleteTags(ids: string[]): Promise<void> {
 	const db = await getDB();
 	const tx = db.transaction('tags', 'readwrite');
 	await Promise.all(ids.map((id) => tx.store.delete(id)));
 	await tx.done;
+}
+
+// ============ FOLDERS ============
+
+export async function getAllFolders(): Promise<Folder[]> {
+	const db = await getDB();
+	return db.getAllFromIndex('folders', 'by-name');
+}
+
+export async function getFolderById(id: string): Promise<Folder | undefined> {
+	const db = await getDB();
+	return db.get('folders', id);
+}
+
+export async function createFolder(name: string): Promise<Folder> {
+	const db = await getDB();
+	const now = new Date().toISOString();
+	const folder: Folder = {
+		id: uuidv4(),
+		name: name.trim(),
+		createdAt: now,
+		updatedAt: now
+	};
+	await db.put('folders', folder);
+	return folder;
+}
+
+export async function updateFolder(id: string, name: string): Promise<Folder | undefined> {
+	const db = await getDB();
+	const existing = await db.get('folders', id);
+	if (!existing) return undefined;
+
+	const updated: Folder = {
+		...existing,
+		name: name.trim(),
+		updatedAt: new Date().toISOString()
+	};
+	await db.put('folders', updated);
+	return updated;
+}
+
+export async function deleteFolder(id: string): Promise<{ promptsDeleted: number }> {
+	const db = await getDB();
+	
+	// Get all prompts in this folder first
+	const allPrompts = await getAllPrompts();
+	const promptsInFolder = allPrompts.filter((p) => p.folderId === id);
+	const promptIdsToDelete = promptsInFolder.map((p) => p.id);
+	
+	// Delete folder and its prompts in a single transaction
+	const tx = db.transaction(['folders', 'prompts'], 'readwrite');
+	const folderStore = tx.objectStore('folders');
+	const promptStore = tx.objectStore('prompts');
+	
+	await folderStore.delete(id);
+	await Promise.all(promptIdsToDelete.map((pid) => promptStore.delete(pid)));
+	await tx.done;
+	
+	return { promptsDeleted: promptIdsToDelete.length };
+}
+
+export async function getFolderByName(name: string): Promise<Folder | undefined> {
+	const db = await getDB();
+	return db.getFromIndex('folders', 'by-name', name.trim());
 }
 
 // ============ SETTINGS ============
@@ -248,14 +351,15 @@ export async function updateSettings(updates: Partial<Omit<Settings, 'version'>>
 // ============ IMPORT / EXPORT ============
 
 export async function exportLibrary(): Promise<ExportData> {
-	const [prompts, tags] = await Promise.all([getAllPrompts(), getAllTags()]);
+	const [prompts, tags, folders] = await Promise.all([getAllPrompts(), getAllTags(), getAllFolders()]);
 
 	return {
 		exportVersion: 1,
 		exportedAt: new Date().toISOString(),
 		data: {
 			prompts,
-			tags
+			tags,
+			folders
 		}
 	};
 }
@@ -263,8 +367,10 @@ export async function exportLibrary(): Promise<ExportData> {
 export interface ImportResult {
 	promptsImported: number;
 	tagsImported: number;
+	foldersImported: number;
 	promptsSkipped: number;
 	tagsSkipped: number;
+	foldersSkipped: number;
 }
 
 export async function importLibrary(data: ExportData): Promise<ImportResult> {
@@ -273,19 +379,55 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 	// Get existing IDs to handle collisions
 	const existingPrompts = await getAllPrompts();
 	const existingTags = await getAllTags();
+	const existingFolders = await getAllFolders();
 	const existingPromptIds = new Set(existingPrompts.map((p) => p.id));
 	const existingTagIds = new Set(existingTags.map((t) => t.id));
+	const existingFolderIds = new Set(existingFolders.map((f) => f.id));
 	// Build a name→id map for deduplication by name
 	const existingTagsByName = new Map(existingTags.map((t) => [t.name.toLowerCase(), t.id]));
+	const existingFoldersByName = new Map(existingFolders.map((f) => [f.name.toLowerCase(), f.id]));
 
 	const result: ImportResult = {
 		promptsImported: 0,
 		tagsImported: 0,
+		foldersImported: 0,
 		promptsSkipped: 0,
-		tagsSkipped: 0
+		tagsSkipped: 0,
+		foldersSkipped: 0
 	};
 
-	// Import tags first (since prompts reference them)
+	// Import folders first (since prompts reference them)
+	const folderIdMap = new Map<string, string>(); // old ID -> new ID
+	const importFolders = data.data.folders || []; // Handle old export files without folders
+
+	for (const folder of importFolders) {
+		// Deduplicate by name first (case-insensitive)
+		const nameKey = folder.name.trim().toLowerCase();
+		const existingByName = existingFoldersByName.get(nameKey);
+		if (existingByName) {
+			// Map the incoming ID to the existing folder — skip writing
+			folderIdMap.set(folder.id, existingByName);
+			result.foldersSkipped++;
+			continue;
+		}
+
+		let newId = folder.id;
+		if (existingFolderIds.has(newId)) {
+			newId = uuidv4();
+		}
+		folderIdMap.set(folder.id, newId);
+
+		const newFolder: Folder = {
+			...folder,
+			id: newId
+		};
+		await db.put('folders', newFolder);
+		existingFolderIds.add(newId);
+		existingFoldersByName.set(nameKey, newId);
+		result.foldersImported++;
+	}
+
+	// Import tags (since prompts reference them)
 	const tagIdMap = new Map<string, string>(); // old ID -> new ID
 
 	for (const tag of data.data.tags) {
@@ -324,11 +466,16 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 
 		// Remap tag IDs
 		const newTagIds = prompt.tagIds.map((oldId) => tagIdMap.get(oldId) || oldId);
+		
+		// Remap folder ID (handle old exports without folderId)
+		const oldFolderId = prompt.folderId ?? null;
+		const newFolderId = oldFolderId ? (folderIdMap.get(oldFolderId) || oldFolderId) : null;
 
 		const newPrompt: Prompt = {
 			...prompt,
 			id: newId,
-			tagIds: newTagIds
+			tagIds: newTagIds,
+			folderId: newFolderId
 		};
 		await db.put('prompts', newPrompt);
 		existingPromptIds.add(newId);
@@ -349,6 +496,8 @@ export function validateImportData(data: unknown): data is ExportData {
 	const inner = d.data as Record<string, unknown>;
 	if (!Array.isArray(inner.prompts)) return false;
 	if (!Array.isArray(inner.tags)) return false;
+	// folders is optional for backward compatibility with old exports
+	if (inner.folders !== undefined && !Array.isArray(inner.folders)) return false;
 
 	return true;
 }

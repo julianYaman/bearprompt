@@ -10,8 +10,8 @@
 	import AboutModal from '$lib/components/AboutModal.svelte';
 	import CopyAnnouncer from '$lib/components/CopyAnnouncer.svelte';
 	import { initializeTheme } from '$lib/theme';
-	import { prompts, tags, mobileMenuOpen } from '$lib/stores';
-	import { getAllPrompts, getAllTags } from '$lib/db';
+	import { prompts, tags, folders, mobileMenuOpen } from '$lib/stores';
+	import { getAllPrompts, getAllTags, getAllFolders } from '$lib/db';
 
 	let { children } = $props();
 
@@ -51,12 +51,14 @@
 			await initializeTheme();
 
 			// Load data from IndexedDB
-			const [loadedPrompts, loadedTags] = await Promise.all([
+			const [loadedPrompts, loadedTags, loadedFolders] = await Promise.all([
 				getAllPrompts(),
-				getAllTags()
+				getAllTags(),
+				getAllFolders()
 			]);
 			prompts.set(loadedPrompts);
 			tags.set(loadedTags);
+			folders.set(loadedFolders);
 			isInitialized = true;
 		} catch (error) {
 			console.error('Failed to initialize app:', error);

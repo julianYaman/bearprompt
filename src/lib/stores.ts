@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
-import type { Prompt, Tag, ThemeMode, SortOption } from './types';
-import { getAllPrompts, getAllTags } from './db';
+import type { Prompt, Tag, Folder, ThemeMode, SortOption } from './types';
+import { getAllPrompts, getAllTags, getAllFolders } from './db';
 
 // UI State
 export const sidebarOpen = writable(false);
@@ -21,6 +21,10 @@ export const sortOption = writable<SortOption>({ field: 'createdAt', direction: 
 // Library data (populated from IndexedDB on mount)
 export const prompts = writable<Prompt[]>([]);
 export const tags = writable<Tag[]>([]);
+export const folders = writable<Folder[]>([]);
+
+// Active folder filter ('all' = show all prompts, string = specific folder ID)
+export const activeFolderId = writable<string | 'all'>('all');
 
 // Editing state
 export const editingPromptId = writable<string | null>(null);
@@ -36,12 +40,18 @@ export const selectedPromptIds = writable<Set<string>>(new Set());
 
 // Filtered and sorted prompts (derived)
 export const filteredPrompts = derived(
-	[prompts, searchQuery, selectedTagIds, sortOption],
-	([$prompts, $searchQuery, $selectedTagIds, $sortOption]) => {
+	[prompts, searchQuery, selectedTagIds, sortOption, activeFolderId],
+	([$prompts, $searchQuery, $selectedTagIds, $sortOption, $activeFolderId]) => {
 		const query = $searchQuery.toLowerCase().trim();
 
 		// Filter prompts
 		const filtered = $prompts.filter((prompt) => {
+		// Folder filter
+		const matchesFolder =
+				$activeFolderId === 'all'
+					? prompt.folderId === null
+					: prompt.folderId === $activeFolderId;
+
 			// Text search
 			const matchesText =
 				!query ||
@@ -53,7 +63,7 @@ export const filteredPrompts = derived(
 				$selectedTagIds.length === 0 ||
 				$selectedTagIds.every((tagId) => prompt.tagIds.includes(tagId));
 
-			return matchesText && matchesTags;
+			return matchesFolder && matchesText && matchesTags;
 		});
 
 		// Sort prompts
@@ -88,4 +98,9 @@ export async function loadPrompts(): Promise<void> {
 export async function loadTags(): Promise<void> {
 	const allTags = await getAllTags();
 	tags.set(allTags);
+}
+
+export async function loadFolders(): Promise<void> {
+	const allFolders = await getAllFolders();
+	folders.set(allFolders);
 }

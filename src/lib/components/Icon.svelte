@@ -41,7 +41,10 @@
 			| 'ms-copilot'
 			| 'cursor'
 			| 'bot'
-		| 'square-check';
+		| 'square-check'
+		| 'folder'
+		| 'folder-open'
+		| 'chevron-right';
 		size?: number;
 		class?: string;
 	}
@@ -154,5 +157,11 @@
 		<path d="M9 13v2" />
 	{:else if name === 'square-check'}
 		<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12l2 2l4-4"/></g>
+	{:else if name === 'folder'}
+		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+	{:else if name === 'folder-open'}
+		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 14l1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />
+	{:else if name === 'chevron-right'}
+		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18l6-6l-6-6" />
 	{/if}
 </svg>

@@ -5,6 +5,14 @@ export interface Prompt {
 	title: string;
 	markdown: string;
 	tagIds: string[];
+	folderId: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface Folder {
+	id: string;
+	name: string;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -30,6 +38,7 @@ export interface ExportData {
 	data: {
 		prompts: Prompt[];
 		tags: Tag[];
+		folders: Folder[];
 	};
 }
 

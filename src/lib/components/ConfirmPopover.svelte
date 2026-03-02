@@ -4,9 +4,14 @@
 		confirmLabel?: string;
 		onconfirm: () => void;
 		oncancel: () => void;
+		/** When set, the popover renders fixed at these viewport coordinates */
+		x?: number;
+		y?: number;
 	}
 
-	let { message, confirmLabel = 'Delete', onconfirm, oncancel }: Props = $props();
+	let { message, confirmLabel = 'Delete', onconfirm, oncancel, x, y }: Props = $props();
+
+	let fixed = $derived(x !== undefined && y !== undefined);
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') oncancel();
@@ -21,8 +26,12 @@
 
 <!-- Popover panel -->
 <div
-	class="absolute right-0 z-50 mt-2 w-64 rounded-lg border p-3 shadow-lg"
-	style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
+	class="z-50 w-64 rounded-lg border p-3 shadow-lg"
+	class:fixed={fixed}
+	class:absolute={!fixed}
+	class:right-0={!fixed}
+	class:mt-2={!fixed}
+	style="background-color: var(--color-bg-primary); border-color: var(--color-border);{fixed ? ` top: ${y}px; left: ${x}px;` : ''}"
 	role="alertdialog"
 	aria-modal="true"
 >

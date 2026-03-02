@@ -13,9 +13,12 @@
 		selectedTagIds,
 		isPromptSelectMode,
 		selectedPromptIds,
-		prompts
+		prompts,
+		folders,
+		activeFolderId,
+		loadFolders
 	} from '$lib/stores';
-	import { deletePrompts } from '$lib/db';
+	import { deletePrompts, movePrompts, updateFolder } from '$lib/db';
 
 	const CHATGPT_PROMPT = `Based on my previous chats, give me my 10 most used prompts that I can copy & paste into a prompt library. 
 Format them in a way that I know where I have to enter custom instructions or text for this prompt. For each prompt, give me a title and a few tags. 
@@ -76,6 +79,18 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		confirmingBulkDelete = false;
 	}
 
+	async function handleMoveSelected(folderId: string | null) {
+		const ids = [...$selectedPromptIds];
+		if (ids.length === 0) return;
+
+		await movePrompts(ids, folderId);
+		prompts.update((all) =>
+			all.map((p) => ($selectedPromptIds.has(p.id) ? { ...p, folderId } : p))
+		);
+		selectedPromptIds.set(new Set());
+		isPromptSelectMode.set(false);
+	}
+
 	async function handleCopyPrompt() {
 		await navigator.clipboard.writeText(CHATGPT_PROMPT);
 		showCopyModal = true;
@@ -99,6 +114,44 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 	// Check if there are active filters
 	let hasActiveFilters = $derived($searchQuery || $selectedTagIds.length > 0);
+
+	// Get the active folder for the breadcrumb
+	let activeFolder = $derived($activeFolderId === 'all' ? null : $folders.find((f) => f.id === $activeFolderId) ?? null);
+
+	// Folders available as move targets (exclude current active folder)
+	let moveFolderOptions = $derived($folders.filter((f) => f.id !== $activeFolderId));
+
+	// Inline folder rename state
+	let isEditingFolderName = $state(false);
+	let editingName = $state('');
+
+	function startEditingFolderName() {
+		if (!activeFolder) return;
+		editingName = activeFolder.name;
+		isEditingFolderName = true;
+	}
+
+	async function confirmFolderRename() {
+		const trimmed = editingName.trim();
+		if (!trimmed || !activeFolder) return;
+		await updateFolder(activeFolder.id, trimmed);
+		await loadFolders();
+		isEditingFolderName = false;
+	}
+
+	function cancelFolderRename() {
+		isEditingFolderName = false;
+		editingName = '';
+	}
+
+	function handleRenameKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			confirmFolderRename();
+		} else if (e.key === 'Escape') {
+			cancelFolderRename();
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleCopyModalKeydown} />
@@ -162,10 +215,38 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	<PromptForm promptId={$editingPromptId} onClose={handleCloseForm} />
 {:else}
 	<div class="h-full p-4 md:p-6">
-		<!-- Headline -->
-		<h1 class="mb-4 text-2xl font-bold" style="color: var(--color-text-primary);">
-			My Library
-		</h1>
+		<!-- Headline / Breadcrumb -->
+		<div class="mb-4 flex items-center gap-2">
+			{#if $activeFolderId === 'all'}
+				<h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">My Library</h1>
+			{:else}
+				<h1 class="flex items-center gap-1.5 text-2xl font-bold" style="color: var(--color-text-primary);">
+					<span style="color: var(--color-text-secondary);">My Library</span>
+					<span style="color: var(--color-text-muted);">/</span>
+					{#if isEditingFolderName}
+						<input
+							type="text"
+							bind:value={editingName}
+							onkeydown={handleRenameKeydown}
+							onblur={() => { if (editingName.trim()) confirmFolderRename(); else cancelFolderRename(); }}
+							class="folder-name-input rounded border-b-2 bg-transparent text-2xl font-bold outline-none"
+							style="color: var(--color-text-primary); border-color: var(--color-accent); min-width: 4ch; width: {editingName.length + 1}ch;"
+							autofocus
+						/>
+					{:else}
+						<span>{activeFolder?.name}</span>
+						<button
+							type="button"
+							onclick={startEditingFolderName}
+							class="edit-name-btn rounded p-1 transition-colors"
+							aria-label="Rename folder"
+						>
+							<Icon name="edit" size={16} />
+						</button>
+					{/if}
+				</h1>
+			{/if}
+		</div>
 
 		<!-- Search and Filter -->
 		<div class="mb-6">
@@ -290,6 +371,28 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							</button>
 						{/if}
 					</div>
+				<div class="flex items-center gap-2">
+					<!-- Move to folder -->
+					<select
+						class="move-select rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
+						style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border);"
+						disabled={$selectedPromptIds.size === 0}
+						onchange={(e) => {
+							const val = (e.currentTarget as HTMLSelectElement).value;
+							if (val === '__placeholder__') return;
+							handleMoveSelected(val === '__unfiled__' ? null : val);
+							(e.currentTarget as HTMLSelectElement).value = '__placeholder__';
+						}}
+					>
+						<option value="__placeholder__" disabled selected>Move to…</option>
+						{#if $activeFolderId !== 'all'}
+							<option value="__unfiled__">My Library</option>
+						{/if}
+						{#each moveFolderOptions as folder (folder.id)}
+							<option value={folder.id}>{folder.name}</option>
+						{/each}
+					</select>
+
 				<div class="relative">
 					<button
 						type="button"
@@ -309,6 +412,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							oncancel={() => (confirmingBulkDelete = false)}
 						/>
 					{/if}
+				</div>
 				</div>
 				</div>
 			{/if}
@@ -348,6 +452,39 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	a:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 2px;
+	}
+
+	.move-select {
+		cursor: pointer;
+		appearance: auto;
+	}
+
+	.move-select:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	.edit-name-btn {
+		color: var(--color-text-muted);
+		opacity: 0;
+	}
+
+	h1:hover .edit-name-btn,
+	.edit-name-btn:focus-visible {
+		opacity: 1;
+	}
+
+	.edit-name-btn:hover {
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary);
+		opacity: 1;
+	}
+
+	.folder-name-input {
+		border-top: none;
+		border-left: none;
+		border-right: none;
+		padding-bottom: 1px;
 	}
 
 	.prompt-content {
