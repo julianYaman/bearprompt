@@ -3,6 +3,7 @@
 </script>
 
 <svelte:head>
+	<meta name="robots" content="noindex, nofollow" />
 	<style>
 		body {
 			background-color: #FDFCFD;

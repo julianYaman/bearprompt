@@ -154,6 +154,14 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	}
 </script>
 
+<svelte:head>
+	<title>My Library | Bearprompt</title>
+	<meta
+		name="description"
+		content="Your personal AI prompt library. Store, organize and access your prompts privately in your browser — free and open-source."
+	/>
+</svelte:head>
+
 <svelte:window onkeydown={handleCopyModalKeydown} />
 
 {#if showCopyModal}

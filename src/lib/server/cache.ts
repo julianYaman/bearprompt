@@ -13,7 +13,8 @@ const TTL = {
 	MAIN_PAGE: 3 * 60 * 60 * 1000,      // 3 hours
 	AUTHOR_PAGE: 1 * 60 * 60 * 1000,    // 1 hour
 	PROMPT_PAGE: 12 * 60 * 60 * 1000,   // 12 hours
-	SEARCH: 1 * 60 * 60 * 1000          // 1 hour
+	SEARCH: 1 * 60 * 60 * 1000,         // 1 hour
+	SITEMAP: 24 * 60 * 60 * 1000        // 24 hours
 };
 
 // HTTP Cache-Control header values (in seconds)
@@ -23,7 +24,8 @@ export const CACHE_CONTROL = {
 	MAIN_PAGE:   'public, max-age=0, s-maxage=10800, stale-while-revalidate=3600',   // no browser cache, 3h CDN
 	AUTHOR_PAGE: 'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800',   // no browser cache, 1h CDN
 	PROMPT_PAGE: 'public, max-age=0, s-maxage=43200, stale-while-revalidate=7200',   // no browser cache, 12h CDN
-	SEARCH:      'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800'    // no browser cache, 1h CDN
+	SEARCH:      'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800',   // no browser cache, 1h CDN
+	SITEMAP:     'public, max-age=0, s-maxage=86400, stale-while-revalidate=3600'    // no browser cache, 24h CDN
 };
 
 // Cache for main library page data
@@ -66,6 +68,12 @@ const agentSearchCache = new LRUCache<string, SearchResults>({
 const authorGroupedCache = new LRUCache<string, AuthorPageDataGrouped>({
 	max: 100,       // Max 100 authors cached
 	ttl: TTL.AUTHOR_PAGE
+});
+
+// Cache for sitemap XML
+const sitemapCache = new LRUCache<string, string>({
+	max: 1,
+	ttl: TTL.SITEMAP
 });
 
 /**
@@ -213,6 +221,22 @@ export async function getCachedAuthorDataGrouped(
 }
 
 /**
+ * Get cached sitemap XML or fetch fresh
+ */
+export async function getCachedSitemapXml(
+	fetcher: () => Promise<string>
+): Promise<string> {
+	const key = 'sitemap';
+	const cached = sitemapCache.get(key);
+	if (cached) {
+		return cached;
+	}
+	const xml = await fetcher();
+	sitemapCache.set(key, xml);
+	return xml;
+}
+
+/**
  * Clear all caches (useful for manual cache invalidation)
  */
 export function clearAllCaches(): void {
@@ -223,6 +247,7 @@ export function clearAllCaches(): void {
 	agentLibraryCache.clear();
 	agentSearchCache.clear();
 	authorGroupedCache.clear();
+	sitemapCache.clear();
 }
 
 /**
@@ -294,6 +319,7 @@ export function getCacheStats() {
 		search: { size: searchCache.size, max: 100 },
 		agentLibrary: { size: agentLibraryCache.size, max: 50 },
 		agentSearch: { size: agentSearchCache.size, max: 100 },
-		authorGrouped: { size: authorGroupedCache.size, max: 100 }
+		authorGrouped: { size: authorGroupedCache.size, max: 100 },
+		sitemap: { size: sitemapCache.size, max: 1 }
 	};
 }

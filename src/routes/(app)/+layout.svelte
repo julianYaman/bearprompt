@@ -27,6 +27,11 @@
 		return 'library';
 	});
 
+	let shouldNoIndex = $derived.by(() => {
+		const pathname = $page.url.pathname;
+		return pathname.startsWith('/tags') || pathname.startsWith('/settings');
+	});
+
 	// Derive page title from current view
 	let pageTitle = $derived.by(() => {
 		switch (currentView) {
@@ -75,6 +80,9 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>{pageTitle}</title>
+	{#if shouldNoIndex}
+		<meta name="robots" content="noindex, nofollow" />
+	{/if}
 </svelte:head>
 
 <div class="flex h-screen w-screen overflow-hidden" style="background-color: var(--color-bg-primary);">
