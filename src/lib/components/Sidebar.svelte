@@ -12,7 +12,7 @@
 
 	let { currentView }: Props = $props();
 
-	let foldersExpanded = $state(false);
+	let foldersExpanded = $state(true);
 	let newFolderName = $state('');
 	let isCreatingFolder = $state(false);
 	let deletingFolderId = $state<string | null>(null);
@@ -58,7 +58,6 @@
 			await loadFolders();
 			newFolderName = '';
 			isCreatingFolder = false;
-			foldersExpanded = false;
 		} catch (err) {
 			console.error('Failed to create folder:', err);
 		}
