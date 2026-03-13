@@ -92,6 +92,24 @@
 <svelte:head>
 	<title>Bearprompt - Your Private Prompt Library for AI & AI Agents</title>
 	<meta name="description" content="Organize, search, and manage your AI prompts privately. Free, open-source, and your data never leaves your device." />
+	<link rel="canonical" href="https://bearprompt.com/" />
+
+	<meta property="og:title" content="Bearprompt - Your private prompt library" />
+	<meta
+		property="og:description"
+		content="Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser."
+	/>
+	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	<meta property="og:url" content="https://bearprompt.com" />
+	<meta property="og:type" content="website" />
+
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Bearprompt - Your private prompt library" />
+	<meta
+		name="twitter:description"
+		content="Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser."
+	/>
+	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
 </svelte:head>
 
 <!-- Navbar -->

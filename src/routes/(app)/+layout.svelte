@@ -75,7 +75,6 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>{pageTitle}</title>
-	<meta name="description" content="Your private prompt library for managing your AI prompts. Increase your productivity for your AI work." />
 </svelte:head>
 
 <div class="flex h-screen w-screen overflow-hidden" style="background-color: var(--color-bg-primary);">
