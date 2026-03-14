@@ -160,19 +160,21 @@
 	}
 </script>
 
-<div class="h-full p-4 md:p-6">
+<div class="tags-page">
+	<div class="tags-container">
 	<!-- Header -->
-	<div class="mb-6 flex items-center justify-between">
-		<h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">
-			Tags
-		</h1>
-		<div class="flex items-center gap-2">
+	<div class="tags-header">
+		<div>
+			<h1 class="page-title">Tags</h1>
+			<p class="page-description">Create and manage tags to organize your prompts.</p>
+		</div>
+		<div class="header-actions">
 			{#if $tagsStore.length > 0}
 				<button
 					type="button"
 					onclick={handleToggleSelectMode}
-					class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
-					style="background-color: {isSelectMode ? 'var(--color-bg-tertiary)' : 'transparent'}; border-color: var(--color-border); color: {isSelectMode ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'};"
+					class="btn-secondary"
+					class:active={isSelectMode}
 					aria-pressed={isSelectMode}
 				>
 					<Icon name={isSelectMode ? 'x' : 'square-check'} size={16} />
@@ -183,8 +185,7 @@
 				<button
 					type="button"
 					onclick={() => (isCreating = true)}
-					class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-					style="background-color: var(--color-accent);"
+					class="btn-primary"
 				>
 					<Icon name="plus" size={16} />
 					New Tag
@@ -195,29 +196,22 @@
 
 	<!-- Create Tag Form -->
 	{#if isCreating}
-		<div
-			class="mb-6 rounded-lg border p-4"
-			style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
-		>
-			<label class="mb-2 block text-sm font-medium" style="color: var(--color-text-primary);">
-				Tag Name
-			</label>
-			<div class="flex gap-2">
+		<div class="create-form">
+			<label class="form-label">Tag Name</label>
+			<div class="form-row">
 				<input
 					type="text"
 					bind:value={newTagName}
 					onkeydown={(e) => handleKeydown(e, 'create')}
 					placeholder="Enter tag name..."
-					class="flex-1 rounded-lg border px-3 py-2 text-sm outline-none transition-colors"
-					style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary);"
+					class="form-input"
 					autofocus
 				/>
 				<button
 					type="button"
 					onclick={handleCreateTag}
 					disabled={!newTagName.trim()}
-					class="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-					style="background-color: var(--color-accent);"
+					class="btn-primary"
 				>
 					Create
 				</button>
@@ -227,8 +221,7 @@
 						isCreating = false;
 						newTagName = '';
 					}}
-					class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
-					style="border-color: var(--color-border); color: var(--color-text-secondary);"
+					class="btn-secondary"
 				>
 					Cancel
 				</button>
@@ -239,207 +232,493 @@
 	<!-- Tags List -->
 	{#if isSelectMode && $tagsStore.length > 0}
 		<!-- Bulk-action bar -->
-		<div
-			class="mb-4 flex items-center justify-between rounded-lg border px-4 py-3"
-			style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
-		>
-			<div class="flex items-center gap-3">
-				<span class="text-sm font-medium" style="color: var(--color-text-primary);">
-					{selectedIds.size} selected
-				</span>
-				<button
-					type="button"
-					onclick={handleSelectAll}
-					class="text-sm transition-colors"
-					style="color: var(--color-text-secondary);"
-				>
+		<div class="bulk-bar">
+			<div class="bulk-bar-left">
+				<span class="bulk-count">{selectedIds.size} selected</span>
+				<button type="button" onclick={handleSelectAll} class="btn-link">
 					Select all ({$tagsStore.length})
 				</button>
 				{#if selectedIds.size > 0}
-					<button
-						type="button"
-						onclick={handleDeselectAll}
-						class="text-sm transition-colors"
-						style="color: var(--color-text-secondary);"
-					>
+					<button type="button" onclick={handleDeselectAll} class="btn-link">
 						Deselect all
 					</button>
 				{/if}
 			</div>
 			<div class="relative">
-			<button
-				type="button"
-				onclick={() => (confirmingBulkDelete = true)}
-				disabled={selectedIds.size === 0}
-				class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-40"
-				style="background-color: var(--color-danger);"
-			>
-				<Icon name="trash" size={15} />
-				Delete ({selectedIds.size})
-			</button>
-			{#if confirmingBulkDelete}
-				{@const count = selectedIds.size}
-				<ConfirmPopover
-					message="Delete {count} {count === 1 ? 'tag' : 'tags'}? This will also remove them from all prompts."
-					onconfirm={handleDeleteSelected}
-					oncancel={() => (confirmingBulkDelete = false)}
-				/>
-			{/if}
-		</div>
+				<button
+					type="button"
+					onclick={() => (confirmingBulkDelete = true)}
+					disabled={selectedIds.size === 0}
+					class="btn-danger"
+				>
+					<Icon name="trash" size={15} />
+					Delete ({selectedIds.size})
+				</button>
+				{#if confirmingBulkDelete}
+					{@const count = selectedIds.size}
+					<ConfirmPopover
+						message="Delete {count} {count === 1 ? 'tag' : 'tags'}? This will also remove them from all prompts."
+						onconfirm={handleDeleteSelected}
+						oncancel={() => (confirmingBulkDelete = false)}
+					/>
+				{/if}
+			</div>
 		</div>
 	{/if}
 
 	{#if $tagsStore.length === 0}
-		<div class="flex flex-col items-center justify-center py-16 text-center">
-			<div
-				class="mb-4 flex h-20 w-20 items-center justify-center rounded-full"
-				style="background-color: var(--color-bg-tertiary);"
-			>
-				<Icon name="tag" size={40} class="text-muted" />
+		<div class="empty-state">
+			<div class="empty-icon">
+				<Icon name="tag" size={40} />
 			</div>
-			<h2 class="mb-2 text-lg font-semibold" style="color: var(--color-text-primary);">
-				No tags yet
-			</h2>
-			<p class="mb-6 max-w-sm text-sm" style="color: var(--color-text-secondary);">
+			<h2 class="empty-title">No tags yet</h2>
+			<p class="empty-description">
 				Create tags to organize your prompts. Tags help you filter and find prompts quickly.
 			</p>
 			{#if !isCreating}
 				<button
 					type="button"
 					onclick={() => (isCreating = true)}
-					class="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
-					style="background-color: var(--color-accent);"
+					class="btn-primary"
 				>
 					Create Your First Tag
 				</button>
 			{/if}
 		</div>
 	{:else}
-		<div class="space-y-2">
+		<div class="tag-list">
 			{#each $tagsStore as tag (tag.id)}
 				<div
-				class="flex items-center justify-between rounded-lg border p-3 transition-colors {isSelectMode ? 'cursor-pointer' : ''}"
-				style="background-color: {isSelectMode && selectedIds.has(tag.id) ? 'var(--color-bg-tertiary)' : 'var(--color-bg-secondary)'}; border-color: {isSelectMode && selectedIds.has(tag.id) ? 'var(--color-accent)' : 'var(--color-border)'};"
-				onclick={isSelectMode ? () => handleToggleTagSelect(tag.id) : undefined}
-				role={isSelectMode ? 'checkbox' : undefined}
-				aria-checked={isSelectMode ? selectedIds.has(tag.id) : undefined}
-			>
-				{#if editingTagId === tag.id}
-					<!-- Edit Mode -->
-					<div class="flex flex-1 items-center gap-2">
-						<input
-							type="text"
-							bind:value={editingTagName}
-							onkeydown={(e) => handleKeydown(e, 'edit')}
-							class="flex-1 rounded-lg border px-3 py-1.5 text-sm outline-none transition-colors"
-							style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary);"
-							autofocus
-						/>
-						<button
-							type="button"
-							onclick={handleUpdateTag}
-							disabled={!editingTagName.trim()}
-							class="rounded-lg p-1.5 transition-colors disabled:opacity-50"
-							style="color: var(--color-success);"
-							aria-label="Save"
-						>
-							<Icon name="check" size={18} />
-						</button>
-						<button
-							type="button"
-							onclick={cancelEditing}
-							class="rounded-lg p-1.5 transition-colors"
-							style="color: var(--color-text-muted);"
-							aria-label="Cancel"
-						>
-							<Icon name="x" size={18} />
-						</button>
-					</div>
-			{:else}
-					<!-- View Mode -->
-					{@const usageCount = getTagUsageCount(tag.id)}
-					<div class="flex items-center gap-3">
-						{#if isSelectMode}
-							<!-- Checkbox -->
-							<div
-								class="pointer-events-none flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors"
-								style="background-color: {selectedIds.has(tag.id) ? 'var(--color-accent)' : 'var(--color-bg-primary)'}; border-color: {selectedIds.has(tag.id) ? 'var(--color-accent)' : 'var(--color-border-hover)'};"
-							>
-								{#if selectedIds.has(tag.id)}
-									<Icon name="check" size={12} class="text-white" />
-								{/if}
-							</div>
-						{/if}
-						<span
-							class="rounded-full px-3 py-1 text-sm font-medium"
-							style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
-						>
-							{tag.name}
-						</span>
-						<span class="text-xs" style="color: var(--color-text-muted);">
-							{usageCount} prompt{usageCount === 1 ? '' : 's'}
-						</span>
-					</div>
-					{#if !isSelectMode}
-						<div class="flex items-center gap-1">
+					class="tag-row"
+					class:selectable={isSelectMode}
+					class:selected={isSelectMode && selectedIds.has(tag.id)}
+					onclick={isSelectMode ? () => handleToggleTagSelect(tag.id) : undefined}
+					role={isSelectMode ? 'checkbox' : undefined}
+					aria-checked={isSelectMode ? selectedIds.has(tag.id) : undefined}
+				>
+					{#if editingTagId === tag.id}
+						<!-- Edit Mode -->
+						<div class="edit-row">
+							<input
+								type="text"
+								bind:value={editingTagName}
+								onkeydown={(e) => handleKeydown(e, 'edit')}
+								class="form-input"
+								autofocus
+							/>
 							<button
 								type="button"
-								onclick={() => startEditing(tag)}
-								class="icon-btn rounded-lg p-2 transition-colors"
-								style="color: var(--color-text-muted);"
-								aria-label="Edit tag"
+								onclick={handleUpdateTag}
+								disabled={!editingTagName.trim()}
+								class="icon-btn save-btn"
+								aria-label="Save"
 							>
-								<Icon name="edit" size={16} />
+								<Icon name="check" size={18} />
 							</button>
-							<div class="relative">
+							<button
+								type="button"
+								onclick={cancelEditing}
+								class="icon-btn"
+								aria-label="Cancel"
+							>
+								<Icon name="x" size={18} />
+							</button>
+						</div>
+					{:else}
+						<!-- View Mode -->
+						{@const usageCount = getTagUsageCount(tag.id)}
+						<div class="tag-info">
+							{#if isSelectMode}
+								<div class="checkbox" class:checked={selectedIds.has(tag.id)}>
+									{#if selectedIds.has(tag.id)}
+										<Icon name="check" size={12} />
+									{/if}
+								</div>
+							{/if}
+							<span class="tag-pill">{tag.name}</span>
+							<span class="usage-count">{usageCount} prompt{usageCount === 1 ? '' : 's'}</span>
+						</div>
+						{#if !isSelectMode}
+							<div class="tag-actions">
 								<button
 									type="button"
-									onclick={() => (confirmingTagId = tag.id)}
-									class="icon-btn rounded-lg p-2 transition-colors"
-									style="color: var(--color-text-muted);"
-									aria-label="Delete tag"
+									onclick={() => startEditing(tag)}
+									class="icon-btn"
+									aria-label="Edit tag"
 								>
-									<Icon name="trash" size={16} />
+									<Icon name="edit" size={16} />
 								</button>
-								{#if confirmingTagId === tag.id}
-									{@const usageCount = getTagUsageCount(tag.id)}
-									<ConfirmPopover
-										message={usageCount > 0
-											? `Delete "${tag.name}"? It's used by ${usageCount} prompt${usageCount === 1 ? '' : 's'}.`
-											: `Delete "${tag.name}"?`}
-										onconfirm={() => { confirmingTagId = null; handleDeleteTag(tag); }}
-										oncancel={() => (confirmingTagId = null)}
-									/>
-								{/if}
+								<div class="relative">
+									<button
+										type="button"
+										onclick={() => (confirmingTagId = tag.id)}
+										class="icon-btn"
+										aria-label="Delete tag"
+									>
+										<Icon name="trash" size={16} />
+									</button>
+									{#if confirmingTagId === tag.id}
+										{@const usageCount = getTagUsageCount(tag.id)}
+										<ConfirmPopover
+											message={usageCount > 0
+												? `Delete "${tag.name}"? It's used by ${usageCount} prompt${usageCount === 1 ? '' : 's'}.`
+												: `Delete "${tag.name}"?`}
+											onconfirm={() => { confirmingTagId = null; handleDeleteTag(tag); }}
+											oncancel={() => (confirmingTagId = null)}
+										/>
+									{/if}
+								</div>
 							</div>
-						</div>
+						{/if}
 					{/if}
-				{/if}
-			</div>
+				</div>
 			{/each}
 		</div>
 	{/if}
+	</div>
 </div>
 
 <style>
-	.icon-btn {
+	/* ── Page shell ── */
+	.tags-page {
+		height: 100%;
+		overflow-y: auto;
+		padding: 1.5rem;
+	}
+
+	.tags-container {
+		max-width: 48rem;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	/* ── Header ── */
+	.tags-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.page-title {
+		font-size: 1.75rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.page-description {
+		font-size: 0.9375rem;
+		color: var(--color-text-secondary);
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+		padding-top: 0.375rem;
+	}
+
+	/* ── Buttons ── */
+	.btn-primary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: white;
+		background-color: var(--color-accent);
+		border: none;
 		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		opacity: 0.9;
+	}
+
+	.btn-primary:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.btn-secondary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-secondary);
+		background-color: transparent;
+		border: 1px solid var(--color-border);
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s;
+	}
+
+	.btn-secondary.active {
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary);
+	}
+
+	.btn-secondary:hover:not(:disabled) {
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary);
+	}
+
+	.btn-danger {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.375rem 0.75rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: white;
+		background-color: var(--color-danger);
+		border: none;
+		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+
+	.btn-danger:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.btn-link {
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		transition: color 0.15s;
+	}
+
+	.btn-link:hover {
+		color: var(--color-text-primary);
+	}
+
+	/* ── Create form ── */
+	.create-form {
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		padding: 1rem;
+		background-color: var(--color-bg-secondary);
+	}
+
+	.form-label {
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.form-row {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.form-input {
+		flex: 1;
+		border-radius: 0.5rem;
+		border: 1px solid var(--color-border);
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+		background-color: var(--color-bg-primary);
+		color: var(--color-text-primary);
+		outline: none;
+		transition: border-color 0.15s;
+	}
+
+	.form-input:focus {
+		border-color: var(--color-accent);
+	}
+
+	/* ── Bulk-action bar ── */
+	.bulk-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		padding: 0.75rem 1rem;
+		background-color: var(--color-bg-secondary);
+	}
+
+	.bulk-bar-left {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.bulk-count {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text-primary);
+	}
+
+	/* ── Empty state ── */
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 4rem 0;
+		text-align: center;
+	}
+
+	.empty-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 5rem;
+		height: 5rem;
+		border-radius: 50%;
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-muted);
+		margin-bottom: 1rem;
+	}
+
+	.empty-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.empty-description {
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		max-width: 24rem;
+		margin-bottom: 1.5rem;
+	}
+
+	/* ── Tag list ── */
+	.tag-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.tag-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		padding: 0.75rem;
+		background-color: var(--color-bg-secondary);
+		transition: background-color 0.15s, border-color 0.15s;
+	}
+
+	.tag-row.selectable {
+		cursor: pointer;
+	}
+
+	.tag-row.selected {
+		background-color: var(--color-bg-tertiary);
+		border-color: var(--color-accent);
+	}
+
+	.tag-info {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.tag-pill {
+		border-radius: 9999px;
+		padding: 0.25rem 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary);
+	}
+
+	.usage-count {
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+	}
+
+	.tag-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	/* ── Edit row ── */
+	.edit-row {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	/* ── Checkbox ── */
+	.checkbox {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		flex-shrink: 0;
+		border-radius: 0.25rem;
+		border: 2px solid var(--color-border-hover);
+		background-color: var(--color-bg-primary);
+		pointer-events: none;
+		transition: background-color 0.15s, border-color 0.15s;
+		color: white;
+	}
+
+	.checkbox.checked {
+		background-color: var(--color-accent);
+		border-color: var(--color-accent);
+	}
+
+	/* ── Icon buttons ── */
+	.icon-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.5rem;
+		padding: 0.5rem;
+		border: none;
+		background: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		transition: background-color 0.15s, color 0.15s;
 	}
 
 	.icon-btn:hover {
 		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary);
 	}
 
-	button:hover:not(:disabled) {
-		opacity: 0.9;
+	.save-btn {
+		color: var(--color-success);
+	}
+
+	.save-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* ── Misc ── */
+	.relative {
+		position: relative;
 	}
 
 	button:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 2px;
-	}
-
-	input:focus {
-		border-color: var(--color-accent);
 	}
 </style>
