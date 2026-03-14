@@ -108,12 +108,13 @@
 		<!-- Main Content -->
 		<main
 			class="flex-1 overflow-auto"
+			style="position: relative;"
 			onclick={handleMainClick}
 		>
-			{#if isInitialized}
-				{@render children()}
-			{:else}
-				<div class="flex h-full items-center justify-center">
+			<!-- Always render children so <svelte:head> OG tags reach SSR output -->
+			{@render children()}
+			{#if !isInitialized}
+				<div class="loading-overlay">
 					<span style="color: var(--color-text-muted);">Loading...</span>
 				</div>
 			{/if}
@@ -126,3 +127,15 @@
 
 <!-- Accessibility -->
 <CopyAnnouncer />
+
+<style>
+	.loading-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: var(--color-bg-primary);
+		z-index: 10;
+	}
+</style>
