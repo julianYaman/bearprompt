@@ -5,7 +5,6 @@ import { getAllPrompts, getAllTags, getAllFolders } from './db';
 // UI State
 export const sidebarOpen = writable(false);
 export const mobileMenuOpen = writable(false);
-export const settingsOpen = writable(false);
 export const aboutOpen = writable(false);
 
 // Theme

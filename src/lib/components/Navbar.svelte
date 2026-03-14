@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import { page } from '$app/stores';
-	import { theme, settingsOpen, mobileMenuOpen, sidebarOpen, prompts, tags } from '$lib/stores';
+	import { goto } from '$app/navigation';
+	import { theme, mobileMenuOpen, sidebarOpen, prompts, tags } from '$lib/stores';
 	import { exportLibrary, importLibrary, validateImportData, getAllPrompts, getAllTags } from '$lib/db';
 	import { downloadJson, buildExportFilename } from '$lib/utils';
 	import type { ThemeMode } from '$lib/types';
@@ -52,8 +53,8 @@
 	}
 
 	function handleSettings() {
-		settingsOpen.set(true);
 		mobileMenuOpen.set(false);
+		goto('/settings');
 	}
 
 	async function handleSave() {

@@ -6,7 +6,6 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import MobileDrawer from '$lib/components/MobileDrawer.svelte';
-	import SettingsModal from '$lib/components/SettingsModal.svelte';
 	import AboutModal from '$lib/components/AboutModal.svelte';
 	import CopyAnnouncer from '$lib/components/CopyAnnouncer.svelte';
 	import { initializeTheme } from '$lib/theme';
@@ -18,9 +17,10 @@
 	let isInitialized = $state(false);
 
 	// Derive current view from the URL path
-	let currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' = $derived.by(() => {
+	let currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' | 'settings' = $derived.by(() => {
 		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/tags')) return 'tags';
+		if (pathname.startsWith('/settings')) return 'settings';
 		if (pathname.startsWith('/agents')) return 'agents';
 		if (pathname.startsWith('/prompts')) return 'prompts';
 		if (pathname.startsWith('/help')) return 'help';
@@ -45,6 +45,8 @@
 				return 'Tags | Bearprompt';
 			case 'help':
 				return 'Help | Bearprompt';
+			case 'settings':
+				return 'Settings | Bearprompt';
 			default:
 				return 'Bearprompt';
 		}
@@ -120,7 +122,6 @@
 </div>
 
 <!-- Modals -->
-<SettingsModal />
 <AboutModal />
 
 <!-- Accessibility -->

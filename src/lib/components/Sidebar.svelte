@@ -7,7 +7,7 @@
 	import type { Folder } from '$lib/types';
 
 	interface Props {
-		currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help';
+		currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' | 'settings';
 	}
 
 	let { currentView }: Props = $props();
@@ -101,11 +101,13 @@
 	style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
 >
 	<!-- Logo / Brand -->
-	<div class="flex h-16 items-center gap-2.5 border-b px-4" style="border-color: var(--color-border);">
-		<img src="/bearprompt.png" alt="Bearprompt logo" class="h-8 w-8" />
-		<h1 class="text-lg font-semibold" style="color: var(--color-text-primary);">
-			Bearprompt
-		</h1>
+	<div class="flex h-16 items-center border-b px-4" style="border-color: var(--color-border);">
+		<a href="/" class="flex items-center gap-2.5">
+			<img src="/bearprompt.png" alt="Bearprompt logo" class="h-8 w-8" />
+			<h1 class="text-lg font-semibold" style="color: var(--color-text-primary);">
+				Bearprompt
+			</h1>
+		</a>
 	</div>
 
 	<!-- Navigation -->
@@ -244,9 +246,23 @@
 	<!-- Bottom Section -->
 	<div class="border-t p-3" style="border-color: var(--color-border);">
 		<a
-			href="/tags"
+			href="/settings"
 			onclick={handleLinkClick}
 			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+			style="color: {currentView === 'settings'
+				? 'var(--color-text-primary)'
+				: 'var(--color-text-secondary)'}; background-color: {currentView === 'settings'
+				? 'var(--color-bg-tertiary)'
+				: 'transparent'};"
+			aria-current={currentView === 'settings' ? 'page' : undefined}
+		>
+			<Icon name="settings" size={18} />
+			Settings
+		</a>
+		<a
+			href="/tags"
+			onclick={handleLinkClick}
+			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
 			style="color: {currentView === 'tags'
 				? 'var(--color-text-primary)'
 				: 'var(--color-text-secondary)'}; background-color: {currentView === 'tags'
@@ -257,15 +273,6 @@
 			<Icon name="tag" size={18} />
 			Tags
 		</a>
-		<button
-			type="button"
-			onclick={handleAboutClick}
-			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
-			style="color: var(--color-text-secondary);"
-		>
-			<Icon name="info" size={18} />
-			About
-		</button>
 		<a
 			href="/help"
 			onclick={handleLinkClick}
@@ -280,6 +287,15 @@
 			<Icon name="help-circle" size={18} />
 			Help
 		</a>
+		<button
+			type="button"
+			onclick={handleAboutClick}
+			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
+			style="color: var(--color-text-secondary);"
+		>
+			<Icon name="info" size={18} />
+			About
+		</button>
 	</div>
 
 	<!-- Delete confirmation popover — rendered outside scroll container, fixed to viewport -->

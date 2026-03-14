@@ -3,7 +3,7 @@
 	import Sidebar from './Sidebar.svelte';
 
 	interface Props {
-		currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help';
+		currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' | 'settings';
 	}
 
 	let { currentView }: Props = $props();
