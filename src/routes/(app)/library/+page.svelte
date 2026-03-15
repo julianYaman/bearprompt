@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { env as publicEnv } from '$env/dynamic/public';
 	import PromptCard from '$lib/components/PromptCard.svelte';
 	import CreateCard from '$lib/components/CreateCard.svelte';
 	import PromptForm from '$lib/components/PromptForm.svelte';
 	import SearchFilter from '$lib/components/SearchFilter.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
+	import type { Prompt } from '$lib/types';
 	import {
 		filteredPrompts,
 		isCreating,
@@ -14,11 +17,23 @@
 		isPromptSelectMode,
 		selectedPromptIds,
 		prompts,
+		tags,
 		folders,
 		activeFolderId,
+		loadPrompts,
+		loadTags,
 		loadFolders
 	} from '$lib/stores';
-	import { deletePrompts, movePrompts, updateFolder } from '$lib/db';
+	import { createPrompt, createTag, deletePrompts, getAllTags, movePrompts, updateFolder } from '$lib/db';
+	import {
+		buildShareUrl,
+		clearShareFromSession,
+		decryptSharedPrompt,
+		encryptSharedPrompt,
+		parseShareHash,
+		readShareFromSession,
+		type SharedPromptPayload
+	} from '$lib/share';
 
 	const CHATGPT_PROMPT = `Based on my previous chats, give me my 10 most used prompts that I can copy & paste into a prompt library. 
 Format them in a way that I know where I have to enter custom instructions or text for this prompt. For each prompt, give me a title and a few tags. 
@@ -28,6 +43,36 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let showForm = $derived($isCreating || $editingPromptId !== null);
 	let showCopyModal = $state(false);
 	let confirmingBulkDelete = $state(false);
+	let isShareModalOpen = $state(false);
+	let shareTargetPrompt = $state<Prompt | null>(null);
+	let shareLink = $state('');
+	let shareLinkExpiresAt = $state('');
+	let shareRevokeToken = $state('');
+	let shareId = $state('');
+	let shareStatus = $state<'idle' | 'loading' | 'ready' | 'error' | 'revoking' | 'revoked'>('idle');
+	let shareError = $state('');
+	let shareCopied = $state(false);
+	let shareCopyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	let isImportModalOpen = $state(false);
+	let importStatus = $state<'loading' | 'ready' | 'error' | 'importing' | 'imported'>('loading');
+	let importError = $state('');
+	let importPayload = $state<SharedPromptPayload | null>(null);
+
+	type TurnstileApi = {
+		render: (
+			element: HTMLElement,
+			options: {
+				sitekey: string;
+				size: 'invisible';
+				callback: (token: string) => void;
+				'error-callback': () => void;
+				'expired-callback': () => void;
+			}
+		) => string;
+		execute: (widgetId: string) => void;
+		remove: (widgetId: string) => void;
+	};
 
 	const chatgptUrl = $derived(`https://chat.openai.com/?q=${encodeURIComponent(CHATGPT_PROMPT)}`);
 
@@ -100,6 +145,260 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		showCopyModal = false;
 	}
 
+	function resetShareState() {
+		shareLink = '';
+		shareLinkExpiresAt = '';
+		shareRevokeToken = '';
+		shareId = '';
+		shareStatus = 'idle';
+		shareError = '';
+		shareCopied = false;
+	}
+
+	function closeShareModal() {
+		isShareModalOpen = false;
+		shareTargetPrompt = null;
+		resetShareState();
+	}
+
+	async function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
+		if (typeof window === 'undefined' || !publicEnv.PUBLIC_TURNSTILE_SITE_KEY) return null;
+		const existing = (window as Window & { turnstile?: TurnstileApi }).turnstile;
+		if (existing) return existing;
+
+		await new Promise<void>((resolve, reject) => {
+			const script = document.createElement('script');
+			script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+			script.async = true;
+			script.defer = true;
+			script.onload = () => resolve();
+			script.onerror = () => reject(new Error('Failed to load captcha'));
+			document.head.appendChild(script);
+		});
+
+		return (window as Window & { turnstile?: TurnstileApi }).turnstile || null;
+	}
+
+	async function requestCaptchaToken(): Promise<string | null> {
+		const turnstile = await ensureTurnstileLoaded();
+		const siteKey = publicEnv.PUBLIC_TURNSTILE_SITE_KEY;
+		if (!turnstile || !siteKey) return null;
+
+		return new Promise((resolve) => {
+			const container = document.createElement('div');
+			container.style.position = 'fixed';
+			container.style.left = '-9999px';
+			container.style.top = '-9999px';
+			document.body.appendChild(container);
+
+			const widgetId = turnstile.render(container, {
+				sitekey: siteKey,
+				size: 'invisible',
+				callback: (token: string) => {
+					turnstile.remove(widgetId);
+					container.remove();
+					resolve(token);
+				},
+				'error-callback': () => {
+					turnstile.remove(widgetId);
+					container.remove();
+					resolve(null);
+				},
+				'expired-callback': () => {
+					turnstile.remove(widgetId);
+					container.remove();
+					resolve(null);
+				}
+			});
+
+			turnstile.execute(widgetId);
+		});
+	}
+
+	async function handleShare(id: string) {
+		const targetPrompt = $prompts.find((prompt) => prompt.id === id);
+		if (!targetPrompt) return;
+
+		isShareModalOpen = true;
+		shareTargetPrompt = targetPrompt;
+		shareStatus = 'loading';
+		shareError = '';
+
+		try {
+			const payload: SharedPromptPayload = {
+				title: targetPrompt.title,
+				markdown: targetPrompt.markdown,
+				tags: targetPrompt.tagIds
+					.map((tagId) => $tags.find((tag) => tag.id === tagId)?.name)
+					.filter((tagName): tagName is string => !!tagName)
+			};
+
+			const encrypted = await encryptSharedPrompt(payload);
+			let response = await fetch('/api/shares', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					ciphertext: encrypted.ciphertext
+				})
+			});
+
+			if (response.status === 403) {
+				const captchaToken = await requestCaptchaToken();
+				if (!captchaToken) {
+					shareStatus = 'error';
+					shareError = 'Captcha verification failed.';
+					return;
+				}
+
+				response = await fetch('/api/shares', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						ciphertext: encrypted.ciphertext,
+						captchaToken
+					})
+				});
+			}
+
+			if (!response.ok) {
+				const errorData = (await response.json().catch(() => ({ error: '' }))) as { error?: string };
+				shareStatus = 'error';
+				shareError =
+					response.status === 403 || response.status === 429
+						? 'Share limit reached. Please try again shortly.'
+						: errorData.error || 'Failed to create share link.';
+				return;
+			}
+
+			const data = (await response.json()) as { id: string; expiresAt: string; revokeToken: string };
+			shareId = data.id;
+			shareRevokeToken = data.revokeToken;
+			shareLinkExpiresAt = data.expiresAt;
+			shareLink = buildShareUrl(data.id, encrypted.key);
+			shareStatus = 'ready';
+		} catch {
+			shareStatus = 'error';
+			shareError = 'Failed to create share link.';
+		}
+	}
+
+	async function handleCopyShareLink() {
+		if (!shareLink) return;
+		try {
+			await navigator.clipboard.writeText(shareLink);
+			shareCopied = true;
+			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
+			shareCopyTimeout = setTimeout(() => {
+				shareCopied = false;
+			}, 1500);
+		} catch {
+			shareError = 'Failed to copy link.';
+		}
+	}
+
+	async function handleRevokeShareLink() {
+		if (!shareId || !shareRevokeToken) return;
+		shareStatus = 'revoking';
+		shareError = '';
+		try {
+			const response = await fetch(`/api/shares/${encodeURIComponent(shareId)}`, {
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${shareRevokeToken}`
+				}
+			});
+			if (!response.ok && response.status !== 404) {
+				shareStatus = 'error';
+				shareError = 'Failed to revoke shared prompt.';
+				return;
+			}
+			shareStatus = 'revoked';
+		} catch {
+			shareStatus = 'error';
+			shareError = 'Failed to revoke shared prompt.';
+		}
+	}
+
+	function closeImportModal() {
+		isImportModalOpen = false;
+		importStatus = 'loading';
+		importError = '';
+		importPayload = null;
+	}
+
+	async function importSharedPromptToLibrary() {
+		if (!importPayload) return;
+		importStatus = 'importing';
+		try {
+			const existingTags = await getAllTags();
+			const tagIds: string[] = [];
+
+			for (const tagName of importPayload.tags) {
+				const trimmed = tagName.trim();
+				if (!trimmed) continue;
+
+				const existing = existingTags.find((tag) => tag.name.toLowerCase() === trimmed.toLowerCase());
+				if (existing) {
+					tagIds.push(existing.id);
+					continue;
+				}
+
+				const createdTag = await createTag(trimmed);
+				existingTags.push(createdTag);
+				tagIds.push(createdTag.id);
+			}
+
+			await createPrompt(importPayload.title.trim(), importPayload.markdown, tagIds);
+			await Promise.all([loadPrompts(), loadTags()]);
+			importStatus = 'imported';
+		} catch {
+			importStatus = 'error';
+			importError = 'Failed to import prompt.';
+		}
+	}
+
+	async function loadShareFromUrl() {
+		const sessionRef = readShareFromSession();
+		const hashRef = parseShareHash(window.location.hash);
+		const shareRef = sessionRef || hashRef;
+		if (!shareRef) return;
+
+		clearShareFromSession();
+		if (window.location.hash) {
+			history.replaceState(null, '', window.location.pathname + window.location.search);
+		}
+
+		isImportModalOpen = true;
+		importStatus = 'loading';
+		importError = '';
+		importPayload = null;
+
+		try {
+			const response = await fetch(`/api/shares/${encodeURIComponent(shareRef.id)}`, {
+				headers: {
+					'Cache-Control': 'no-store'
+				}
+			});
+			if (!response.ok) {
+				throw new Error('Unavailable');
+			}
+
+			const data = (await response.json()) as { ciphertext: string };
+			const payload = await decryptSharedPrompt(data.ciphertext, shareRef.key);
+			importPayload = payload;
+			importStatus = 'ready';
+		} catch {
+			importStatus = 'error';
+			importError = 'This shared prompt is unavailable, expired, or invalid.';
+		} finally {
+			clearShareFromSession();
+		}
+	}
+
 	function handleCopyModalBackdropClick(event: MouseEvent) {
 		if (event.target === event.currentTarget) {
 			handleCloseCopyModal();
@@ -108,7 +407,9 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 	function handleCopyModalKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
-			handleCloseCopyModal();
+			if (showCopyModal) handleCloseCopyModal();
+			if (isShareModalOpen) closeShareModal();
+			if (isImportModalOpen) closeImportModal();
 		}
 	}
 
@@ -152,6 +453,19 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 			cancelFolderRename();
 		}
 	}
+
+	onMount(() => {
+		void loadShareFromUrl();
+		const onHashChange = () => {
+			void loadShareFromUrl();
+		};
+		window.addEventListener('hashchange', onHashChange);
+
+		return () => {
+			window.removeEventListener('hashchange', onHashChange);
+			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
+		};
+	});
 </script>
 
 <svelte:head>
@@ -214,6 +528,178 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						Close
 					</button>
 				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if isShareModalOpen}
+	<!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="share-modal-title"
+		onclick={(event) => {
+			if (event.target === event.currentTarget) closeShareModal();
+		}}
+	>
+		<div class="w-full max-w-xl rounded-xl shadow-xl" style="background-color: var(--color-bg-primary);">
+			<div class="p-6">
+					<div class="mb-4 flex items-center justify-between">
+						<h2 id="share-modal-title" class="text-lg font-semibold" style="color: var(--color-text-primary);">
+							Share Prompt{shareTargetPrompt ? ` "${shareTargetPrompt.title}"` : ''}
+						</h2>
+					<button
+						type="button"
+						onclick={closeShareModal}
+						class="rounded p-1 transition-colors"
+						style="color: var(--color-text-muted);"
+						aria-label="Close share dialog"
+					>
+						<Icon name="x" size={18} />
+					</button>
+				</div>
+
+				<div
+					class="mb-4 rounded-lg border p-3 text-xs leading-relaxed"
+					style="border-color: var(--color-border); background-color: var(--color-bg-secondary); color: var(--color-text-secondary);"
+				>
+					This link is end-to-end encrypted. Anyone with the link can import this prompt. The link expires in 14 days. You can revoke it only while this window stays open.
+				</div>
+
+				{#if shareStatus === 'loading'}
+					<p class="text-sm" style="color: var(--color-text-secondary);">Generating secure share link...</p>
+				{:else if shareStatus === 'ready' || shareStatus === 'revoking' || shareStatus === 'revoked'}
+					<div class="mb-4 space-y-2">
+						<label for="share-link" class="text-xs font-medium" style="color: var(--color-text-muted);">
+							Share link
+						</label>
+						<input
+							id="share-link"
+							value={shareLink}
+							readonly
+							class="w-full rounded-lg border px-3 py-2 text-sm"
+							style="background-color: var(--color-bg-secondary); border-color: var(--color-border); color: var(--color-text-primary);"
+						/>
+						<p class="text-xs" style="color: var(--color-text-muted);">
+							Expires: {new Date(shareLinkExpiresAt).toLocaleString()}
+						</p>
+					</div>
+					<div class="flex flex-wrap items-center gap-2">
+						<button
+							type="button"
+							onclick={handleCopyShareLink}
+							disabled={shareStatus === 'revoking' || shareStatus === 'revoked'}
+							class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+							style="background-color: var(--color-accent);"
+						>
+							<Icon name={shareCopied ? 'check' : 'copy'} size={16} />
+							{shareCopied ? 'Copied' : 'Copy link'}
+						</button>
+						<button
+							type="button"
+							onclick={handleRevokeShareLink}
+							disabled={shareStatus === 'revoking' || shareStatus === 'revoked'}
+							class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+							style="background-color: var(--color-danger);"
+						>
+							<Icon name="trash" size={15} />
+							{shareStatus === 'revoking' ? 'Revoking...' : 'Revoke link'}
+						</button>
+						{#if shareStatus === 'revoked'}
+							<span class="text-sm" style="color: var(--color-success);">Link revoked</span>
+						{/if}
+					</div>
+				{:else if shareStatus === 'error'}
+					<p class="text-sm" style="color: var(--color-danger);">{shareError || 'Failed to create share link.'}</p>
+				{/if}
+
+				{#if shareError && shareStatus !== 'error'}
+					<p class="mt-3 text-sm" style="color: var(--color-danger);">{shareError}</p>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if isImportModalOpen}
+	<!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="import-share-title"
+		onclick={(event) => {
+			if (event.target === event.currentTarget) closeImportModal();
+		}}
+	>
+		<div class="w-full max-w-xl rounded-xl shadow-xl" style="background-color: var(--color-bg-primary);">
+			<div class="p-6">
+				<div class="mb-4 flex items-center justify-between">
+					<h2 id="import-share-title" class="text-lg font-semibold" style="color: var(--color-text-primary);">
+						Add Shared Prompt
+					</h2>
+					<button
+						type="button"
+						onclick={closeImportModal}
+						class="rounded p-1 transition-colors"
+						style="color: var(--color-text-muted);"
+						aria-label="Close import dialog"
+					>
+						<Icon name="x" size={18} />
+					</button>
+				</div>
+
+				{#if importStatus === 'loading'}
+					<p class="text-sm" style="color: var(--color-text-secondary);">Decrypting shared prompt...</p>
+				{:else if importStatus === 'error'}
+					<p class="text-sm" style="color: var(--color-danger);">{importError}</p>
+				{:else if importPayload}
+					<h2 class="mb-2 text-base font-semibold" style="color: var(--color-text-primary);">
+						{importPayload.title}
+					</h2>
+					{#if importPayload.tags.length > 0}
+						<div class="mb-3 flex flex-wrap gap-1.5">
+							{#each importPayload.tags as tagName}
+								<span
+									class="rounded-full px-2 py-0.5 text-xs"
+									style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
+								>
+									{tagName}
+								</span>
+							{/each}
+						</div>
+					{/if}
+					<pre
+						class="mb-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg p-3 text-sm"
+						style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
+					>{importPayload.markdown}</pre>
+					<div class="flex items-center gap-2">
+						<button
+							type="button"
+							onclick={importSharedPromptToLibrary}
+							disabled={importStatus === 'importing' || importStatus === 'imported'}
+							class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+							style="background-color: var(--color-accent);"
+						>
+							<Icon name={importStatus === 'imported' ? 'check' : 'plus'} size={16} />
+							{importStatus === 'importing'
+								? 'Adding...'
+								: importStatus === 'imported'
+									? 'Added to library'
+									: 'Add to library'}
+						</button>
+						<button
+							type="button"
+							onclick={closeImportModal}
+							class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+							style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
+						>
+							Close
+						</button>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -437,6 +923,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					<PromptCard
 						{prompt}
 						onEdit={handleEdit}
+						onShare={handleShare}
 						selectMode={$isPromptSelectMode}
 						selected={$selectedPromptIds.has(prompt.id)}
 						onSelect={handleSelectPrompt}

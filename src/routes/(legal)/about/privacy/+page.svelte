@@ -5,7 +5,7 @@
 
 <article>
 	<h1>Privacy Policy</h1>
-	<p class="last-updated">Last updated: February 21, 2026</p>
+	<p class="last-updated">Last updated: March 16, 2026</p>
 
 	<p>
 		Welcome to Bearprompt ("we", "us", or "our"). We are committed to protecting your privacy. 
@@ -13,52 +13,82 @@
 		<a href="https://bearprompt.com">bearprompt.com</a> (the "Service").
 	</p>
 
-	<h2>1. Information We Collect</h2>
+	<h2>1. Information We Process</h2>
 	<p>
-		<strong>We do not collect any personal data.</strong> Bearprompt is designed with privacy as a core principle. 
-		All your prompts and data are stored locally in your browser using IndexedDB technology. 
-		We have no access to your prompts, tags, or any content you create within the application.
+		Bearprompt is designed to be privacy-first. Most prompt data is stored locally in your browser.
+		When you use optional features such as encrypted sharing, limited server-side processing is required.
 	</p>
+	<ul>
+		<li>Local library data: prompts, tags, folders, and settings in your browser (IndexedDB)</li>
+		<li>Optional sharing data: encrypted prompt payloads you choose to upload for link sharing</li>
+		<li>Operational data: basic request metadata needed for security and abuse prevention</li>
+		<li>Analytics data: privacy-focused aggregate usage metrics (see section 4)</li>
+	</ul>
 
 	<h2>2. Local Data Storage</h2>
 	<p>
-		All data you create in Bearprompt (prompts, tags, settings) is stored exclusively in your browser's 
-		local storage (IndexedDB). This means:
+		By default, data you create in Bearprompt (prompts, tags, folders, settings) is stored in your
+		browser's IndexedDB. This means:
 	</p>
 	<ul>
-		<li>Your data never leaves your device</li>
-		<li>We cannot access, read, or recover your data</li>
+		<li>We cannot access your local library unless you explicitly use a server-backed feature</li>
 		<li>If you clear your browser data, your prompts will be deleted</li>
 		<li>Your data is not synced across devices unless you manually export and import it</li>
 	</ul>
 
-	<h2>3. Analytics</h2>
+	<h2>3. Optional End-to-End Encrypted Sharing</h2>
 	<p>
-		We use <a href="https://umami.is" target="_blank" rel="noopener noreferrer">Umami Analytics</a> 
-		to collect anonymous usage statistics. Umami is a privacy-friendly analytics tool that:
+		If you use the Share feature, Bearprompt uploads an encrypted prompt payload to our backend so another
+		user can import it via link. The decryption key remains client-side in the URL fragment/hash and is not
+		stored on our servers.
 	</p>
 	<ul>
-		<li>Does not use cookies</li>
-		<li>Does not collect personal data</li>
-		<li>Does not track users across websites</li>
-		<li>Is fully compliant with GDPR, CCPA, and PECR</li>
+		<li>Only encrypted payloads are stored server-side for sharing</li>
+		<li>Shared payloads are automatically deleted after 14 days</li>
+		<li>Links can be revoked by the share creator while the share dialog remains open</li>
+		<li>Anyone with the full link can import that shared prompt</li>
+	</ul>
+
+	<h2>4. Analytics and Security Services</h2>
+	<p>
+		We use the following service providers to operate Bearprompt:
+	</p>
+	<ul>
+		<li>
+			<a href="https://umami.is" target="_blank" rel="noopener noreferrer">Umami Analytics</a>
+			for privacy-focused aggregate usage analytics
+		</li>
+		<li>Supabase for encrypted share storage and backend database operations</li>
+		<li>
+			Cloudflare Turnstile for bot and abuse protection on sensitive endpoints (for example share creation)
+		</li>
 	</ul>
 	<p>
-		The data collected includes anonymous information such as page views, referral sources, 
-		browser type, and country of origin. This helps us understand how the Service is used 
-		and how we can improve it.
+		For invisible Turnstile mode, we reference Cloudflare's Turnstile Privacy Addendum in accordance with
+		their requirements.
 	</p>
 
-	<h2>4. Third-Party Services</h2>
+	<h2>5. Cookies and Similar Technologies</h2>
 	<p>
-		Apart from Umami Analytics, we do not integrate any third-party services that would 
-		collect your data. We do not use advertising networks, social media trackers, or any 
-		other external services that could compromise your privacy.
+		Bearprompt does not use advertising cookies. Umami is configured to be privacy-focused and does not rely on
+		cross-site ad tracking cookies. Security tooling (such as Turnstile/Cloudflare) may use strictly necessary
+		technical storage or cookies for abuse protection and request integrity.
 	</p>
 
-	<h2>5. Data Security</h2>
+	<h2>6. Data Retention</h2>
+	<ul>
+		<li>Local library data: retained in your browser until you delete it or clear browser storage</li>
+		<li>Encrypted shared payloads: up to 14 days, or shorter if revoked/deleted earlier</li>
+		<li>Operational security logs/metadata: retained only as needed for service security and abuse prevention</li>
+	</ul>
+
+	<h2>7. Data Security</h2>
 	<p>
-		Since all your data is stored locally on your device, you are in full control of its security. 
+		We use technical and organizational measures appropriate to the risk, including encrypted payload handling
+		for sharing, transport security, and abuse protection controls.
+	</p>
+	<p>
+		Because local data remains on your device, you are also responsible for device/browser security.
 		We recommend:
 	</p>
 	<ul>
@@ -67,19 +97,25 @@
 		<li>Being cautious when using shared or public computers</li>
 	</ul>
 
-	<h2>6. Children's Privacy</h2>
+	<h2>8. International Data Transfers</h2>
+	<p>
+		Depending on your location and provider infrastructure, data may be processed in countries outside your own.
+		Where required, we rely on appropriate safeguards provided by our processors.
+	</p>
+
+	<h2>9. Children's Privacy</h2>
 	<p>
 		Our Service is not directed to children under 13. We do not knowingly collect any 
 		information from children under 13.
 	</p>
 
-	<h2>7. Changes to This Policy</h2>
+	<h2>10. Changes to This Policy</h2>
 	<p>
 		We may update this Privacy Policy from time to time. We will notify you of any changes 
 		by posting the new Privacy Policy on this page and updating the "Last updated" date.
 	</p>
 
-	<h2>8. Contact Us</h2>
+	<h2>11. Contact Us</h2>
 	<p>
 		If you have any questions about this Privacy Policy, please contact us at:
 	</p>

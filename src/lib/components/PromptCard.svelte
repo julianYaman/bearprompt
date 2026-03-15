@@ -7,12 +7,13 @@
 	interface Props {
 		prompt: Prompt;
 		onEdit: (id: string) => void;
+		onShare?: (id: string) => void;
 		selectMode?: boolean;
 		selected?: boolean;
 		onSelect?: (id: string) => void;
 	}
 
-	let { prompt, onEdit, selectMode = false, selected = false, onSelect }: Props = $props();
+	let { prompt, onEdit, onShare, selectMode = false, selected = false, onSelect }: Props = $props();
 
 	let copyState: 'idle' | 'copied' = $state('idle');
 	let isPreviewHovering = $state(false);
@@ -65,6 +66,12 @@
 		if (selectMode) return;
 		event.stopPropagation();
 		onEdit(prompt.id);
+	}
+
+	function handleShare(event: MouseEvent | KeyboardEvent) {
+		if (selectMode) return;
+		event.stopPropagation();
+		onShare?.(prompt.id);
 	}
 
 	function handleSelectToggle(event: MouseEvent | KeyboardEvent) {
@@ -163,11 +170,22 @@
 			>
 				{prompt.title}
 			</h3>
-			<div
-				class="flex h-6 w-6 shrink-0 items-center justify-center"
-				style="color: var(--color-text-muted);"
-			>
-				<Icon name="edit" size={14} />
+			<div class="flex items-center gap-1">
+				<button
+					type="button"
+					class="action-icon-btn flex h-7 w-7 items-center justify-center rounded transition-colors"
+					style="color: var(--color-text-muted);"
+					aria-label={`Share prompt: ${prompt.title}`}
+					onclick={handleShare}
+				>
+					<Icon name="share" size={14} />
+				</button>
+				<div
+					class="flex h-6 w-6 shrink-0 items-center justify-center"
+					style="color: var(--color-text-muted);"
+				>
+					<Icon name="edit" size={14} />
+				</div>
 			</div>
 		</div>
 
@@ -218,5 +236,10 @@
 	.content-section:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: -2px;
+	}
+
+	.action-icon-btn:hover {
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary) !important;
 	}
 </style>
