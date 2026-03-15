@@ -100,6 +100,9 @@
 		content="Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser."
 	/>
 	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Bearprompt - Your private prompt library for AI" />
 	<meta property="og:url" content="https://bearprompt.com" />
 	<meta property="og:type" content="website" />
 
@@ -110,6 +113,25 @@
 		content="Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser."
 	/>
 	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
+	<meta name="twitter:image:alt" content="Bearprompt - Your private prompt library for AI" />
+
+	<!-- JSON-LD Structured Data -->
+	{@html `<script type="application/ld+json">${JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		"name": "Bearprompt",
+		"url": "https://bearprompt.com",
+		"description": "Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser.",
+		"publisher": {
+			"@type": "Organization",
+			"name": "Bearprompt",
+			"url": "https://bearprompt.com",
+			"logo": {
+				"@type": "ImageObject",
+				"url": "https://bearprompt.com/bearprompt.png"
+			}
+		}
+	})}</script>`}
 </svelte:head>
 
 <!-- Navbar -->
@@ -322,6 +344,10 @@
 			<a href="https://github.com/julianyaman/bearprompt" target="_blank" rel="noopener noreferrer">
 				<Icon name="github" size={16} />
 				GitHub
+			</a>
+			<a href="https://x.com/bearprompt" target="_blank" rel="noopener noreferrer">
+				<Icon name="x-logo" size={16} />
+				X
 			</a>
 			<a href="https://buymeacoffee.com/julianyaman" target="_blank" rel="noopener noreferrer" class="donate-link">
 				<Icon name="heart" size={16} />

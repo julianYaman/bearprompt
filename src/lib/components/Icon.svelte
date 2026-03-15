@@ -36,6 +36,7 @@
 			| 'claude-code'
 			| 'perplexity'
 			| 'grok'
+			| 'x-logo'
 			| 'help-circle'
 			| 'notion'
 			| 'ms-copilot'
@@ -112,7 +113,7 @@
 	{:else if name === 'info'}
 		<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></g>
 	{:else if name === 'heart'}
-		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676a.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3.019L5 15c-1.5-1.5-3-3.2-3-5.5" />
+		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676a.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
 	{:else if name === 'external-link'}
 		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3h6v6m-11 5L21 3m-3 10v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
 	{:else if name === 'panel-left'}
@@ -133,6 +134,8 @@
 		<path fill="currentColor" stroke="none" d="M22.398 7.09h-2.31V.068l-7.51 6.354V.158h-1.156v6.196L4.49 0v7.09H1.602v10.397H4.49V24l6.933-6.36v6.201h1.155v-6.047l6.932 6.181v-6.488h2.888zm-3.466-4.531v4.53h-5.355zm-13.286.067l4.869 4.464h-4.87zM2.758 16.332V8.245h7.847L4.49 14.36v1.972zm2.888 5.04v-6.534l5.776-5.776v7.011zm12.708.025l-5.776-5.15V9.061l5.776 5.776zm2.889-5.065H19.51V14.36l-6.115-6.115h7.848z" />
 	{:else if name === 'grok'}
 		<path fill="currentColor" stroke="none" d="M18.9 4.7h2.9l-6.4 7.3 7.3 9.6h-5.7l-4.5-5.8-5.1 5.8H4.2l6.6-7.5L3.8 4.7h5.8l4 5.3zm-1 15h1.6l-10.2-13.5h-1.7z" />
+	{:else if name === 'x-logo'}
+		<path fill="currentColor" stroke="none" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
 	{:else if name === 'help-circle'}
 		<circle cx="12" cy="12" r="10" />
 		<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
