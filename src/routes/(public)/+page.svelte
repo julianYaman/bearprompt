@@ -337,22 +337,26 @@
 		</div>
 		<p class="footer-tagline">Your private prompt library for AI</p>
 		<div class="footer-links">
-			<a href="/about/privacy">Privacy Policy</a>
-			<a href="/about/terms">Terms of Service</a>
-			<a href="/about/legal">Legal Notice</a>
-			<a href="https://status.yaman.pro" target="_blank" rel="noopener noreferrer">Status</a>
-			<a href="https://github.com/julianyaman/bearprompt" target="_blank" rel="noopener noreferrer">
-				<Icon name="github" size={16} />
-				GitHub
-			</a>
-			<a href="https://x.com/bearprompt" target="_blank" rel="noopener noreferrer">
-				<Icon name="x-logo" size={16} />
-				X
-			</a>
-			<a href="https://buymeacoffee.com/julianyaman" target="_blank" rel="noopener noreferrer" class="donate-link">
-				<Icon name="heart" size={16} />
-				Donate
-			</a>
+			<div class="footer-links-row">
+				<a href="https://status.yaman.pro" target="_blank" rel="noopener noreferrer">Status</a>
+				<a href="https://github.com/julianyaman/bearprompt" target="_blank" rel="noopener noreferrer">
+					<Icon name="github" size={16} />
+					GitHub
+				</a>
+				<a href="https://x.com/bearprompt" target="_blank" rel="noopener noreferrer">
+					<Icon name="x-logo" size={16} />
+					X
+				</a>
+				<a href="https://buymeacoffee.com/julianyaman" target="_blank" rel="noopener noreferrer">
+					<Icon name="heart" size={16} />
+					Donate
+				</a>
+			</div>
+			<div class="footer-links-row footer-links-legal">
+				<a href="/about/privacy">Privacy Policy</a>
+				<a href="/about/terms">Terms of Service</a>
+				<a href="/about/legal">Legal Notice</a>
+			</div>
 		</div>
 		<button
 			type="button"
@@ -901,10 +905,21 @@
 
 	.footer-links {
 		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.footer-links-row {
+		display: flex;
 		justify-content: center;
 		flex-wrap: wrap;
 		gap: 1.5rem;
-		margin-bottom: 1.5rem;
+	}
+
+	.footer-links-legal {
+		gap: 1.25rem;
 	}
 
 	.footer-links a {
@@ -915,6 +930,10 @@
 		color: var(--color-text-secondary);
 		text-decoration: none;
 		transition: color 0.2s;
+	}
+
+	.footer-links-legal a {
+		font-size: 0.8125rem;
 	}
 
 	.footer-links a:hover {
