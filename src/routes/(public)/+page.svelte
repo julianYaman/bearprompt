@@ -185,8 +185,7 @@
 		<div class="hero-content">
 			<h1 class="hero-title">Your private prompt library for AI</h1>
 			<p class="hero-subtitle">
-				Organize, search, and manage all your AI prompts in one place. 
-				Privacy-first, open-source, and completely free.
+				Manage your AI prompts easily and securely in one place.
 			</p>
 			<a href="/library" class="hero-cta">
 				Create your library
@@ -336,6 +335,11 @@
 			<span class="footer-title">Bearprompt</span>
 		</div>
 		<p class="footer-tagline">Your private prompt library for AI</p>
+		<div class="featured-list">
+			<a href="https://findly.tools/bearprompt?utm_source=bearprompt" target="_blank" rel="noopener noreferrer">
+				<img src="https://findly.tools/badges/findly-tools-badge-light.svg" alt="Featured on Findly.tools" width="175" height="55" />
+			</a>
+		</div>
 		<div class="footer-links">
 			<div class="footer-links-row">
 				<a href="https://status.yaman.pro" target="_blank" rel="noopener noreferrer">Status</a>
@@ -997,5 +1001,13 @@
 		.hero-subtitle {
 			font-size: 1.25rem;
 		}
+	}
+
+	.featured-list {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
 	}
 </style>
