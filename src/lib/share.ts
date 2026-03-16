@@ -51,17 +51,26 @@ export function parseShareHash(hash: string): ShareReference | null {
 	const separatorIndex = value.indexOf(':');
 	if (separatorIndex <= 0) return null;
 
-	const rawId = value.slice(0, separatorIndex);
-	const rawKey = value.slice(separatorIndex + 1);
-	const id = decodeURIComponent(rawId).trim();
-	const key = decodeURIComponent(rawKey).trim();
-	if (!id || !key) return null;
+	try {
+		const rawId = value.slice(0, separatorIndex);
+		const rawKey = value.slice(separatorIndex + 1);
+		const id = decodeURIComponent(rawId).trim();
+		const key = decodeURIComponent(rawKey).trim();
+		if (!id || !key) return null;
 
-	return { id, key };
+		return { id, key };
+	} catch {
+		return null;
+	}
 }
 
 export function readShareFromSession(): ShareReference | null {
-	const raw = sessionStorage.getItem(SHARE_SESSION_STORAGE_KEY);
+	let raw = '';
+	try {
+		raw = sessionStorage.getItem(SHARE_SESSION_STORAGE_KEY) || '';
+	} catch {
+		return null;
+	}
 	if (!raw) return null;
 	try {
 		const parsed = JSON.parse(raw) as ShareReference;
@@ -73,7 +82,11 @@ export function readShareFromSession(): ShareReference | null {
 }
 
 export function clearShareFromSession(): void {
-	sessionStorage.removeItem(SHARE_SESSION_STORAGE_KEY);
+	try {
+		sessionStorage.removeItem(SHARE_SESSION_STORAGE_KEY);
+	} catch {
+		// Ignore storage clear failures.
+	}
 }
 
 export async function encryptSharedPrompt(payload: SharedPromptPayload): Promise<{

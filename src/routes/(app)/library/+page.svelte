@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { env as publicEnv } from '$env/dynamic/public';
 	import PromptCard from '$lib/components/PromptCard.svelte';
 	import CreateCard from '$lib/components/CreateCard.svelte';
@@ -58,23 +58,66 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let importStatus = $state<'loading' | 'ready' | 'error' | 'importing' | 'imported'>('loading');
 	let importError = $state('');
 	let importPayload = $state<SharedPromptPayload | null>(null);
+	let showCaptchaChallenge = $state(false);
+	let turnstileContainerEl = $state<HTMLDivElement | null>(null);
+	let activeTurnstileWidgetId: string | null = null;
 
 	type TurnstileApi = {
 		render: (
 			element: HTMLElement,
 			options: {
 				sitekey: string;
-				size: 'invisible';
+				size?: 'normal' | 'compact' | 'flexible';
 				callback: (token: string) => void;
-				'error-callback': () => void;
+				'error-callback': (errorCode?: string) => void;
 				'expired-callback': () => void;
 			}
 		) => string;
-		execute: (widgetId: string) => void;
 		remove: (widgetId: string) => void;
 	};
 
+	let turnstileLoadPromise: Promise<TurnstileApi | null> | null = null;
+
 	const chatgptUrl = $derived(`https://chat.openai.com/?q=${encodeURIComponent(CHATGPT_PROMPT)}`);
+	const shareRelativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+	function truncateWithEllipsis(value: string, maxChars: number): string {
+		if (value.length <= maxChars) return value;
+		return `${value.slice(0, maxChars - 1).trimEnd()}...`;
+	}
+
+	function formatShareExpiresAt(value: string): string {
+		if (!value) return '';
+		const expiry = new Date(value);
+		if (Number.isNaN(expiry.getTime())) return '';
+
+		const absolute = expiry.toLocaleString(undefined, {
+			dateStyle: 'medium',
+			timeStyle: 'short'
+		});
+		const diffMs = expiry.getTime() - Date.now();
+		const absMs = Math.abs(diffMs);
+
+		const units: Array<{ unit: Intl.RelativeTimeFormatUnit; size: number }> = [
+			{ unit: 'day', size: 24 * 60 * 60 * 1000 },
+			{ unit: 'hour', size: 60 * 60 * 1000 },
+			{ unit: 'minute', size: 60 * 1000 }
+		];
+
+		const selected = units.find(({ size }) => absMs >= size) ?? units[units.length - 1];
+		const relativeValue = Math.round(diffMs / selected.size);
+		const relative = shareRelativeTimeFormatter.format(relativeValue, selected.unit);
+		return `${absolute} (${relative})`;
+	}
+
+	let sharePromptTitleDisplay = $derived(
+		shareTargetPrompt ? truncateWithEllipsis(shareTargetPrompt.title, 58) : ''
+	);
+	let shareExpiresDisplay = $derived(formatShareExpiresAt(shareLinkExpiresAt));
+	let importPromptTitleDisplay = $derived(
+		importPayload ? truncateWithEllipsis(importPayload.title.trim(), 72) : ''
+	);
+	let importTagCount = $derived(importPayload?.tags.length ?? 0);
 
 	function handleCreateNew() {
 		editingPromptId.set(null);
@@ -153,65 +196,151 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		shareStatus = 'idle';
 		shareError = '';
 		shareCopied = false;
+		showCaptchaChallenge = false;
 	}
 
 	function closeShareModal() {
+		cleanupTurnstileWidget();
 		isShareModalOpen = false;
 		shareTargetPrompt = null;
 		resetShareState();
 	}
 
-	async function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
-		if (typeof window === 'undefined' || !publicEnv.PUBLIC_TURNSTILE_SITE_KEY) return null;
-		const existing = (window as Window & { turnstile?: TurnstileApi }).turnstile;
-		if (existing) return existing;
-
-		await new Promise<void>((resolve, reject) => {
-			const script = document.createElement('script');
-			script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-			script.async = true;
-			script.defer = true;
-			script.onload = () => resolve();
-			script.onerror = () => reject(new Error('Failed to load captcha'));
-			document.head.appendChild(script);
-		});
-
-		return (window as Window & { turnstile?: TurnstileApi }).turnstile || null;
+	function cleanupTurnstileWidget() {
+		const turnstile = (window as Window & { turnstile?: TurnstileApi }).turnstile;
+		if (turnstile && activeTurnstileWidgetId) {
+			try {
+				turnstile.remove(activeTurnstileWidgetId);
+			} catch {
+				// Ignore stale widget cleanup errors.
+			}
+		}
+		activeTurnstileWidgetId = null;
+		if (turnstileContainerEl) {
+			turnstileContainerEl.innerHTML = '';
+		}
 	}
 
-	async function requestCaptchaToken(): Promise<string | null> {
+	async function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
+		if (typeof window === 'undefined' || !publicEnv.PUBLIC_TURNSTILE_SITE_KEY) return null;
+		const win = window as Window & { turnstile?: TurnstileApi };
+		if (win.turnstile && typeof win.turnstile.render === 'function') return win.turnstile;
+		if (turnstileLoadPromise) return turnstileLoadPromise;
+
+		turnstileLoadPromise = new Promise<TurnstileApi | null>((resolve) => {
+			const getReadyApi = () => {
+				if (win.turnstile && typeof win.turnstile.render === 'function') {
+					return win.turnstile;
+				}
+				return null;
+			};
+
+			const immediateApi = getReadyApi();
+			if (immediateApi) {
+				resolve(immediateApi);
+				return;
+			}
+
+			let script = document.querySelector<HTMLScriptElement>('script[data-turnstile-script="true"]');
+			if (!script) {
+				script = document.createElement('script');
+				script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+				script.async = true;
+				script.defer = true;
+				script.dataset.turnstileScript = 'true';
+				document.head.appendChild(script);
+			}
+
+			let settled = false;
+			const timeoutAt = Date.now() + 10000;
+			let timer: number | null = null;
+
+			const settle = (value: TurnstileApi | null) => {
+				if (settled) return;
+				settled = true;
+				if (timer !== null) window.clearInterval(timer);
+				script?.removeEventListener('load', onLoad);
+				script?.removeEventListener('error', onError);
+				resolve(value);
+			};
+
+			const onLoad = () => {
+				script?.setAttribute('data-loaded', 'true');
+				const readyApi = getReadyApi();
+				if (readyApi) {
+					settle(readyApi);
+					return;
+				}
+				if (Date.now() >= timeoutAt) settle(null);
+			};
+
+			const onError = () => {
+				settle(null);
+			};
+
+			script.addEventListener('load', onLoad);
+			script.addEventListener('error', onError);
+
+			timer = window.setInterval(() => {
+				const readyApi = getReadyApi();
+				if (readyApi) {
+					settle(readyApi);
+					return;
+				}
+				if (Date.now() >= timeoutAt) settle(null);
+			}, 50);
+		}).then((turnstileApi) => {
+			if (!turnstileApi) {
+				turnstileLoadPromise = null;
+			}
+			return turnstileApi;
+		});
+
+		return turnstileLoadPromise;
+	}
+
+	async function requestCaptchaToken(): Promise<{ token: string | null; errorCode?: string }> {
 		const turnstile = await ensureTurnstileLoaded();
 		const siteKey = publicEnv.PUBLIC_TURNSTILE_SITE_KEY;
-		if (!turnstile || !siteKey) return null;
+		if (!turnstile || !siteKey) return { token: null };
+
+		showCaptchaChallenge = true;
+		await tick();
+		if (!turnstileContainerEl) return { token: null };
+
+		cleanupTurnstileWidget();
 
 		return new Promise((resolve) => {
-			const container = document.createElement('div');
-			container.style.position = 'fixed';
-			container.style.left = '-9999px';
-			container.style.top = '-9999px';
-			document.body.appendChild(container);
+			let settled = false;
+			const timeout = window.setTimeout(() => {
+				settle({ token: null, errorCode: 'timeout' });
+			}, 30000);
+			const settle = (result: { token: string | null; errorCode?: string }) => {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timeout);
+				showCaptchaChallenge = false;
+				cleanupTurnstileWidget();
+				resolve(result);
+			};
 
-			const widgetId = turnstile.render(container, {
-				sitekey: siteKey,
-				size: 'invisible',
-				callback: (token: string) => {
-					turnstile.remove(widgetId);
-					container.remove();
-					resolve(token);
-				},
-				'error-callback': () => {
-					turnstile.remove(widgetId);
-					container.remove();
-					resolve(null);
-				},
-				'expired-callback': () => {
-					turnstile.remove(widgetId);
-					container.remove();
-					resolve(null);
-				}
-			});
+			if (!turnstileContainerEl) {
+				settle({ token: null });
+				return;
+			}
 
-			turnstile.execute(widgetId);
+			try {
+				const widgetId = turnstile.render(turnstileContainerEl, {
+					sitekey: siteKey,
+					size: 'normal',
+					callback: (token: string) => settle({ token }),
+					'error-callback': (errorCode?: string) => settle({ token: null, errorCode }),
+					'expired-callback': () => settle({ token: null, errorCode: 'expired' })
+				});
+				activeTurnstileWidgetId = widgetId;
+			} catch {
+				settle({ token: null });
+			}
 		});
 	}
 
@@ -245,10 +374,16 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 			});
 
 			if (response.status === 403) {
-				const captchaToken = await requestCaptchaToken();
-				if (!captchaToken) {
+				const captchaResult = await requestCaptchaToken();
+				if (!captchaResult.token) {
 					shareStatus = 'error';
-					shareError = 'Captcha verification failed.';
+					shareError = captchaResult.errorCode?.startsWith('110200')
+						? 'Captcha domain is not authorized. Add this hostname in Cloudflare Turnstile settings.'
+						: captchaResult.errorCode === 'timeout'
+							? 'Captcha timed out. Please try again.'
+							: captchaResult.errorCode === 'expired'
+								? 'Captcha expired. Please try again.'
+								: 'Captcha verification failed. Please try again.';
 					return;
 				}
 
@@ -259,7 +394,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					},
 					body: JSON.stringify({
 						ciphertext: encrypted.ciphertext,
-						captchaToken
+						captchaToken: captchaResult.token
 					})
 				});
 			}
@@ -268,9 +403,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 				const errorData = (await response.json().catch(() => ({ error: '' }))) as { error?: string };
 				shareStatus = 'error';
 				shareError =
-					response.status === 403 || response.status === 429
+					response.status === 429
 						? 'Share limit reached. Please try again shortly.'
-						: errorData.error || 'Failed to create share link.';
+						: response.status === 403
+							? 'Captcha verification failed. Please try again.'
+							: errorData.error || 'Failed to create share link.';
 				return;
 			}
 
@@ -364,10 +501,9 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	async function loadShareFromUrl() {
 		const sessionRef = readShareFromSession();
 		const hashRef = parseShareHash(window.location.hash);
-		const shareRef = sessionRef || hashRef;
+		const shareRef = hashRef || sessionRef;
 		if (!shareRef) return;
 
-		clearShareFromSession();
 		if (window.location.hash) {
 			history.replaceState(null, '', window.location.pathname + window.location.search);
 		}
@@ -464,6 +600,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		return () => {
 			window.removeEventListener('hashchange', onHashChange);
 			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
+			cleanupTurnstileWidget();
 		};
 	});
 </script>
@@ -547,8 +684,13 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		<div class="w-full max-w-xl rounded-xl shadow-xl" style="background-color: var(--color-bg-primary);">
 			<div class="p-6">
 					<div class="mb-4 flex items-center justify-between">
-						<h2 id="share-modal-title" class="text-lg font-semibold" style="color: var(--color-text-primary);">
-							Share Prompt{shareTargetPrompt ? ` "${shareTargetPrompt.title}"` : ''}
+						<h2
+							id="share-modal-title"
+							class="text-lg font-semibold"
+							style="color: var(--color-text-primary);"
+							title={shareTargetPrompt?.title || ''}
+						>
+							Share Prompt{shareTargetPrompt ? ` "${sharePromptTitleDisplay}"` : ''}
 						</h2>
 					<button
 						type="button"
@@ -565,7 +707,12 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					class="mb-4 rounded-lg border p-3 text-xs leading-relaxed"
 					style="border-color: var(--color-border); background-color: var(--color-bg-secondary); color: var(--color-text-secondary);"
 				>
-					This link is end-to-end encrypted. Anyone with the link can import this prompt. The link expires in 14 days. You can revoke it only while this window stays open.
+					<div class="space-y-1">
+						<ul>
+							<li>The prompt is <b>end-to-end encrypted</b>. Bearprompt cannot access its content.</li>
+							<li>Anyone with this exact link can import the prompt. It expires in 14 days.</li>
+						</ul>
+					</div>
 				</div>
 
 				{#if shareStatus === 'loading'}
@@ -579,11 +726,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							id="share-link"
 							value={shareLink}
 							readonly
-							class="w-full rounded-lg border px-3 py-2 text-sm"
+							class="share-link-input w-full rounded-lg border px-3 py-2 text-sm"
 							style="background-color: var(--color-bg-secondary); border-color: var(--color-border); color: var(--color-text-primary);"
 						/>
 						<p class="text-xs" style="color: var(--color-text-muted);">
-							Expires: {new Date(shareLinkExpiresAt).toLocaleString()}
+							Expires: {shareExpiresDisplay}
 						</p>
 					</div>
 					<div class="flex flex-wrap items-center gap-2">
@@ -601,8 +748,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							type="button"
 							onclick={handleRevokeShareLink}
 							disabled={shareStatus === 'revoking' || shareStatus === 'revoked'}
-							class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
-							style="background-color: var(--color-danger);"
+							class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+							style="border-color: color-mix(in oklab, var(--color-danger) 50%, var(--color-border)); color: var(--color-danger); background-color: color-mix(in oklab, var(--color-danger) 10%, transparent);"
 						>
 							<Icon name="trash" size={15} />
 							{shareStatus === 'revoking' ? 'Revoking...' : 'Revoke link'}
@@ -617,6 +764,15 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 				{#if shareError && shareStatus !== 'error'}
 					<p class="mt-3 text-sm" style="color: var(--color-danger);">{shareError}</p>
+				{/if}
+
+				{#if showCaptchaChallenge}
+					<div class="mt-4 rounded-lg border p-3" style="border-color: var(--color-border);">
+						<p class="mb-2 text-xs" style="color: var(--color-text-secondary);">
+							Complete verification to continue sharing.
+						</p>
+						<div bind:this={turnstileContainerEl}></div>
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -652,12 +808,12 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 				</div>
 
 				{#if importStatus === 'loading'}
-					<p class="text-sm" style="color: var(--color-text-secondary);">Decrypting shared prompt...</p>
+					<p class="text-sm" style="color: var(--color-text-secondary);">Loading shared prompt...</p>
 				{:else if importStatus === 'error'}
 					<p class="text-sm" style="color: var(--color-danger);">{importError}</p>
 				{:else if importPayload}
 					<h2 class="mb-2 text-base font-semibold" style="color: var(--color-text-primary);">
-						{importPayload.title}
+						<span title={importPayload.title}>{importPromptTitleDisplay}</span>
 					</h2>
 					{#if importPayload.tags.length > 0}
 						<div class="mb-3 flex flex-wrap gap-1.5">
@@ -672,8 +828,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						</div>
 					{/if}
 					<pre
-						class="mb-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg p-3 text-sm"
-						style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
+						class="mb-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border p-3 text-sm"
+						style="background-color: var(--color-bg-secondary); border-color: var(--color-border); color: var(--color-text-primary);"
 					>{importPayload.markdown}</pre>
 					<div class="flex items-center gap-2">
 						<button
@@ -687,14 +843,14 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							{importStatus === 'importing'
 								? 'Adding...'
 								: importStatus === 'imported'
-									? 'Added to library'
+									? 'Added'
 									: 'Add to library'}
 						</button>
 						<button
 							type="button"
 							onclick={closeImportModal}
-							class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-							style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
+							class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+							style="background-color: transparent; border-color: var(--color-border); color: var(--color-text-primary);"
 						>
 							Close
 						</button>
@@ -984,5 +1140,10 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 	.prompt-content {
 		font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+	}
+
+	.share-link-input {
+		font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+		letter-spacing: 0.01em;
 	}
 </style>

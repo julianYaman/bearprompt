@@ -181,7 +181,7 @@
 					<Icon name="share" size={14} />
 				</button>
 				<div
-					class="flex h-6 w-6 shrink-0 items-center justify-center"
+					class="edit-icon-btn flex h-7 w-7 items-center justify-center rounded transition-colors"
 					style="color: var(--color-text-muted);"
 				>
 					<Icon name="edit" size={14} />
@@ -239,7 +239,14 @@
 	}
 
 	.action-icon-btn:hover {
-		background-color: var(--color-bg-tertiary);
+		cursor: pointer;
+		background-color: var(--color-accent);
+		color: var(--color-text-primary) !important;
+	}
+
+	.edit-icon-btn:hover{
+		cursor: pointer;
+		background-color: var(--color-accent);
 		color: var(--color-text-primary) !important;
 	}
 </style>

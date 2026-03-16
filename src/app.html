@@ -27,12 +27,16 @@
 				const separatorIndex = value.indexOf(':');
 				if (separatorIndex <= 0) return;
 
-				const id = decodeURIComponent(value.slice(0, separatorIndex)).trim();
-				const key = decodeURIComponent(value.slice(separatorIndex + 1)).trim();
-				if (!id || !key) return;
+				try {
+					const id = decodeURIComponent(value.slice(0, separatorIndex)).trim();
+					const key = decodeURIComponent(value.slice(separatorIndex + 1)).trim();
+					if (!id || !key) return;
 
-				sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ id, key }));
-				history.replaceState(null, '', pathname + window.location.search);
+					sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ id, key }));
+					history.replaceState(null, '', pathname + window.location.search);
+				} catch {
+					// Ignore malformed share hashes or storage failures.
+				}
 			})();
 		</script>
 
