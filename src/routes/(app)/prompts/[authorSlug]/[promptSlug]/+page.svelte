@@ -2,6 +2,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
+	import { serializeJsonLd } from '$lib/security';
 	import { loadPrompts, loadTags } from '$lib/stores';
 	import type { PublicPrompt } from '$lib/types/public';
 
@@ -33,7 +34,7 @@
 		: `https://bearprompt.com/prompts`;
 
 	// SEO: JSON-LD structured data
-	const jsonLd = JSON.stringify({
+	const jsonLd = serializeJsonLd({
 		'@context': 'https://schema.org',
 		'@type': 'CreativeWork',
 		name: prompt.title,
@@ -145,7 +146,7 @@
 	<meta name="twitter:image:alt" content={pageTitle} />
 	
 	<!-- JSON-LD Structured Data -->
-	{@html `<script type="application/ld+json">${jsonLd}</script>`}
+	<script type="application/ld+json">{jsonLd}</script>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl px-4 py-6">

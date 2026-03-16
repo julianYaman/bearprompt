@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { sanitizeExternalUrl } from '$lib/security';
 	import type { AgentToolWithSetupUrl } from '$lib/types/public';
 
 	interface Props {
@@ -35,7 +36,7 @@
 		</h2>
 		<div class="flex flex-wrap gap-3">
 			{#each tools as tool}
-				{@const href = tool.setup_url || tool.url}
+				{@const href = sanitizeExternalUrl(tool.setup_url || tool.url)}
 				{#if href}
 					<a
 						{href}

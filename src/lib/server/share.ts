@@ -26,12 +26,28 @@ function base64urlToBuffer(value: string): Buffer {
 }
 
 export function extractClientIp(headers: Headers): string {
+	const normalizeIp = (value: string | null): string | null => {
+		if (!value) return null;
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		if (!/^[0-9a-fA-F:.]+$/.test(trimmed)) return null;
+		return trimmed;
+	};
+
+	const cfConnectingIp = normalizeIp(headers.get('cf-connecting-ip'));
+	if (cfConnectingIp) {
+		return cfConnectingIp;
+	}
+
 	const forwardedFor = headers.get('x-forwarded-for');
 	if (forwardedFor) {
-		return forwardedFor.split(',')[0]?.trim() || 'unknown';
+		const firstForwarded = normalizeIp(forwardedFor.split(',')[0] ?? null);
+		if (firstForwarded) {
+			return firstForwarded;
+		}
 	}
-	const realIp = headers.get('x-real-ip');
-	return realIp?.trim() || 'unknown';
+	const realIp = normalizeIp(headers.get('x-real-ip'));
+	return realIp || 'unknown';
 }
 
 export function hashToken(token: string): string {

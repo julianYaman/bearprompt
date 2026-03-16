@@ -4,6 +4,7 @@
 	import PublicPromptCard from '$lib/components/public/PublicPromptCard.svelte';
 	import Pagination from '$lib/components/public/Pagination.svelte';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
+	import { sanitizeExternalUrl, serializeJsonLd } from '$lib/security';
 	import { loadPrompts, loadTags } from '$lib/stores';
 	import type { PublicPrompt } from '$lib/types/public';
 
@@ -25,7 +26,7 @@
 
 	// SEO: JSON-LD structured data
 	const jsonLd = $derived(
-		JSON.stringify({
+		serializeJsonLd({
 			'@context': 'https://schema.org',
 			'@type': 'ProfilePage',
 			name: `${data.author.name}'s Agent Prompts`,
@@ -40,6 +41,8 @@
 			}
 		})
 	);
+
+	const authorLink = $derived(sanitizeExternalUrl(data.author.link));
 
 	async function handleAddToLibrary(prompt: PublicPrompt) {
 		// Get all existing tags
@@ -91,7 +94,7 @@
 	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
 	
 	<!-- JSON-LD Structured Data -->
-	{@html `<script type="application/ld+json">${jsonLd}</script>`}
+	<script type="application/ld+json">{jsonLd}</script>
 </svelte:head>
 
 <div class="mx-auto max-w-7xl px-4 py-6">
@@ -135,9 +138,9 @@
 					{#if data.author.verified}
 						<VerifiedBadge size={20} />
 					{/if}
-					{#if data.author.link}
+					{#if authorLink}
 						<a
-							href={data.author.link}
+							href={authorLink}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="inline-flex items-center gap-1 text-sm transition-colors"

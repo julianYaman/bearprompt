@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { serializeJsonLd } from '$lib/security';
 	import { theme } from '$lib/stores';
 	import { browser } from '$app/environment';
 	import type { ThemeMode } from '$lib/types';
@@ -87,6 +88,24 @@
 				return 'Dark theme';
 		}
 	}
+
+	const jsonLd = serializeJsonLd({
+		'@context': 'https://schema.org',
+		'@type': 'WebSite',
+		name: 'Bearprompt',
+		url: 'https://bearprompt.com',
+		description:
+			'Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser.',
+		publisher: {
+			'@type': 'Organization',
+			name: 'Bearprompt',
+			url: 'https://bearprompt.com',
+			logo: {
+				'@type': 'ImageObject',
+				url: 'https://bearprompt.com/bearprompt.png'
+			}
+		}
+	});
 </script>
 
 <svelte:head>
@@ -116,22 +135,7 @@
 	<meta name="twitter:image:alt" content="Bearprompt - Your private prompt library for AI" />
 
 	<!-- JSON-LD Structured Data -->
-	{@html `<script type="application/ld+json">${JSON.stringify({
-		"@context": "https://schema.org",
-		"@type": "WebSite",
-		"name": "Bearprompt",
-		"url": "https://bearprompt.com",
-		"description": "Your private prompt library for AI. Store, organize, and quickly access your prompts - all locally in your browser.",
-		"publisher": {
-			"@type": "Organization",
-			"name": "Bearprompt",
-			"url": "https://bearprompt.com",
-			"logo": {
-				"@type": "ImageObject",
-				"url": "https://bearprompt.com/bearprompt.png"
-			}
-		}
-	})}</script>`}
+	<script type="application/ld+json">{jsonLd}</script>
 </svelte:head>
 
 <!-- Navbar -->

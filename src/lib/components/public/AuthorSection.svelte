@@ -2,6 +2,7 @@
 	import Icon from '../Icon.svelte';
 	import VerifiedBadge from './VerifiedBadge.svelte';
 	import PublicPromptCard from './PublicPromptCard.svelte';
+	import { sanitizeExternalUrl } from '$lib/security';
 	import { AUTHOR_ROW_LIMIT } from '$lib/utils';
 	import type { AuthorWithPrompts, PublicPrompt } from '$lib/types/public';
 
@@ -15,6 +16,8 @@
 	let { author, basePath = '/prompts', itemLabel = 'prompts', onAddToLibrary }: Props = $props();
 
 	let showSeeAll = $derived(author.totalPrompts > AUTHOR_ROW_LIMIT);
+	let authorPageUrl = $derived(`${basePath}/${author.slug || author.id}`);
+	let authorExternalLink = $derived(sanitizeExternalUrl(author.link));
 	
 	// Don't render anything if author has no prompts
 	let hasPrompts = $derived(author.prompts.length > 0 || author.totalPrompts > 0);
@@ -42,18 +45,19 @@
 
 		<div class="flex-1 min-w-0">
 			<div class="flex items-center gap-2">
-				<h2
-					class="text-lg font-semibold truncate"
+				<a
+					href={authorPageUrl}
+					class="text-lg font-semibold truncate transition-colors"
 					style="color: var(--color-text-primary);"
 				>
 					{author.name}
-				</h2>
+				</a>
 				{#if author.verified}
 					<VerifiedBadge size={16} />
 				{/if}
-				{#if author.link}
+				{#if authorExternalLink}
 					<a
-						href={author.link}
+						href={authorExternalLink}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="ml-1 shrink-0 transition-colors"
@@ -87,7 +91,7 @@
 			<!-- See All card -->
 			{#if showSeeAll}
 				<a
-					href="{basePath}/{author.slug || author.id}"
+					href={authorPageUrl}
 					class="see-all-card flex w-48 shrink-0 flex-col items-center justify-center rounded-xl border transition-all duration-200"
 					style="background-color: var(--color-bg-secondary); border-color: var(--color-border); min-height: 16rem;"
 				>
