@@ -5,7 +5,7 @@
 
 <article>
 	<h1>Privacy Policy</h1>
-	<p class="last-updated">Last updated: March 16, 2026</p>
+	<p class="last-updated">Last updated: March 17, 2026</p>
 
 	<p>
 		Welcome to Bearprompt ("we", "us", or "our"). We are committed to protecting your privacy. 
@@ -49,7 +49,7 @@
 		<li>Anyone with the full link can import that shared prompt</li>
 	</ul>
 
-	<h2>4. Analytics and Security Services</h2>
+	<h2>4. Analytics, Fonts, and Security Services</h2>
 	<p>
 		We use the following service providers to operate Bearprompt:
 	</p>
@@ -62,10 +62,20 @@
 		<li>
 			Cloudflare Turnstile for bot and abuse protection on sensitive endpoints (for example share creation)
 		</li>
+		<li>
+			<a href="https://fonts.bunny.net" target="_blank" rel="noopener noreferrer">Bunny Fonts</a>
+			for web font delivery (Space Grotesk and Bricolage Grotesque typefaces)
+		</li>
 	</ul>
 	<p>
-		For invisible Turnstile mode, we reference Cloudflare's Turnstile Privacy Addendum in accordance with
-		their requirements.
+		Bunny Fonts is a privacy-focused font CDN operated by BunnyWay d.o.o. that does not track users
+		or collect personal data. Unlike Google Fonts, Bunny Fonts is fully GDPR-compliant and does not
+		log IP addresses or use cookies for tracking purposes.
+	</p>
+	<p>
+		For invisible Turnstile mode, we reference Cloudflare's
+		<a href="https://www.cloudflare.com/de-de/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer">Turnstile Privacy Addendum</a>
+		in accordance with their requirements.
 	</p>
 
 	<h2>5. Cookies and Similar Technologies</h2>
