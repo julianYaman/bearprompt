@@ -26,7 +26,7 @@
 	const metaDescription = prompt.description || `AI prompt for ${prompt.title}`;
 
 	// SEO: Generate page title
-	const pageTitle = `${prompt.title} | Bearprompt`;
+	const pageTitle = `${prompt.title} | Prompt Library | Bearprompt`;
 
 	// SEO: Canonical URL
 	const canonicalUrl = prompt.author

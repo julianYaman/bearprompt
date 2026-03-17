@@ -160,14 +160,14 @@
 </script>
 
 <svelte:head>
-	<title>Bearprompt - Your Prompts Deserve Better</title>
+	<title>Bearprompt - Your Prompts Deserve Better | AI Prompt Library</title>
 	<meta
 		name="description"
 		content="Your AI prompts deserve better than scattered notes. Keep them safe, organized, and ready to use—without handing them to another company. Free, open-source, 100% private."
 	/>
 	<link rel="canonical" href="https://bearprompt.com/" />
 
-	<meta property="og:title" content="Bearprompt - Your Prompts Deserve Better" />
+	<meta property="og:title" content="Bearprompt - Your private prompt library" />
 	<meta
 		property="og:description"
 		content="The prompts that make AI actually useful? Keep them safe, organized, and ready to use—without handing them to another company. 100% private, free, and open-source."
@@ -175,18 +175,18 @@
 	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="Bearprompt - Your prompts deserve better" />
+	<meta property="og:image:alt" content="Bearprompt - Your private prompt library" />
 	<meta property="og:url" content="https://bearprompt.com/" />
 	<meta property="og:type" content="website" />
 
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content="Bearprompt - Your Prompts Deserve Better" />
+	<meta name="twitter:title" content="Bearprompt - Your private prompt library" />
 	<meta
 		name="twitter:description"
 		content="The prompts that make AI actually useful? Keep them safe, organized, and ready to use—without handing them to another company. 100% private, free, and open-source."
 	/>
 	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
-	<meta name="twitter:image:alt" content="Bearprompt - Your prompts deserve better" />
+	<meta name="twitter:image:alt" content="Bearprompt - Your private prompt library" />
 
 	<!-- JSON-LD Structured Data -->
 	<script type="application/ld+json">{jsonLd}</script>

@@ -8,7 +8,7 @@
 <p align="center" style="font-weight: bold;">Create your prompt library on <a href="https://bearprompt.com">bearprompt.com</a>.</p>
 
 <p align="center">
-  <img src=".github/assets/hero-image.png" alt="Bearprompt Screenshot" width="800" />
+  <img src=".github/assets/hero-image-dark.png" alt="Bearprompt Screenshot" width="800" />
 </p>
 
 ## Features

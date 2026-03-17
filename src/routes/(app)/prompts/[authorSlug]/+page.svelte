@@ -17,7 +17,7 @@
 	);
 
 	// SEO: Generate page title
-	const pageTitle = $derived(`${data.author.name} | Bearprompt`);
+	const pageTitle = $derived(`${data.author.name} - Prompt Library | Bearprompt`);
 
 	// SEO: Canonical URL
 	const canonicalUrl = $derived(`https://bearprompt.com/prompts/${data.author.slug}`);
@@ -79,7 +79,7 @@
 	<link rel="canonical" href={canonicalUrl} />
 	
 	<!-- Open Graph -->
-	<meta property="og:title" content="{data.author.name} | Bearprompt" />
+	<meta property="og:title" content="{data.author.name} - Prompt Library | Bearprompt" />
 	<meta property="og:description" content={metaDescription} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:type" content="profile" />
@@ -87,7 +87,7 @@
 	
 	<!-- Twitter -->
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content="{data.author.name} | Bearprompt" />
+	<meta name="twitter:title" content="{data.author.name} - Prompt Library | Bearprompt" />
 	<meta name="twitter:description" content={metaDescription} />
 	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
 	
