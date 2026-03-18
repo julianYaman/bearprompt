@@ -422,7 +422,7 @@
 				<span class="neo-footer-title">Bearprompt</span>
 			</div>
 			<p class="neo-footer-tagline">Your private prompt library for AI</p>
-			<div class="neo-featured-list">
+			<div class="neo-featured-list neo-footer-links">
 				<a
 					href="https://findly.tools/bearprompt?utm_source=bearprompt"
 					target="_blank"
@@ -435,6 +435,7 @@
 						height="55"
 					/>
 				</a>
+				<a href="https://dang.ai" target="_blank" rel="noopener noreferrer">Featured on dang.ai</a>
 			</div>
 			<div class="neo-footer-links">
 				<div class="neo-footer-links-row">
