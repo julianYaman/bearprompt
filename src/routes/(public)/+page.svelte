@@ -461,6 +461,7 @@
 					<a href="/about/privacy">Privacy Policy</a>
 					<a href="/about/terms">Terms of Service</a>
 					<a href="/about/legal">Legal Notice</a>
+					<a href="/about/contact">Contact</a>
 				</div>
 			</div>
 			<p class="neo-footer-credit">

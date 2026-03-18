@@ -125,14 +125,13 @@
 							style="color: var(--color-text-secondary);"
 							onclick={handleClose}
 						>
-							Impressum
+							Legal Notice
 						</a>
 					</div>
 				</div>
 
-				<!-- Status Link -->
 				<div class="border-t pt-4" style="border-color: var(--color-border);">
-					<div class="flex justify-center">
+					<div class="flex justify-center gap-4 flex-wrap">
 						<a
 							href="https://status.yaman.pro"
 							target="_blank"
@@ -141,6 +140,15 @@
 							style="color: var(--color-text-secondary);"
 						>
 							Status
+						</a>
+						<a
+							href="/about/contact"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-sm transition-colors"
+							style="color: var(--color-text-secondary);"
+						>
+							Contact
 						</a>
 					</div>
 				</div>

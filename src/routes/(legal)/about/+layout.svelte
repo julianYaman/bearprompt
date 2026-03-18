@@ -33,6 +33,7 @@
 				<a href="/about/privacy">Privacy Policy</a>
 				<a href="/about/terms">Terms of Service</a>
 				<a href="/about/legal">Impressum</a>
+				<a href="/about/contact">Contact</a>
 			</div>
 		</footer>
 	</div>
