@@ -432,13 +432,14 @@
 					<img
 						src="https://findly.tools/badges/findly-tools-badge-light.svg"
 						alt="Featured on Findly.tools"
-						width="175"
-						height="55"
+						width="160"
+						height="54"
 					/>
 				</a>
 				<a href="https://neeed.directory/products/bearprompt?utm_source=bearprompt" target="_blank" rel="noopener">
-					<img src="https://neeed.directory/badges/neeed-badge-light.svg" alt="Featured on neeed.directory" width="139" />
+					<img src="https://neeed.directory/badges/neeed-badge-light.svg" alt="Featured on neeed.directory" width="160" height="54" />
 				</a>
+				<a href="https://wired.business" target="_blank"><img src="https://wired.business/badge0-white.svg" alt="Featured on Wired Business" width="180" height="54"></a>
 				</div>
 			</div>
 			<div class="neo-footer-links">
