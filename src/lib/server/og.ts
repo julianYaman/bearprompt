@@ -59,25 +59,26 @@ async function readStaticAssetArrayBuffer(filePath: string): Promise<ArrayBuffer
 }
 
 async function getOgFonts() {
-	if (!ogFontsPromise) {
-		ogFontsPromise = Promise.all([
-			readStaticAssetArrayBuffer(OG_FONT_PATH),
-			readStaticAssetArrayBuffer(OG_FONT_BOLD_PATH)
-		]).then(([regularFont, boldFont]) => [
-			{
-				name: OG_FONT_FAMILY,
-				data: regularFont,
-				style: 'normal' as const,
-				weight: 400 as const
-			},
-			{
-				name: OG_FONT_FAMILY,
-				data: boldFont,
-				style: 'normal' as const,
-				weight: 700 as const
-			}
-		]);
-	}
+		
+	const [fontBoldRes, fontRegularRes] = await Promise.all([
+		fetch(`https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNs4eY3aSBFNeIVfPizd7gGcA8RohrL1UkMbu6`),
+		fetch(`https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNmGwtD1ToEuaSktVMFgfzjXIx1mT6rcGQqyWe`)
+	])
+
+	ogFontsPromise = Promise.resolve([
+		{
+			name: OG_FONT_FAMILY,
+			data: await fontRegularRes.arrayBuffer(),
+			style: 'normal' as const,
+			weight: 400 as const
+		},
+		{
+			name: OG_FONT_FAMILY,
+			data: await fontBoldRes.arrayBuffer(),
+			style: 'normal' as const,
+			weight: 700 as const
+		}
+	]);
 
 	return ogFontsPromise;
 }
