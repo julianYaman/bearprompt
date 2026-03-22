@@ -152,6 +152,18 @@
 						</a>
 					</div>
 				</div>
+
+				<p class="text-xs text-center" style="color: var(--color-text-muted);">
+					<a
+						href="https://logo.dev"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="transition-colors"
+						style="color: var(--color-text-secondary);"
+					>
+						Logos provided by Logo.dev
+					</a>
+				</p>
 			</div>
 
 			<!-- Footer -->

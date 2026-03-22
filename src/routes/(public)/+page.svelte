@@ -478,6 +478,11 @@
 					class="neo-footer-author">Julian Yaman</a
 				>
 			</p>
+			<p class="neo-footer-attribution">
+				<a href="https://logo.dev" target="_blank" rel="noopener noreferrer">
+					Logos provided by Logo.dev
+				</a>
+			</p>
 		</div>
 	</footer>
 </div>
@@ -1402,6 +1407,23 @@
 	}
 
 	.neo-footer-author:hover {
+		border-bottom-color: var(--neo-accent-secondary);
+	}
+
+	.neo-footer-attribution {
+		margin-top: 0.75rem;
+		font-size: 0.75rem;
+		color: var(--neo-text-muted);
+	}
+
+	.neo-footer-attribution a {
+		color: inherit;
+		text-decoration: none;
+		border-bottom: 1px solid transparent;
+		transition: border-color 0.15s ease;
+	}
+
+	.neo-footer-attribution a:hover {
 		border-bottom-color: var(--neo-accent-secondary);
 	}
 
