@@ -3,6 +3,7 @@
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
 	import AgentToolLinks from '$lib/components/public/AgentToolLinks.svelte';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
+	import { buildPromptOgImageUrl } from '$lib/seo';
 	import { serializeJsonLd } from '$lib/security';
 	import { loadPrompts, loadTags } from '$lib/stores';
 
@@ -33,6 +34,10 @@
 	const canonicalUrl = prompt.author
 		? `https://bearprompt.com/agents/${prompt.author.slug}/${prompt.slug}`
 		: `https://bearprompt.com/agents`;
+
+	const ogImageUrl = prompt.author
+		? buildPromptOgImageUrl('agents', prompt.author.slug, prompt.slug)
+		: 'https://bearprompt.com/og-image.png';
 
 	// SEO: JSON-LD structured data
 	const jsonLd = serializeJsonLd({
@@ -122,7 +127,7 @@
 	<meta property="og:description" content={metaDescription} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:type" content="website" />
-	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	<meta property="og:image" content={ogImageUrl} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta property="og:image:alt" content={pageTitle} />
@@ -131,7 +136,7 @@
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={pageTitle} />
 	<meta name="twitter:description" content={metaDescription} />
-	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
+	<meta name="twitter:image" content={ogImageUrl} />
 	<meta name="twitter:image:alt" content={pageTitle} />
 	
 	<!-- JSON-LD Structured Data -->
@@ -182,6 +187,7 @@
 							<img
 								src={prompt.author.avatar_url}
 								alt="{prompt.author.name}'s avatar"
+								referrerpolicy="origin"
 								class="h-6 w-6 rounded-full object-cover"
 							/>
 						{/if}

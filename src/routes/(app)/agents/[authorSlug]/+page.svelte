@@ -4,6 +4,7 @@
 	import PublicPromptCard from '$lib/components/public/PublicPromptCard.svelte';
 	import Pagination from '$lib/components/public/Pagination.svelte';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
+	import { buildAuthorOgImageUrl } from '$lib/seo';
 	import { sanitizeExternalUrl, serializeJsonLd } from '$lib/security';
 	import { loadPrompts, loadTags } from '$lib/stores';
 	import type { PublicPrompt } from '$lib/types/public';
@@ -23,6 +24,8 @@
 
 	// SEO: Canonical URL
 	const canonicalUrl = $derived(`https://bearprompt.com/agents/${data.author.slug}`);
+
+	const ogImageUrl = $derived(buildAuthorOgImageUrl('agents', data.author.slug));
 
 	// SEO: JSON-LD structured data
 	const jsonLd = $derived(
@@ -85,13 +88,17 @@
 	<meta property="og:description" content={metaDescription} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:type" content="profile" />
-	<meta property="og:image" content="https://bearprompt.com/og-image.png" />
+	<meta property="og:image" content={ogImageUrl} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="{data.author.name} - Agent Prompts | Bearprompt" />
 	
 	<!-- Twitter -->
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content="{data.author.name} - Agent Prompts | Bearprompt" />
 	<meta name="twitter:description" content={metaDescription} />
-	<meta name="twitter:image" content="https://bearprompt.com/og-image.png" />
+	<meta name="twitter:image" content={ogImageUrl} />
+	<meta name="twitter:image:alt" content="{data.author.name} - Agent Prompts | Bearprompt" />
 	
 	<!-- JSON-LD Structured Data -->
 	<script type="application/ld+json">{jsonLd}</script>
@@ -116,6 +123,7 @@
 				<img
 					src={data.author.avatar_url}
 					alt="{data.author.name}'s avatar"
+					referrerpolicy="origin"
 					class="h-16 w-16 shrink-0 rounded-full object-cover"
 				/>
 			{:else}

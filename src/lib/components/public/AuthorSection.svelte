@@ -32,6 +32,7 @@
 			<img
 				src={author.avatar_url}
 				alt="{author.name}'s avatar"
+				referrerpolicy="origin"
 				class="h-12 w-12 shrink-0 rounded-full object-cover"
 			/>
 		{:else}
