@@ -13,13 +13,12 @@ import type { PublicAuthor, PublicPrompt, PromptType } from '$lib/types/public';
 
 const h = React.createElement;
 const STATIC_ROOT = path.join(process.cwd(), 'static');
-const BEARPROMPT_LOGO_PATH = path.join(STATIC_ROOT, 'bearprompt.png');
+const BEARPROMPT_LOGO_URL = `${SITE_URL}/bearprompt.png`;
 const OG_FONT_PATH = path.join(STATIC_ROOT, 'og-font.ttf');
 const OG_FONT_BOLD_PATH = path.join(STATIC_ROOT, 'og-font-bold.ttf');
 const SITE_ORIGIN = new URL(SITE_URL).origin;
 const OG_FONT_FAMILY = 'OG Font';
 
-let bearpromptLogoPromise: Promise<string> | null = null;
 let ogFontsPromise: Promise<
 	{ name: string; data: ArrayBuffer; style: 'normal'; weight: 400 | 700 }[]
 > | null = null;
@@ -56,14 +55,6 @@ async function readStaticAssetDataUrl(filePath: string): Promise<string> {
 async function readStaticAssetArrayBuffer(filePath: string): Promise<ArrayBuffer> {
 	const buffer = await readFile(filePath);
 	return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-}
-
-async function getBearpromptLogo(): Promise<string> {
-	if (!bearpromptLogoPromise) {
-		bearpromptLogoPromise = readStaticAssetDataUrl(BEARPROMPT_LOGO_PATH);
-	}
-
-	return bearpromptLogoPromise;
 }
 
 async function getOgFonts() {
@@ -479,12 +470,11 @@ export async function renderPromptOgImage(prompt: PublicPrompt): Promise<Respons
 		throw new Error('Prompt author is required for OG rendering');
 	}
 
-	const logoSrc = await getBearpromptLogo();
 	const avatarSrc = await resolveAvatarSrc(prompt.author.avatar_url, prompt.author.slug);
 
 	return imageResponse(
 		baseImageContent(
-			logoSrc,
+			BEARPROMPT_LOGO_URL,
 			{
 				title: prompt.title,
 				badge: getPromptBadgeText(prompt.type),
@@ -500,12 +490,11 @@ export async function renderAuthorOgImage(
 	author: PublicAuthor,
 	section: OgAuthorSection
 ): Promise<Response> {
-	const logoSrc = await getBearpromptLogo();
 	const avatarSrc = await resolveAvatarSrc(author.avatar_url, author.slug);
 
 	return imageResponse(
 		baseImageContent(
-			logoSrc,
+			BEARPROMPT_LOGO_URL,
 			{
 				title: author.name,
 				badge: getAuthorBadgeText(section),
