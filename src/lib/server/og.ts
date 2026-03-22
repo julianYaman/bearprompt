@@ -13,7 +13,8 @@ import type { PublicAuthor, PublicPrompt, PromptType } from '$lib/types/public';
 
 const h = React.createElement;
 const STATIC_ROOT = path.join(process.cwd(), 'static');
-const BEARPROMPT_LOGO_URL = `${SITE_URL}/bearprompt.png`;
+const BEARPROMPT_LOGO_URL =
+	'https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNyI8gg2GZzIKqMNfxHOB43pYgdQ9yTJFVACo8';
 const OG_FONT_PATH = path.join(STATIC_ROOT, 'og-font.ttf');
 const OG_FONT_BOLD_PATH = path.join(STATIC_ROOT, 'og-font-bold.ttf');
 const SITE_ORIGIN = new URL(SITE_URL).origin;
