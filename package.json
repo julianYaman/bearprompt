@@ -20,7 +20,7 @@
 		"@types/react": "^19.2.14",
 		"@types/sanitize-html": "^2.16.0",
 		"@types/uuid": "^10.0.0",
-		"svelte": "^5.51.0",
+		"svelte": "^5.55.0",
 		"svelte-check": "^4.3.6",
 		"tailwindcss": "^4.2.0",
 		"typescript": "^5.9.3",
