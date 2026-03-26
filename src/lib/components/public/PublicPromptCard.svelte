@@ -150,55 +150,66 @@
 	<!-- Content Section - Links to prompt detail page -->
 	<a
 		href={promptDetailUrl}
-		class="content-section block border-t p-4 transition-colors hover:bg-opacity-80"
+		class="content-section flex h-32 flex-col justify-between border-t p-4 transition-colors hover:bg-opacity-80"
 		style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
 	>
-		<div class="flex items-start justify-between gap-2">
-			<h3 class="flex-1 whitespace-pre-line text-sm font-semibold" style="color: var(--color-text-primary);">
-				{prompt.title}
-			</h3>
-			<span
-				class="flex shrink-0 items-center gap-1 text-xs"
-				style="color: var(--color-text-muted);"
-			>
-				<Icon name="eye" size={14} />
-				Show
-			</span>
+		<div>
+			<div class="flex items-start justify-between gap-2">
+				<h3
+					class="line-clamp-2 flex-1 whitespace-pre-line text-sm font-semibold"
+					style="color: var(--color-text-primary);"
+				>
+					{prompt.title}
+				</h3>
+				<span
+					class="flex shrink-0 items-center gap-1 text-xs"
+					style="color: var(--color-text-muted);"
+				>
+					<Icon name="eye" size={14} />
+					Show
+				</span>
+			</div>
+
+			<!-- Author info (optional) -->
+			{#if showAuthor}
+				<div class="mt-1 h-4">
+					{#if resolvedAuthor}
+						<div class="flex items-center gap-1">
+							<span class="text-xs" style="color: var(--color-text-muted);">
+								by {resolvedAuthor.name}
+							</span>
+							{#if resolvedAuthor.verified}
+								<VerifiedBadge size={12} />
+							{/if}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</div>
 
-		<!-- Author info (optional) -->
-		{#if showAuthor && resolvedAuthor}
-			<div class="mt-1 flex items-center gap-1">
-				<span class="text-xs" style="color: var(--color-text-muted);">
-					by {resolvedAuthor.name}
-				</span>
-				{#if resolvedAuthor.verified}
-					<VerifiedBadge size={12} />
-				{/if}
-			</div>
-		{/if}
-
 		<!-- Tags -->
-		{#if prompt.tags && prompt.tags.length > 0}
-			<div class="mt-2 flex flex-wrap gap-1">
-				{#each prompt.tags.slice(0, MAX_VISIBLE_TAGS) as tag}
-					<span
-						class="rounded-full px-2 py-0.5 text-xs"
-						style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
-					>
-						{tag.name}
-					</span>
-				{/each}
-				{#if prompt.tags.length > MAX_VISIBLE_TAGS}
-					<span
-						class="rounded-full px-2 py-0.5 text-xs"
-						style="background-color: var(--color-bg-tertiary); color: var(--color-text-muted);"
-					>
-						+{prompt.tags.length - MAX_VISIBLE_TAGS}
-					</span>
-				{/if}
-			</div>
-		{/if}
+		<div class="mt-2 min-h-[2.75rem] overflow-hidden">
+			{#if prompt.tags && prompt.tags.length > 0}
+				<div class="flex flex-wrap gap-1">
+					{#each prompt.tags.slice(0, MAX_VISIBLE_TAGS) as tag}
+						<span
+							class="rounded-full px-2 py-0.5 text-xs"
+							style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
+						>
+							{tag.name}
+						</span>
+					{/each}
+					{#if prompt.tags.length > MAX_VISIBLE_TAGS}
+						<span
+							class="rounded-full px-2 py-0.5 text-xs"
+							style="background-color: var(--color-bg-tertiary); color: var(--color-text-muted);"
+						>
+							+{prompt.tags.length - MAX_VISIBLE_TAGS}
+						</span>
+					{/if}
+				</div>
+			{/if}
+		</div>
 	</a>
 </article>
 
