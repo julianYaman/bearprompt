@@ -19,6 +19,7 @@ const OG_FONT_PATH = path.join(STATIC_ROOT, 'og-font.ttf');
 const OG_FONT_BOLD_PATH = path.join(STATIC_ROOT, 'og-font-bold.ttf');
 const SITE_ORIGIN = new URL(SITE_URL).origin;
 const OG_FONT_FAMILY = 'OG Font';
+const OG_REMOTE_ASSET_REFERER = 'https://bearprompt.com';
 
 let ogFontsPromise: Promise<
 	{ name: string; data: ArrayBuffer; style: 'normal'; weight: 400 | 700 }[]
@@ -51,11 +52,6 @@ async function readStaticAssetDataUrl(filePath: string): Promise<string> {
 		buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
 		getMimeType(filePath)
 	);
-}
-
-async function readStaticAssetArrayBuffer(filePath: string): Promise<ArrayBuffer> {
-	const buffer = await readFile(filePath);
-	return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 }
 
 async function getOgFonts() {
@@ -109,7 +105,7 @@ function getTitleFontSize(title: string): number {
 	return 46;
 }
 
-async function resolveAvatarSrc(avatarUrl: string | null, authorSlug: string): Promise<string | ArrayBuffer | null> {
+async function resolveAvatarSrc(avatarUrl: string | null): Promise<string | null> {
 	if (!avatarUrl) {
 		return null;
 	}
@@ -122,12 +118,26 @@ async function resolveAvatarSrc(avatarUrl: string | null, authorSlug: string): P
 	}
 
 	if (resolvedUrl.origin !== SITE_ORIGIN) {
-		const res = await fetch(resolvedUrl);
-		const arrayBuffer = await res.arrayBuffer();
+		try {
+			const res = await fetch(resolvedUrl, {
+				headers: {
+					Referer: OG_REMOTE_ASSET_REFERER
+				}
+			});
+			if (!res.ok) {
+				return null;
+			}
 
-		const contentType = res.headers.get('Content-Type') || getMimeType(resolvedUrl.pathname);
+			const contentType = res.headers.get('Content-Type') || getMimeType(resolvedUrl.pathname);
+			if (!contentType.startsWith('image/')) {
+				return null;
+			}
 
-		return arrayBuffer
+			const arrayBuffer = await res.arrayBuffer();
+			return toDataUrl(arrayBuffer, contentType);
+		} catch (error) {
+			return null;
+		}
 	}
 
 	const relativePath = decodeURIComponent(resolvedUrl.pathname).replace(/^\/+/, '');
@@ -472,7 +482,7 @@ export async function renderPromptOgImage(prompt: PublicPrompt): Promise<Respons
 		throw new Error('Prompt author is required for OG rendering');
 	}
 
-	const avatarSrc = await resolveAvatarSrc(prompt.author.avatar_url, prompt.author.slug);
+	const avatarSrc = await resolveAvatarSrc(prompt.author.avatar_url);
 
 	return imageResponse(
 		baseImageContent(
@@ -492,7 +502,7 @@ export async function renderAuthorOgImage(
 	author: PublicAuthor,
 	section: OgAuthorSection
 ): Promise<Response> {
-	const avatarSrc = await resolveAvatarSrc(author.avatar_url, author.slug);
+	const avatarSrc = await resolveAvatarSrc(author.avatar_url);
 
 	return imageResponse(
 		baseImageContent(
