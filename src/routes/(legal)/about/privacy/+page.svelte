@@ -5,7 +5,7 @@
 
 <article>
 	<h1>Privacy Policy</h1>
-	<p class="last-updated">Last updated: March 17, 2026</p>
+	<p class="last-updated">Last updated: March 29, 2026</p>
 
 	<p>
 		Welcome to Bearprompt ("we", "us", or "our"). We are committed to protecting your privacy. 
@@ -67,6 +67,13 @@
 			for web font delivery (Space Grotesk and Bricolage Grotesque typefaces)
 		</li>
 	</ul>
+	<p>
+		Analytics may include aggregate interaction events such as button clicks, onboarding actions,
+		navigation choices and so forth. We do not use analytics to collect the
+		contents of your private prompts nor is any personally identifiable information associated with these events.
+		We use this data to understand general usage patterns and improve the product, but it is not used for advertising or tracking purposes.
+		No prompt content is collected.
+	</p>
 	<p>
 		Bunny Fonts is a privacy-focused font CDN operated by BunnyWay d.o.o. that does not track users
 		or collect personal data. Unlike Google Fonts, Bunny Fonts is fully GDPR-compliant and does not
