@@ -118,6 +118,7 @@
 				<a
 					href="/library"
 					onclick={handleMyLibraryClick}
+					data-umami-event="Sidebar My Library"
 					class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
 					style="color: {currentView === 'library' && $activeFolderId === 'all'
 						? 'var(--color-text-primary)'
@@ -212,6 +213,7 @@
 				<a
 					href="/prompts"
 					onclick={handleLinkClick}
+					data-umami-event="Sidebar Public Library"
 					class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
 					style="color: {currentView === 'prompts'
 						? 'var(--color-text-primary)'
@@ -228,6 +230,7 @@
 				<a
 					href="/agents"
 					onclick={handleLinkClick}
+					data-umami-event="Sidebar Agent Library"
 					class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
 					style="color: {currentView === 'agents'
 						? 'var(--color-text-primary)'
@@ -248,6 +251,7 @@
 		<a
 			href="/settings"
 			onclick={handleLinkClick}
+			data-umami-event="Sidebar Settings"
 			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
 			style="color: {currentView === 'settings'
 				? 'var(--color-text-primary)'
@@ -262,6 +266,7 @@
 		<a
 			href="/tags"
 			onclick={handleLinkClick}
+			data-umami-event="Sidebar Tags"
 			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
 			style="color: {currentView === 'tags'
 				? 'var(--color-text-primary)'
@@ -276,6 +281,7 @@
 		<a
 			href="/help"
 			onclick={handleLinkClick}
+			data-umami-event="Sidebar Help"
 			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
 			style="color: {currentView === 'help'
 				? 'var(--color-text-primary)'
@@ -290,6 +296,7 @@
 		<button
 			type="button"
 			onclick={handleAboutClick}
+			data-umami-event="Sidebar About"
 			class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-1"
 			style="color: var(--color-text-secondary);"
 		>
