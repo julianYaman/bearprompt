@@ -212,7 +212,7 @@
 					<Icon name="github" size={16} />
 					GitHub
 				</a>
-				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta">
+				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta" data-umami-event="Create Library Navbar">
 					Get Started
 					<Icon name="arrow-right" size={16} />
 				</a>
@@ -240,7 +240,7 @@
 					<Icon name="github" size={16} />
 					GitHub
 				</a>
-				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta">
+				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta" data-umami-event="Create Library Navbar">
 					Get Started
 					<Icon name="arrow-right" size={16} />
 				</a>
@@ -258,7 +258,7 @@
 					use&mdash;without handing them to another company.
 				</p>
 				<div class="neo-hero-cta-wrapper">
-					<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg">
+					<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Hero">
 						Create your library
 						<Icon name="arrow-right" size={20} />
 					</a>
@@ -406,7 +406,7 @@
 				<p class="neo-cta-subtitle">
 					Start in 10 seconds. No account. No email. Just prompts.
 				</p>
-				<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg">
+				<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Bottom CTA">
 					Create your library
 					<Icon name="arrow-right" size={20} />
 				</a>

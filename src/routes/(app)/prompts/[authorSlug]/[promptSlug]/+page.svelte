@@ -211,6 +211,8 @@
 			<!-- Add to library button -->
 			<button
 				onclick={handleAddToLibrary}
+				data-umami-event="Add Prompt Detail To Library"
+				data-umami-event-prompt={prompt.slug || prompt.id}
 				class="flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all"
 				style="background-color: {addState === 'added'
 					? 'var(--color-success)'
@@ -252,6 +254,8 @@
 				</h2>
 				<button
 					onclick={handleCopy}
+					data-umami-event="Copy Prompt Detail"
+					data-umami-event-prompt={prompt.slug || prompt.id}
 					class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
 					style="background-color: {copyState === 'copied'
 						? 'var(--color-success)'
@@ -315,6 +319,9 @@
 					href={providerUrls.chatgpt}
 					target="_blank"
 					rel="noopener noreferrer"
+					data-umami-event="Open Prompt In Provider"
+					data-umami-event-provider="ChatGPT"
+					data-umami-event-prompt={prompt.slug || prompt.id}
 					class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
 					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
 				>
@@ -326,6 +333,9 @@
 					href={providerUrls.claude}
 					target="_blank"
 					rel="noopener noreferrer"
+					data-umami-event="Open Prompt In Provider"
+					data-umami-event-provider="Claude"
+					data-umami-event-prompt={prompt.slug || prompt.id}
 					class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
 					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
 				>
@@ -358,6 +368,9 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								onclick={closeDropdown}
+								data-umami-event="Open Prompt In Provider"
+								data-umami-event-provider="Perplexity"
+								data-umami-event-prompt={prompt.slug || prompt.id}
 								class="dropdown-item flex items-center gap-2 px-4 py-2.5 text-sm transition-colors"
 								style="color: var(--color-text-primary);"
 							>
@@ -370,6 +383,9 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								onclick={closeDropdown}
+								data-umami-event="Open Prompt In Provider"
+								data-umami-event-provider="Grok"
+								data-umami-event-prompt={prompt.slug || prompt.id}
 								class="dropdown-item flex items-center gap-2 px-4 py-2.5 text-sm transition-colors"
 								style="color: var(--color-text-primary);"
 							>

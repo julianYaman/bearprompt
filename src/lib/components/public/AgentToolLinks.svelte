@@ -42,6 +42,7 @@
 						{href}
 						target="_blank"
 						rel="noopener noreferrer"
+						data-umami-event="Open Agent In Tool"
 						class="tool-link flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
 						style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
 					>

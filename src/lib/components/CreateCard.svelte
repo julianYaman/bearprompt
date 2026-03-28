@@ -21,6 +21,7 @@
 	style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
 	onclick={onClick}
 	onkeydown={handleKeydown}
+	data-umami-event="New Prompt Card"
 	tabindex="0"
 	role="button"
 	aria-label="Create new prompt"

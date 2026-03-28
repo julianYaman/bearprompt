@@ -893,6 +893,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						type="button"
 						onclick={handleAddStarterPrompts}
 						disabled={!selectedStarterCategory || isAddingStarterPrompts}
+						data-umami-event="Add Starter Prompts"
+						data-umami-event-category={selectedStarterCategory?.title ?? ''}
 						class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
 						style="background-color: var(--color-accent);"
 					>
@@ -1197,6 +1199,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								<button
 									type="button"
 									onclick={openStarterPromptsModal}
+									data-umami-event="Choose Category"
 									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
 									style="background-color: var(--color-accent);"
 								>
@@ -1226,6 +1229,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								<button
 									type="button"
 									onclick={handleCopyPrompt}
+									data-umami-event="Copy Import Prompt"
 									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
 									style="background-color: var(--color-accent);"
 								>
@@ -1255,6 +1259,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								<button
 									type="button"
 									onclick={handleCreateNew}
+									data-umami-event="Add Prompt"
 									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
 									style="background-color: var(--color-accent);"
 								>
@@ -1299,6 +1304,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					<button
 						type="button"
 						onclick={handleCreateNew}
+						data-umami-event="Add Prompt"
 						class="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
 						style="background-color: var(--color-accent);"
 					>
@@ -1306,6 +1312,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					</button>
 					<a
 						href="/prompts"
+						data-umami-event="Browse Prompts"
 						class="inline-flex items-center gap-2 rounded-lg border px-6 py-2.5 text-sm font-medium transition-colors"
 						style="border-color: var(--color-border); color: var(--color-text-primary);"
 					>
