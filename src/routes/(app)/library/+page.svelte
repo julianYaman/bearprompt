@@ -1182,7 +1182,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
 						>
 							<div
-								class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
+								class="onboarding-card-icon mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
 								style="background-color: color-mix(in oklab, var(--color-accent) 14%, transparent); color: var(--color-accent);"
 							>
 								<Icon name="sparkles" size={22} />
@@ -1211,7 +1211,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
 						>
 							<div
-								class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
+								class="onboarding-card-icon mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
 								style="background-color: color-mix(in oklab, var(--color-accent) 14%, transparent); color: var(--color-accent);"
 							>
 								<Icon name="chatgpt" size={22} />
@@ -1240,7 +1240,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 							style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
 						>
 							<div
-								class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
+								class="onboarding-card-icon mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
 								style="background-color: color-mix(in oklab, var(--color-accent) 14%, transparent); color: var(--color-accent);"
 							>
 								<Icon name="edit" size={22} />
@@ -1514,6 +1514,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	@media (max-width: 767px) {
 		.empty-state-panel {
 			text-align: center;
+		}
+
+		.onboarding-card-icon {
+			margin-left: auto;
+			margin-right: auto;
 		}
 	}
 </style>
