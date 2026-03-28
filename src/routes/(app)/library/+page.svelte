@@ -8,6 +8,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import ConfirmPopover from '$lib/components/ConfirmPopover.svelte';
 	import type { Prompt } from '$lib/types';
+	import { STARTER_PROMPT_CATEGORIES } from '$lib/starter-prompts';
 	import {
 		filteredPrompts,
 		isCreating,
@@ -24,7 +25,16 @@
 		loadTags,
 		loadFolders
 	} from '$lib/stores';
-	import { createPrompt, createTag, deletePrompts, getAllTags, movePrompts, updateFolder } from '$lib/db';
+	import {
+		createPrompt,
+		createTag,
+		deletePrompts,
+		getAllTags,
+		getSettings,
+		movePrompts,
+		updateFolder,
+		updateSettings
+	} from '$lib/db';
 	import {
 		buildShareUrl,
 		clearShareFromSession,
@@ -43,6 +53,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let showForm = $derived($isCreating || $editingPromptId !== null);
 	let showCopyModal = $state(false);
 	let confirmingBulkDelete = $state(false);
+	let hasCompletedOnboarding = $state(false);
+	let isStarterModalOpen = $state(false);
+	let selectedStarterCategoryId = $state<string>(STARTER_PROMPT_CATEGORIES[0]?.id ?? '');
+	let isAddingStarterPrompts = $state(false);
+	let onboardingFeedback = $state('');
 	let isShareModalOpen = $state(false);
 	let shareTargetPrompt = $state<Prompt | null>(null);
 	let shareLink = $state('');
@@ -61,6 +76,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let showCaptchaChallenge = $state(false);
 	let turnstileContainerEl = $state<HTMLDivElement | null>(null);
 	let activeTurnstileWidgetId: string | null = null;
+	let onboardingFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	type TurnstileApi = {
 		render: (
@@ -117,9 +133,12 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let importPromptTitleDisplay = $derived(
 		importPayload ? truncateWithEllipsis(importPayload.title.trim(), 72) : ''
 	);
-	let importTagCount = $derived(importPayload?.tags.length ?? 0);
+	let selectedStarterCategory = $derived(
+		STARTER_PROMPT_CATEGORIES.find((category) => category.id === selectedStarterCategoryId) ?? null
+	);
 
 	function handleCreateNew() {
+		void markOnboardingComplete();
 		editingPromptId.set(null);
 		isCreating.set(true);
 	}
@@ -132,6 +151,94 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	function handleCloseForm() {
 		isCreating.set(false);
 		editingPromptId.set(null);
+	}
+
+	async function markOnboardingComplete() {
+		if (hasCompletedOnboarding) return;
+		hasCompletedOnboarding = true;
+		await updateSettings({ hasCompletedOnboarding: true });
+	}
+
+	function showOnboardingFeedback(message: string) {
+		onboardingFeedback = message;
+		if (onboardingFeedbackTimeout) clearTimeout(onboardingFeedbackTimeout);
+		onboardingFeedbackTimeout = setTimeout(() => {
+			onboardingFeedback = '';
+		}, 4000);
+	}
+
+	function dismissOnboardingFeedback() {
+		onboardingFeedback = '';
+		if (onboardingFeedbackTimeout) {
+			clearTimeout(onboardingFeedbackTimeout);
+			onboardingFeedbackTimeout = null;
+		}
+	}
+
+	function openStarterPromptsModal() {
+		isStarterModalOpen = true;
+	}
+
+	function closeStarterPromptsModal() {
+		if (isAddingStarterPrompts) return;
+		isStarterModalOpen = false;
+	}
+
+	async function handleAddStarterPrompts() {
+		if (!selectedStarterCategory || isAddingStarterPrompts) return;
+
+		isAddingStarterPrompts = true;
+
+		try {
+			const existingTags = await getAllTags();
+			const tagsByName = new Map(existingTags.map((tag) => [tag.name.trim().toLowerCase(), tag]));
+			const createdPrompts: Prompt[] = [];
+
+			for (const starterPrompt of selectedStarterCategory.prompts) {
+				const tagIds: string[] = [];
+
+				for (const tagName of starterPrompt.tags) {
+					const normalized = tagName.trim().toLowerCase();
+					if (!normalized) continue;
+
+					let existingTag = tagsByName.get(normalized);
+					if (!existingTag) {
+						existingTag = await createTag(tagName);
+						tagsByName.set(normalized, existingTag);
+					}
+
+					tagIds.push(existingTag.id);
+				}
+
+				const createdPrompt = await createPrompt(
+					starterPrompt.title,
+					starterPrompt.markdown,
+					tagIds
+				);
+				createdPrompts.push(createdPrompt);
+			}
+
+			await markOnboardingComplete();
+			activeFolderId.set('all');
+			searchQuery.set('');
+			selectedTagIds.set([]);
+			selectedPromptIds.set(new Set());
+			isPromptSelectMode.set(false);
+			prompts.update((all) => [...createdPrompts.reverse(), ...all]);
+			await loadTags();
+
+			isStarterModalOpen = false;
+			showOnboardingFeedback(
+				`Added ${createdPrompts.length} ${
+					createdPrompts.length === 1 ? 'starter prompt' : 'starter prompts'
+				} to your library.`
+			);
+		} catch (error) {
+			console.error('Failed to add starter prompts:', error);
+			alert('Failed to add starter prompts. Please try again.');
+		} finally {
+			isAddingStarterPrompts = false;
+		}
 	}
 
 	// --- Select mode ---
@@ -180,6 +287,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	}
 
 	async function handleCopyPrompt() {
+		void markOnboardingComplete();
 		await navigator.clipboard.writeText(CHATGPT_PROMPT);
 		showCopyModal = true;
 	}
@@ -490,6 +598,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 			}
 
 			await createPrompt(importPayload.title.trim(), importPayload.markdown, tagIds);
+			await markOnboardingComplete();
 			await Promise.all([loadPrompts(), loadTags()]);
 			importStatus = 'imported';
 		} catch {
@@ -544,6 +653,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	function handleCopyModalKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
 			if (showCopyModal) handleCloseCopyModal();
+			if (isStarterModalOpen) closeStarterPromptsModal();
 			if (isShareModalOpen) closeShareModal();
 			if (isImportModalOpen) closeImportModal();
 		}
@@ -551,6 +661,13 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 	// Check if there are active filters
 	let hasActiveFilters = $derived($searchQuery || $selectedTagIds.length > 0);
+	let isRootLibraryView = $derived($activeFolderId === 'all');
+	let showOnboardingEmptyState = $derived(
+		$filteredPrompts.length === 0 && !hasActiveFilters && isRootLibraryView && !hasCompletedOnboarding
+	);
+	let showStandardEmptyState = $derived(
+		$filteredPrompts.length === 0 && !hasActiveFilters && !showOnboardingEmptyState
+	);
 
 	// Get the active folder for the breadcrumb
 	let activeFolder = $derived($activeFolderId === 'all' ? null : $folders.find((f) => f.id === $activeFolderId) ?? null);
@@ -591,6 +708,9 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	}
 
 	onMount(() => {
+		void getSettings().then((settings) => {
+			hasCompletedOnboarding = settings.hasCompletedOnboarding;
+		});
 		void loadShareFromUrl();
 		const onHashChange = () => {
 			void loadShareFromUrl();
@@ -600,6 +720,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		return () => {
 			window.removeEventListener('hashchange', onHashChange);
 			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
+			if (onboardingFeedbackTimeout) clearTimeout(onboardingFeedbackTimeout);
 			cleanupTurnstileWidget();
 		};
 	});
@@ -663,6 +784,120 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
 					>
 						Close
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if isStarterModalOpen}
+	<!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="starter-prompts-title"
+		onclick={(event) => {
+			if (event.target === event.currentTarget) closeStarterPromptsModal();
+		}}
+	>
+		<div class="w-full max-w-4xl rounded-xl shadow-xl" style="background-color: var(--color-bg-primary);">
+			<div class="p-6">
+				<div class="mb-6 flex items-start justify-between gap-4">
+					<div>
+						<h2 id="starter-prompts-title" class="text-lg font-semibold" style="color: var(--color-text-primary);">
+							Starter prompts
+						</h2>
+						<p class="mt-1 text-sm" style="color: var(--color-text-secondary);">
+							Choose a category and add five curated prompts to your library.
+						</p>
+					</div>
+					<button
+						type="button"
+						onclick={closeStarterPromptsModal}
+						class="rounded p-1 transition-colors"
+						style="color: var(--color-text-muted);"
+						aria-label="Close starter prompts dialog"
+					>
+						<Icon name="x" size={18} />
+					</button>
+				</div>
+
+				<div class="grid gap-3 md:grid-cols-2">
+					{#each STARTER_PROMPT_CATEGORIES as category (category.id)}
+						<button
+							type="button"
+							onclick={() => {
+								selectedStarterCategoryId = category.id;
+							}}
+							class:selected={selectedStarterCategoryId === category.id}
+							class="starter-category-card flex h-full flex-col rounded-xl border p-4 text-left transition-colors"
+							style="border-color: {selectedStarterCategoryId === category.id
+								? 'var(--color-accent)'
+								: 'var(--color-border)'}; background-color: {selectedStarterCategoryId === category.id
+								? 'color-mix(in oklab, var(--color-accent) 12%, var(--color-bg-primary))'
+								: 'var(--color-bg-secondary)'};"
+						>
+							<div class="mb-2 flex items-center justify-between gap-3">
+								<h3 class="text-base font-semibold" style="color: var(--color-text-primary);">
+									{category.title}
+								</h3>
+								{#if selectedStarterCategoryId === category.id}
+									<span
+										class="inline-flex h-6 w-6 items-center justify-center rounded-full"
+										style="background-color: var(--color-accent); color: #271105;"
+									>
+										<Icon name="check" size={14} />
+									</span>
+								{/if}
+							</div>
+							<p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+								{category.description}
+							</p>
+							<p class="mt-auto pt-4 text-xs font-medium" style="color: var(--color-text-muted);">
+								{category.prompts.length} prompts included
+							</p>
+						</button>
+					{/each}
+				</div>
+
+				{#if selectedStarterCategory}
+					<div
+						class="mt-6 rounded-xl border p-4"
+						style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
+					>
+						<h3 class="mb-3 text-sm font-semibold" style="color: var(--color-text-primary);">
+							Includes these prompts
+						</h3>
+						<div class="grid gap-2 md:grid-cols-2">
+							{#each selectedStarterCategory.prompts as prompt}
+								<div class="rounded-lg px-3 py-2 text-sm" style="background-color: var(--color-bg-primary); color: var(--color-text-secondary);">
+									{prompt.title}
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<div class="mt-6 flex flex-wrap items-center justify-end gap-2">
+					<button
+						type="button"
+						onclick={closeStarterPromptsModal}
+						class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+						style="border-color: var(--color-border); color: var(--color-text-primary);"
+					>
+						Cancel
+					</button>
+					<button
+						type="button"
+						onclick={handleAddStarterPrompts}
+						disabled={!selectedStarterCategory || isAddingStarterPrompts}
+						class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+						style="background-color: var(--color-accent);"
+					>
+						<Icon name={isAddingStarterPrompts ? 'sparkles' : 'plus'} size={16} />
+						{isAddingStarterPrompts ? 'Adding...' : 'Add to my library'}
 					</button>
 				</div>
 			</div>
@@ -899,13 +1134,139 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		</div>
 
 		<!-- Search and Filter -->
+		{#if onboardingFeedback}
+			<div
+				class="mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-3"
+				style="border-color: color-mix(in oklab, var(--color-success) 30%, var(--color-border)); background-color: color-mix(in oklab, var(--color-success) 12%, var(--color-bg-primary));"
+			>
+				<div class="flex min-w-0 items-center gap-3">
+					<div
+						class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+						style="background-color: color-mix(in oklab, var(--color-success) 22%, transparent); color: var(--color-success);"
+					>
+						<Icon name="check" size={16} />
+					</div>
+					<p class="text-sm font-medium leading-relaxed" style="color: var(--color-text-primary);">
+						{onboardingFeedback}
+					</p>
+				</div>
+				<button
+					type="button"
+					onclick={dismissOnboardingFeedback}
+					class="rounded p-1 transition-colors"
+					style="color: var(--color-text-muted);"
+					aria-label="Dismiss success message"
+				>
+					<Icon name="x" size={16} />
+				</button>
+			</div>
+		{/if}
+
 		<div class="mb-6">
 			<SearchFilter />
 		</div>
 
 		<!-- Prompts Grid -->
-		{#if $filteredPrompts.length === 0 && !hasActiveFilters}
-			<!-- Empty state - no prompts yet -->
+		{#if showOnboardingEmptyState}
+			<div class="py-10">
+				<div class="mx-auto max-w-6xl text-center">
+					<h2 class="mb-3 text-3xl font-bold" style="color: var(--color-text-primary);">
+						Welcome to Bearprompt
+					</h2>
+					<p class="mx-auto mb-8 max-w-2xl text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+						Start your library with curated starter prompts, import prompts you already use, or create one from scratch.
+					</p>
+					<div class="grid gap-4 lg:grid-cols-3">
+						<section
+							class="empty-state-panel flex h-full flex-col rounded-2xl border p-6 text-left"
+							style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
+						>
+							<div
+								class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
+								style="background-color: color-mix(in oklab, var(--color-accent) 14%, transparent); color: var(--color-accent);"
+							>
+								<Icon name="sparkles" size={22} />
+							</div>
+							<h3 class="mb-2 text-lg font-semibold" style="color: var(--color-text-primary);">
+								Use starter prompts
+							</h3>
+							<p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+								Pick a category like Writing, Productivity, or Coding and add five ready-to-use prompts with tags.
+							</p>
+							<div class="mt-auto pt-6">
+								<button
+									type="button"
+									onclick={openStarterPromptsModal}
+									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
+									style="background-color: var(--color-accent);"
+								>
+									<Icon name="plus" size={16} />
+									Choose a category
+								</button>
+							</div>
+						</section>
+
+						<section
+							class="empty-state-panel flex h-full flex-col rounded-2xl border p-6 text-left"
+							style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
+						>
+							<div
+								class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
+								style="background-color: color-mix(in oklab, var(--color-accent) 14%, transparent); color: var(--color-accent);"
+							>
+								<Icon name="chatgpt" size={22} />
+							</div>
+							<h3 class="mb-2 text-lg font-semibold" style="color: var(--color-text-primary);">
+								Import from ChatGPT
+							</h3>
+							<p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+								Copy the prompt to ask ChatGPT for your most-used prompts, then bring the results into Bearprompt.
+							</p>
+							<div class="mt-auto pt-6">
+								<button
+									type="button"
+									onclick={handleCopyPrompt}
+									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
+									style="background-color: var(--color-accent);"
+								>
+									<Icon name="copy" size={16} />
+									Copy import prompt
+								</button>
+							</div>
+						</section>
+
+						<section
+							class="empty-state-panel flex h-full flex-col rounded-2xl border p-6 text-left"
+							style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
+						>
+							<div
+								class="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full"
+								style="background-color: color-mix(in oklab, var(--color-accent) 14%, transparent); color: var(--color-accent);"
+							>
+								<Icon name="edit" size={22} />
+							</div>
+							<h3 class="mb-2 text-lg font-semibold" style="color: var(--color-text-primary);">
+								Add prompt
+							</h3>
+							<p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+								Create your own prompt from scratch and organize it later with tags and folders.
+							</p>
+							<div class="mt-auto pt-6">
+								<button
+									type="button"
+									onclick={handleCreateNew}
+									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
+									style="background-color: var(--color-accent);"
+								>
+									<Icon name="plus" size={16} />
+									Add a prompt
+								</button>
+							</div>
+						</section>
+					</div>
+				</div>
+			</div>
+		{:else if showStandardEmptyState}
 			<div class="flex flex-col items-center justify-center py-16 text-center">
 				<div
 					class="mb-4 flex h-20 w-20 items-center justify-center rounded-full"
@@ -927,39 +1288,30 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					</svg>
 				</div>
 				<h2 class="mb-2 text-lg font-semibold" style="color: var(--color-text-primary);">
-					Your library is empty
+					{isRootLibraryView ? 'Your library is empty' : 'This folder is empty'}
 				</h2>
-				<p class="mb-6 max-w-sm text-sm" style="color: var(--color-text-secondary);">
-					Create your first prompt to get started. You can organize prompts with tags and easily copy them when needed.
+				<p class="mb-6 max-w-md text-sm leading-relaxed" style="color: var(--color-text-secondary);">
+					{isRootLibraryView
+						? 'Create your first prompt or browse the public library to add something useful.'
+						: 'Add a prompt to this folder or browse the public library for ideas you can bring into your library.'}
 				</p>
-				<button
-					type="button"
-					onclick={handleCreateNew}
-					class="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
-					style="background-color: var(--color-accent);"
-				>
-					Create Your First Prompt
-				</button>
-
-				<!-- Getting started section -->
-				<div class="mt-8 w-full max-w-md">
-					<div class="border-t pt-6 text-center" style="border-color: var(--color-border);">
-						<h3 class="mb-2 text-base font-semibold" style="color: var(--color-text-primary);">
-							Getting started
-						</h3>
-						<p class="mb-4 text-sm" style="color: var(--color-text-secondary);">
-							Get your 10 most used prompts from ChatGPT. Copy the prompt below, paste it in ChatGPT, and then add the results to your library.
-						</p>
-						<button
-							type="button"
-							onclick={handleCopyPrompt}
-							class="inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
-							style="background-color: var(--color-accent);"
-						>
-							<Icon name="copy" size={16} />
-							Copy prompt
-						</button>
-					</div>
+				<div class="flex flex-wrap items-center justify-center gap-3">
+					<button
+						type="button"
+						onclick={handleCreateNew}
+						class="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
+						style="background-color: var(--color-accent);"
+					>
+						Add prompt
+					</button>
+					<a
+						href="/prompts"
+						class="inline-flex items-center gap-2 rounded-lg border px-6 py-2.5 text-sm font-medium transition-colors"
+						style="border-color: var(--color-border); color: var(--color-text-primary);"
+					>
+						<Icon name="globe" size={16} />
+						Browse prompts
+					</a>
 				</div>
 			</div>
 		{:else if $filteredPrompts.length === 0 && hasActiveFilters}
@@ -1145,5 +1497,23 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	.share-link-input {
 		font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 		letter-spacing: 0.01em;
+	}
+
+	.empty-state-panel {
+		min-height: 100%;
+	}
+
+	.starter-category-card {
+		cursor: pointer;
+	}
+
+	.starter-category-card:hover {
+		border-color: var(--color-accent) !important;
+	}
+
+	@media (max-width: 767px) {
+		.empty-state-panel {
+			text-align: center;
+		}
 	}
 </style>

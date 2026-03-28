@@ -325,6 +325,7 @@ export async function getFolderByName(name: string): Promise<Folder | undefined>
 const DEFAULT_SETTINGS: Settings = {
 	version: 1,
 	theme: 'system',
+	hasCompletedOnboarding: false,
 	ui: {
 		cardSize: 'm'
 	}
@@ -333,7 +334,16 @@ const DEFAULT_SETTINGS: Settings = {
 export async function getSettings(): Promise<Settings> {
 	const db = await getDB();
 	const settings = await db.get('settings', 1);
-	return settings || DEFAULT_SETTINGS;
+	if (!settings) return DEFAULT_SETTINGS;
+
+	return {
+		...DEFAULT_SETTINGS,
+		...settings,
+		ui: {
+			...DEFAULT_SETTINGS.ui,
+			...settings.ui
+		}
+	};
 }
 
 export async function updateSettings(updates: Partial<Omit<Settings, 'version'>>): Promise<Settings> {
@@ -342,6 +352,10 @@ export async function updateSettings(updates: Partial<Omit<Settings, 'version'>>
 	const updated: Settings = {
 		...current,
 		...updates,
+		ui: {
+			...current.ui,
+			...updates.ui
+		},
 		version: 1
 	};
 	await db.put('settings', updated);

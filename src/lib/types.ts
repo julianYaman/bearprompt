@@ -27,6 +27,7 @@ export interface Tag {
 export interface Settings {
 	version: number;
 	theme: 'system' | 'light' | 'dark';
+	hasCompletedOnboarding: boolean;
 	ui: {
 		cardSize: 'm' | 'l';
 	};
