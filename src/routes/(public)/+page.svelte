@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { getAllPrompts } from '$lib/db';
 	import { serializeJsonLd } from '$lib/security';
 
 	const products = ['Text Files', 'Notion', 'Sticky Notes', 'Apple Notes', 'Google Docs', 'Slack DMs'];
@@ -18,6 +19,10 @@
 	let heroDisplayText = $state('');
 	let heroPhase = $state<Phase>('typing');
 	let heroShowCursor = $state(true);
+	let hasExistingLibrary = $state(false);
+
+	const libraryCtaLabel = $derived(hasExistingLibrary ? 'Open your library' : 'Create your library');
+	const navbarCtaLabel = $derived(hasExistingLibrary ? 'Open your library' : 'Get Started');
 
 	onMount(() => {
 		const TYPE_SPEED = 60;
@@ -89,6 +94,14 @@
 		ctaTick();
 		// Offset hero by 500ms so they don't animate in lockstep
 		heroTimeout = setTimeout(heroTick, 500);
+
+		getAllPrompts()
+			.then((prompts) => {
+				hasExistingLibrary = prompts.length > 0;
+			})
+			.catch((error) => {
+				console.error('Failed to inspect local library state:', error);
+			});
 
 		return () => {
 			clearTimeout(ctaTimeout);
@@ -213,7 +226,7 @@
 					GitHub
 				</a>
 				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta" data-umami-event="Create Library Navbar">
-					Get Started
+					{navbarCtaLabel}
 					<Icon name="arrow-right" size={16} />
 				</a>
 			</div>
@@ -241,7 +254,7 @@
 					GitHub
 				</a>
 				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta" data-umami-event="Create Library Navbar">
-					Get Started
+					{navbarCtaLabel}
 					<Icon name="arrow-right" size={16} />
 				</a>
 			</div>
@@ -258,11 +271,21 @@
 					use&mdash;without handing them to another company.
 				</p>
 				<div class="neo-hero-cta-wrapper">
-					<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Hero">
-						Create your library
-						<Icon name="arrow-right" size={20} />
-					</a>
-					<span class="neo-sticker neo-sticker-secondary neo-sticker-rotate-right neo-hero-cta-sticker">No signup</span>
+					<div class="neo-hero-cta-group">
+						<div class="neo-primary-cta-wrap">
+							<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Hero">
+								{libraryCtaLabel}
+								<Icon name="arrow-right" size={20} />
+							</a>
+							{#if !hasExistingLibrary}
+								<span class="neo-sticker neo-sticker-secondary neo-sticker-rotate-right neo-hero-cta-sticker">No signup</span>
+							{/if}
+						</div>
+						<a href="/prompts" class="neo-btn neo-btn-secondary neo-btn-md" data-umami-event="Browse Prompts Hero">
+							Explore prompts
+							<Icon name="globe" size={18} />
+						</a>
+					</div>
 				</div>
 			</div>
 			<div class="neo-hero-image-wrapper">
@@ -407,7 +430,7 @@
 					Start in 10 seconds. No account. No email. Just prompts.
 				</p>
 				<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Bottom CTA">
-					Create your library
+					{libraryCtaLabel}
 					<Icon name="arrow-right" size={20} />
 				</a>
 			</div>
@@ -649,9 +672,23 @@
 		background-color: var(--neo-accent-hover);
 	}
 
+	.neo-btn-secondary {
+		background-color: #fffdf8;
+		color: var(--neo-text);
+	}
+
+	.neo-btn-secondary:hover {
+		background-color: #ffffff;
+	}
+
 	.neo-btn-lg {
 		padding: 1rem 2rem;
 		font-size: 1rem;
+	}
+
+	.neo-btn-md {
+		padding: 0.8rem 1.4rem;
+		font-size: 0.9rem;
 	}
 
 	/* Stickers */
@@ -916,8 +953,21 @@
 	.neo-hero-cta-wrapper {
 		position: relative;
 		display: inline-flex;
+		align-items: flex-start;
+		justify-content: flex-start;
+	}
+
+	.neo-hero-cta-group {
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
+		gap: 0.875rem;
+	}
+
+	.neo-primary-cta-wrap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
 	}
 
 	.neo-hero-cta-sticker {
@@ -978,8 +1028,11 @@
 		}
 
 		.neo-hero-cta-wrapper {
-			flex-direction: row;
-			gap: 1.5rem;
+			align-items: center;
+		}
+
+		.neo-hero-cta-group {
+			align-items: center;
 		}
 
 		.neo-hero-image-wrapper > .neo-sticker {
