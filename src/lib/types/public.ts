@@ -1,5 +1,13 @@
 // Types for the public prompt library (Supabase data)
 
+export type CategoryIconKey =
+	| 'sparkles'
+	| 'pencil-line'
+	| 'briefcase'
+	| 'megaphone'
+	| 'code'
+	| 'square-check';
+
 export interface PublicAuthor {
 	id: string;
 	created_at: string;
@@ -10,6 +18,8 @@ export interface PublicAuthor {
 	verified: boolean;
 	avatar_url: string | null;
 	highlighted: boolean;
+	featured_color_light: string | null;
+	featured_color_dark: string | null;
 }
 
 export interface PublicTag {
@@ -34,6 +44,19 @@ export interface PublicPrompt {
 	tools?: AgentToolWithSetupUrl[];
 }
 
+export interface PublicCategory {
+	id: string;
+	slug: string;
+	name: string;
+	description: string;
+	color: string;
+	icon_key: CategoryIconKey | null;
+	image_url?: string;
+	promptCount: number;
+	tags: PublicTag[];
+	externalUrl?: string;
+}
+
 export interface AgentTool {
 	id: string;
 	name: string;
@@ -51,6 +74,7 @@ export interface AuthorWithPrompts extends PublicAuthor {
 }
 
 export interface PublicLibraryData {
+	featuredCategories?: PublicCategory[];
 	highlightedAuthors: AuthorWithPrompts[];
 	authors: AuthorWithPrompts[];
 	totalAuthors: number;
@@ -68,6 +92,14 @@ export interface SearchResults {
 
 export interface AuthorPageData {
 	author: PublicAuthor;
+	prompts: PublicPrompt[];
+	totalPrompts: number;
+	currentPage: number;
+	totalPages: number;
+}
+
+export interface CategoryPageData {
+	category: PublicCategory;
 	prompts: PublicPrompt[];
 	totalPrompts: number;
 	currentPage: number;

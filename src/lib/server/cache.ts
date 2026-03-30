@@ -5,7 +5,9 @@ import type {
 	AuthorPageData,
 	AuthorPageDataGrouped,
 	AgentLibraryData,
-	PublicPrompt
+	PublicPrompt,
+	PublicCategory,
+	CategoryPageData
 } from '$lib/types/public';
 
 // Cache TTLs in milliseconds
@@ -67,6 +69,16 @@ const agentSearchCache = new LRUCache<string, SearchResults>({
 // Cache for author pages with grouped prompts
 const authorGroupedCache = new LRUCache<string, AuthorPageDataGrouped>({
 	max: 100,       // Max 100 authors cached
+	ttl: TTL.AUTHOR_PAGE
+});
+
+const categoryListCache = new LRUCache<string, PublicCategory[]>({
+	max: 1,
+	ttl: TTL.MAIN_PAGE
+});
+
+const categoryPageCache = new LRUCache<string, CategoryPageData>({
+	max: 100,
 	ttl: TTL.AUTHOR_PAGE
 });
 
@@ -220,6 +232,38 @@ export async function getCachedAuthorDataGrouped(
 	return data;
 }
 
+export async function getCachedPromptCategories(
+	fetcher: () => Promise<PublicCategory[]>
+): Promise<PublicCategory[]> {
+	const key = 'prompt-categories';
+	const cached = categoryListCache.get(key);
+	if (cached) {
+		return cached;
+	}
+
+	const data = await fetcher();
+	categoryListCache.set(key, data);
+	return data;
+}
+
+export async function getCachedCategoryPageData(
+	categorySlug: string,
+	page: number,
+	fetcher: () => Promise<CategoryPageData | null>
+): Promise<CategoryPageData | null> {
+	const key = `category:${categorySlug}:page:${page}`;
+	const cached = categoryPageCache.get(key);
+	if (cached) {
+		return cached;
+	}
+
+	const data = await fetcher();
+	if (data) {
+		categoryPageCache.set(key, data);
+	}
+	return data;
+}
+
 /**
  * Get cached sitemap XML or fetch fresh
  */
@@ -247,6 +291,8 @@ export function clearAllCaches(): void {
 	agentLibraryCache.clear();
 	agentSearchCache.clear();
 	authorGroupedCache.clear();
+	categoryListCache.clear();
+	categoryPageCache.clear();
 	sitemapCache.clear();
 }
 
@@ -255,6 +301,8 @@ export function clearAllCaches(): void {
  */
 export function clearLibraryCache(): void {
 	libraryCache.clear();
+	categoryListCache.clear();
+	categoryPageCache.clear();
 }
 
 export function clearAuthorCache(authorSlug?: string): void {

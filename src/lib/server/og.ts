@@ -9,7 +9,7 @@ import {
 	SITE_URL,
 	type OgAuthorSection
 } from '$lib/seo';
-import type { PublicAuthor, PublicPrompt, PromptType } from '$lib/types/public';
+import type { PublicAuthor, PublicCategory, PublicPrompt, PromptType } from '$lib/types/public';
 
 const h = React.createElement;
 const STATIC_ROOT = path.join(process.cwd(), 'static');
@@ -462,8 +462,48 @@ function authorBody(options: BaseImageOptions) {
 	);
 }
 
-function baseImageContent(logoSrc: string, options: BaseImageOptions, mode: 'prompt' | 'author') {
-	return imageFrame(logoSrc, mode === 'author' ? authorBody(options) : promptBody(options));
+function categoryBody(options: BaseImageOptions) {
+	return h(
+		'div',
+		{
+			style: {
+				display: 'flex',
+				flexDirection: 'column',
+				flex: 1,
+				justifyContent: 'flex-end',
+				paddingTop: '12px'
+			}
+		},
+		h(
+			'div',
+			{
+				style: {
+					display: 'flex',
+					flexDirection: 'column',
+					gap: '18px',
+					maxWidth: '780px'
+				}
+			},
+			badgeNode(options.badge),
+			titleNode(options.title)
+		)
+	);
+}
+
+function baseImageContent(
+	logoSrc: string,
+	options: BaseImageOptions,
+	mode: 'prompt' | 'author' | 'category'
+) {
+	if (mode === 'author') {
+		return imageFrame(logoSrc, authorBody(options));
+	}
+
+	if (mode === 'category') {
+		return imageFrame(logoSrc, categoryBody(options));
+	}
+
+	return imageFrame(logoSrc, promptBody(options));
 }
 
 async function imageResponse(element: React.ReactElement) {
@@ -514,6 +554,35 @@ export async function renderAuthorOgImage(
 				avatarSrc
 			},
 			'author'
+		)
+	);
+}
+
+export async function renderCategoryOgImage(category: PublicCategory): Promise<Response> {
+	const fallbackAuthor: PublicAuthor = {
+		id: category.id,
+		created_at: '',
+		name: category.name,
+		slug: category.slug,
+		public_description: null,
+		link: null,
+		verified: false,
+		avatar_url: null,
+		highlighted: false,
+		featured_color_light: null,
+		featured_color_dark: null
+	};
+
+	return imageResponse(
+		baseImageContent(
+			BEARPROMPT_LOGO_URL,
+			{
+				title: category.name,
+				badge: 'Category',
+				author: fallbackAuthor,
+				avatarSrc: null
+			},
+			'category'
 		)
 	);
 }

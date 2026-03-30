@@ -1,11 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
 	PublicAuthor,
+	PublicCategory,
 	PublicPrompt,
 	AuthorWithPrompts,
 	PublicLibraryData,
 	SearchResults,
 	AuthorPageData,
+	CategoryPageData,
 	AuthorPageDataGrouped,
 	AgentLibraryData,
 	AgentToolWithSetupUrl,
@@ -16,6 +18,21 @@ const AUTHORS_PER_PAGE = 10;
 const PROMPTS_PREVIEW_LIMIT = 6;
 const PROMPTS_PER_PAGE = 30;
 const SEARCH_RESULTS_PER_PAGE = 24;
+const CATEGORY_PROMPTS_PER_PAGE = 24;
+
+type CategoryTagRow = {
+	category_id: string;
+	tag_id: string;
+	tag?: { id: string; name: string } | { id: string; name: string }[] | null;
+};
+
+function sortPromptsAlphabetically<T extends Pick<PublicPrompt, 'title'>>(prompts: T[]): T[] {
+	return [...prompts].sort((a, b) => a.title.localeCompare(b.title));
+}
+
+function normalizeJoinedRow<T>(value: T | T[] | null | undefined): T | null {
+	return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
 
 /**
  * Fetch tags for a list of prompt IDs in a single query
@@ -70,10 +87,12 @@ async function attachTagsToPrompts(
 	const promptIds = prompts.map((p) => p.id);
 	const tagMap = await getTagsForPrompts(supabase, promptIds);
 
-	return prompts.map((prompt) => ({
-		...prompt,
-		tags: tagMap.get(prompt.id) || []
-	}));
+	return sortPromptsAlphabetically(
+		prompts.map((prompt) => ({
+			...prompt,
+			tags: tagMap.get(prompt.id) || []
+		}))
+	);
 }
 
 /**
@@ -125,12 +144,12 @@ async function getPromptsForAuthors(
 ): Promise<Map<string, PublicPrompt[]>> {
 	if (authorIds.length === 0) return new Map();
 
-	// Fetch all prompts for these authors, ordered by created_at
+	// Fetch all prompts for these authors alphabetically by title
 	let query = supabase
 		.from('prompts')
 		.select('*')
 		.in('author_id', authorIds)
-		.order('created_at', { ascending: false });
+		.order('title', { ascending: true });
 	
 	if (promptType) {
 		query = query.eq('type', promptType);
@@ -280,23 +299,120 @@ export async function getAuthors(
 	return { authors: authorsWithPrompts, total: totalCount };
 }
 
+export async function getPromptCategories(
+	supabase: SupabaseClient
+): Promise<PublicCategory[]> {
+	const { data: categories, error: categoriesError } = await supabase
+		.from('categories')
+		.select('*')
+		.order('sort_order', { ascending: true })
+		.order('name', { ascending: true });
+
+	if (categoriesError) {
+		if (categoriesError.code === '42P01' || categoriesError.code === 'PGRST205') {
+			return [];
+		}
+		throw categoriesError;
+	}
+	if (!categories || categories.length === 0) return [];
+
+	const categoryIds = categories.map((category) => category.id);
+	const { data: categoryTagRows, error: categoryTagError } = await supabase
+		.from('category_tags')
+		.select(
+			`
+			category_id,
+			tag_id,
+			tag:tag_id (
+				id,
+				name
+			)
+		`
+		)
+		.in('category_id', categoryIds);
+
+	if (categoryTagError) throw categoryTagError;
+
+	const tagIds = [...new Set((categoryTagRows || []).map((row) => row.tag_id))];
+	const { data: tagPromptRows, error: tagPromptError } = tagIds.length
+		? await supabase
+				.from('tag-to-prompt')
+				.select(
+					`
+					tag_id,
+					prompt_id,
+					prompt:prompt_id (
+						id,
+						type
+					)
+				`
+				)
+				.in('tag_id', tagIds)
+		: { data: [], error: null };
+
+	if (tagPromptError) throw tagPromptError;
+
+	const promptIdsByTag = new Map<string, Set<string>>();
+	for (const row of tagPromptRows || []) {
+		const prompt = normalizeJoinedRow(row.prompt as { id: string; type: PromptType } | { id: string; type: PromptType }[] | null);
+		if (!prompt || prompt.type !== 'prompt') continue;
+		const tagPromptIds = promptIdsByTag.get(row.tag_id) || new Set<string>();
+		tagPromptIds.add(prompt.id);
+		promptIdsByTag.set(row.tag_id, tagPromptIds);
+	}
+
+	const rowsByCategory = new Map<string, CategoryTagRow[]>();
+	for (const row of (categoryTagRows || []) as CategoryTagRow[]) {
+		const categoryRows = rowsByCategory.get(row.category_id) || [];
+		categoryRows.push(row);
+		rowsByCategory.set(row.category_id, categoryRows);
+	}
+
+	return categories.map((category) => {
+		const rows = rowsByCategory.get(category.id) || [];
+		const promptIds = new Set<string>();
+
+		for (const row of rows) {
+			for (const promptId of promptIdsByTag.get(row.tag_id) || []) {
+				promptIds.add(promptId);
+			}
+		}
+
+		return {
+			id: category.id,
+			slug: category.slug,
+			name: category.name,
+			description: category.description,
+			color: category.color,
+			icon_key: category.icon_key,
+			promptCount: promptIds.size,
+			tags: rows
+				.map((row) => normalizeJoinedRow(row.tag))
+				.filter((tag): tag is { id: string; name: string } => Boolean(tag))
+				.sort((a, b) => a.name.localeCompare(b.name))
+		};
+	});
+}
+
 /**
  * Get public library data for the main page
  * Only includes prompts with type='prompt'
- */
+*/
 export async function getPublicLibraryData(
 	supabase: SupabaseClient,
 	page: number = 1
 ): Promise<PublicLibraryData> {
 	// Run both queries in parallel for better performance
-	const [highlightedAuthors, { authors, total }] = await Promise.all([
+	const [highlightedAuthors, { authors, total }, featuredCategories] = await Promise.all([
 		getHighlightedAuthors(supabase, 'prompt'),
-		getAuthors(supabase, page, 'prompt')
+		getAuthors(supabase, page, 'prompt'),
+		getPromptCategories(supabase)
 	]);
 
 	const totalPages = Math.ceil(total / AUTHORS_PER_PAGE);
 
 	return {
+		featuredCategories,
 		highlightedAuthors,
 		authors,
 		totalAuthors: total,
@@ -325,6 +441,67 @@ export async function getAgentLibraryData(
 		highlightedAuthors,
 		authors,
 		totalAuthors: total,
+		currentPage: page,
+		totalPages
+	};
+}
+
+export async function getCategoryPageData(
+	supabase: SupabaseClient,
+	categorySlug: string,
+	page: number = 1
+): Promise<CategoryPageData | null> {
+	const categories = await getPromptCategories(supabase);
+	const category = categories.find((entry) => entry.slug === categorySlug);
+	if (!category) return null;
+
+	const tagIds = category.tags.map((tag) => tag.id);
+	if (tagIds.length === 0) {
+		return {
+			category,
+			prompts: [],
+			totalPrompts: 0,
+			currentPage: page,
+			totalPages: 0
+		};
+	}
+
+	const { data: tagPromptRows, error: tagPromptError } = await supabase
+		.from('tag-to-prompt')
+		.select(
+			`
+			tag_id,
+			prompt_id,
+			prompt:prompt_id (
+				*,
+				author:author_id (*)
+			)
+		`
+		)
+		.in('tag_id', tagIds);
+
+	if (tagPromptError) throw tagPromptError;
+
+	const promptsById = new Map<string, PublicPrompt>();
+	for (const row of tagPromptRows || []) {
+		const prompt = normalizeJoinedRow(
+			row.prompt as PublicPrompt | PublicPrompt[] | null
+		);
+		if (!prompt || prompt.type !== 'prompt' || promptsById.has(prompt.id)) continue;
+		promptsById.set(prompt.id, prompt);
+	}
+
+	const allPrompts = sortPromptsAlphabetically([...promptsById.values()]);
+	const totalPrompts = allPrompts.length;
+	const totalPages = Math.ceil(totalPrompts / CATEGORY_PROMPTS_PER_PAGE);
+	const offset = (page - 1) * CATEGORY_PROMPTS_PER_PAGE;
+	const pagePrompts = allPrompts.slice(offset, offset + CATEGORY_PROMPTS_PER_PAGE);
+	const promptsWithTags = await attachTagsToPrompts(supabase, pagePrompts);
+
+	return {
+		category,
+		prompts: promptsWithTags,
+		totalPrompts,
 		currentPage: page,
 		totalPages
 	};
@@ -359,7 +536,7 @@ export async function searchPrompts(
 			author:author_id (*)
 		`)
 		.or(baseFilter)
-		.order('created_at', { ascending: false })
+		.order('title', { ascending: true })
 		.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1);
 
 	if (promptType) {
@@ -435,7 +612,7 @@ export async function getAuthorPageData(
 			.from('prompts')
 			.select('*')
 			.eq('author_id', authorId)
-			.order('created_at', { ascending: false })
+			.order('title', { ascending: true })
 			.range(offset, offset + PROMPTS_PER_PAGE - 1)
 	]);
 
@@ -523,7 +700,7 @@ export async function getAuthorPageDataBySlug(
 			.from('prompts')
 			.select('*')
 			.eq('author_id', author.id)
-			.order('created_at', { ascending: false })
+			.order('title', { ascending: true })
 			.range(offset, offset + PROMPTS_PER_PAGE - 1)
 	]);
 
@@ -628,7 +805,7 @@ export async function getAuthorPageDataGroupedBySlug(
 		.from('prompts')
 		.select('*')
 		.eq('author_id', author.id)
-		.order('created_at', { ascending: false });
+		.order('title', { ascending: true });
 
 	if (error) throw error;
 

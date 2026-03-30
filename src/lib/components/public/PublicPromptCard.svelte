@@ -118,7 +118,7 @@
 				onkeydown={(e) => handleKeydown(e, 'add')}
 				data-umami-event="Add Public Prompt To Library"
 				data-umami-event-prompt={prompt.slug || prompt.id}
-				class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-all"
+				class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-all"
 				style="background-color: {addState === 'added'
 					? 'var(--color-success)'
 					: 'var(--color-accent)'};"
@@ -136,7 +136,7 @@
 			<button
 				onclick={handleCopy}
 				onkeydown={(e) => handleKeydown(e, 'copy')}
-				class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all"
+				class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all"
 				style="background-color: {copyState === 'copied'
 					? 'var(--color-success)'
 					: 'var(--color-bg-primary)'}; color: {copyState === 'copied'

@@ -59,3 +59,57 @@ export function buildExportFilename(): string {
 	const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
 	return `promptlib-export-v1-${date}.json`;
 }
+
+// ─── Color Utilities ──────────────────────────────────────────────────────────
+
+export function hexToRgba(hex: string, alpha: number): string {
+	const normalized = hex.trim().replace('#', '');
+	const expanded =
+		normalized.length === 3
+			? normalized
+					.split('')
+					.map((char) => char + char)
+					.join('')
+			: normalized;
+
+	if (!/^[\da-fA-F]{6}$/.test(expanded)) {
+		return `rgba(255, 255, 255, ${alpha})`;
+	}
+
+	const red = Number.parseInt(expanded.slice(0, 2), 16);
+	const green = Number.parseInt(expanded.slice(2, 4), 16);
+	const blue = Number.parseInt(expanded.slice(4, 6), 16);
+
+	return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+export function buildFeatureGradient(color: string, alpha = 0.2): string {
+	return `linear-gradient(180deg, ${hexToRgba(color, alpha)} 0%, rgba(0, 0, 0, 0) 100%)`;
+}
+
+export function buildFeatureBorder(color: string, alpha = 0.55): string {
+	return hexToRgba(color, alpha);
+}
+
+export function resolveThemeIsDark(
+	themeMode: 'system' | 'light' | 'dark',
+	systemPrefersDark: boolean
+): boolean {
+	if (themeMode === 'system') {
+		return systemPrefersDark;
+	}
+
+	return themeMode === 'dark';
+}
+
+export function resolveFeaturedAuthorColor(
+	author: {
+		featured_color_light: string | null;
+		featured_color_dark: string | null;
+	},
+	isDark: boolean
+): string | null {
+	return isDark
+		? (author.featured_color_dark ?? author.featured_color_light)
+		: (author.featured_color_light ?? author.featured_color_dark);
+}

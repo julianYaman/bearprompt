@@ -43,6 +43,10 @@
 			| 'cursor'
 			| 'bot'
 			| 'square-check'
+			| 'pencil-line'
+			| 'briefcase'
+			| 'megaphone'
+			| 'code'
 			| 'folder'
 			| 'folder-open'
 			| 'chevron-right'
@@ -161,6 +165,21 @@
 		<path d="M9 13v2" />
 	{:else if name === 'square-check'}
 		<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12l2 2l4-4"/></g>
+	{:else if name === 'pencil-line'}
+		<path d="M13 21h8" />
+		<path d="m15 5 4 4" />
+		<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+	{:else if name === 'briefcase'}
+		<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+		<rect width="20" height="14" x="2" y="6" rx="2" />
+	{:else if name === 'megaphone'}
+		<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+		<path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" />
+		<path d="M8 6v8" />
+	{:else if name === 'code'}
+		<path d="m18 16 4-4-4-4" />
+		<path d="m6 8-4 4 4 4" />
+		<path d="m14.5 4-5 16" />
 	{:else if name === 'folder'}
 		<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
 	{:else if name === 'folder-open'}

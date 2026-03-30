@@ -1,9 +1,17 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon from '../Icon.svelte';
 	import VerifiedBadge from './VerifiedBadge.svelte';
 	import PublicPromptCard from './PublicPromptCard.svelte';
 	import { sanitizeExternalUrl } from '$lib/security';
-	import { AUTHOR_ROW_LIMIT } from '$lib/utils';
+	import { theme } from '$lib/stores';
+	import {
+		AUTHOR_ROW_LIMIT,
+		buildFeatureBorder,
+		buildFeatureGradient,
+		resolveFeaturedAuthorColor,
+		resolveThemeIsDark
+	} from '$lib/utils';
 	import type { AuthorWithPrompts, PublicPrompt } from '$lib/types/public';
 
 	interface Props {
@@ -14,17 +22,60 @@
 	}
 
 	let { author, basePath = '/prompts', itemLabel = 'prompts', onAddToLibrary }: Props = $props();
+	let systemPrefersDark = $state(false);
+	let promptsScrollEl = $state<HTMLDivElement | null>(null);
+	let showRightFade = $state(false);
 
 	let showSeeAll = $derived(author.totalPrompts > AUTHOR_ROW_LIMIT);
 	let authorPageUrl = $derived(`${basePath}/${author.slug || author.id}`);
 	let authorExternalLink = $derived(sanitizeExternalUrl(author.link));
-	
+	let resolvedFeaturedColor = $derived(
+		resolveFeaturedAuthorColor(author, resolveThemeIsDark($theme, systemPrefersDark))
+	);
+	let isFeatured = $derived(author.highlighted && !!resolvedFeaturedColor);
+	let featuredBackground = $derived(
+		isFeatured ? buildFeatureGradient(resolvedFeaturedColor!, 0.2) : 'transparent'
+	);
+	let featuredBorder = $derived(
+		isFeatured ? buildFeatureBorder(resolvedFeaturedColor!, 0.55) : 'var(--color-border)'
+	);
+
 	// Don't render anything if author has no prompts
 	let hasPrompts = $derived(author.prompts.length > 0 || author.totalPrompts > 0);
+
+	function updateFadeVisibility() {
+		if (!promptsScrollEl) {
+			showRightFade = false;
+			return;
+		}
+
+		const maxScrollLeft = promptsScrollEl.scrollWidth - promptsScrollEl.clientWidth;
+		showRightFade = maxScrollLeft > 4 && promptsScrollEl.scrollLeft < maxScrollLeft - 4;
+	}
+
+	onMount(() => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const updatePreference = () => {
+			systemPrefersDark = mediaQuery.matches;
+		};
+
+		updatePreference();
+		mediaQuery.addEventListener('change', updatePreference);
+		requestAnimationFrame(updateFadeVisibility);
+		window.addEventListener('resize', updateFadeVisibility);
+
+		return () => {
+			mediaQuery.removeEventListener('change', updatePreference);
+			window.removeEventListener('resize', updateFadeVisibility);
+		};
+	});
 </script>
 
 {#if hasPrompts}
-<section class="mb-8">
+<section
+	class="mb-8 rounded-2xl border p-4 md:p-5"
+	style={`border-color: ${featuredBorder}; background: ${featuredBackground};`}
+>
 	<!-- Author header -->
 	<div class="mb-4 flex items-start gap-3">
 		<!-- Avatar -->
@@ -82,7 +133,11 @@
 
 	<!-- Prompts row with fade indicator -->
 	<div class="prompts-row-container relative">
-		<div class="prompts-scroll flex gap-4 overflow-x-auto pb-2">
+		<div
+			bind:this={promptsScrollEl}
+			class="prompts-scroll flex gap-4 overflow-x-auto pb-2"
+			onscroll={updateFadeVisibility}
+		>
 			{#each author.prompts as prompt}
 				<div class="w-64 shrink-0">
 					<PublicPromptCard {prompt} author={author} {basePath} {onAddToLibrary} />
@@ -112,7 +167,9 @@
 			{/if}
 		</div>
 		<!-- Right fade indicator -->
-		<div class="fade-indicator pointer-events-none absolute right-0 top-0 h-full w-16"></div>
+		{#if showRightFade}
+			<div class="fade-indicator pointer-events-none absolute right-0 top-0 h-full w-16"></div>
+		{/if}
 	</div>
 </section>
 {/if}

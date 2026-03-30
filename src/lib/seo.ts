@@ -8,6 +8,10 @@ export const OG_IMAGE_CACHE_CONTROL =
 export type PromptSection = 'prompts' | 'agents';
 export type OgAuthorSection = PromptSection;
 
+export function buildCategoryOgImageUrl(categorySlug: string): string {
+	return `${SITE_URL}/api/og/categories/${categorySlug}`;
+}
+
 export function buildPromptOgImageUrl(
 	section: PromptSection,
 	authorSlug: string,

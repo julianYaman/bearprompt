@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import AuthorSection from '$lib/components/public/AuthorSection.svelte';
 	import AuthorSectionSkeleton from '$lib/components/public/AuthorSectionSkeleton.svelte';
@@ -7,15 +8,18 @@
 	import Pagination from '$lib/components/public/Pagination.svelte';
 	import PublicLibraryError from '$lib/components/public/PublicLibraryError.svelte';
 	import EmptySearchResults from '$lib/components/public/EmptySearchResults.svelte';
+	import FeaturedCategoryGrid from '$lib/components/public/FeaturedCategoryGrid.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
-	import { loadPrompts, loadTags } from '$lib/stores';
-	import type { PublicPrompt } from '$lib/types/public';
+	import { loadPrompts, loadTags, theme } from '$lib/stores';
+	import { resolveThemeIsDark } from '$lib/utils';
+	import type { PublicCategory, PublicPrompt } from '$lib/types/public';
 
 	const MAX_SEARCH_LENGTH = 200;
 
 	let { data } = $props();
+	let systemPrefersDark = $state(false);
 
 	let searchInput = $state($page.url.searchParams.get('q') || '');
 
@@ -84,6 +88,34 @@
 		await loadPrompts();
 		await loadTags();
 	}
+
+	onMount(() => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const updatePreference = () => {
+			systemPrefersDark = mediaQuery.matches;
+		};
+
+		updatePreference();
+		mediaQuery.addEventListener('change', updatePreference);
+
+		return () => {
+			mediaQuery.removeEventListener('change', updatePreference);
+		};
+	});
+
+	const starterPromptCategory = $derived<PublicCategory>({
+		id: 'starter-prompts-chatgpt',
+		slug: 'starter-prompts-chatgpt',
+		name: 'Starter Prompts for ChatGPT',
+		description: 'A direct jump to OpenAI starter prompts and the official OpenAI author page.',
+		color: resolveThemeIsDark($theme, systemPrefersDark) ? '#f5f5f5' : '#080808',
+		icon_key: 'sparkles',
+		image_url:
+			'https://img.logo.dev/name/ChatGPT?token=pk_Ss1kqMCwRdC9gAGPgJ4RTw&retina=true',
+		promptCount: 0,
+		tags: [],
+		externalUrl: '/prompts/openai'
+	});
 </script>
 
 <svelte:head>
@@ -209,9 +241,21 @@
 			{#if !libraryData}
 				<PublicLibraryError />
 			{:else}
+				<FeaturedCategoryGrid
+					categories={[...(libraryData.featuredCategories ?? []), starterPromptCategory]}
+				/>
+
 				<!-- Highlighted authors -->
 				{#if libraryData.highlightedAuthors.length > 0}
 					<div class="mb-8">
+						<div class="mb-4">
+							<p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--color-text-muted);">
+								Featured Authors
+							</p>
+							<h2 class="text-2xl font-semibold" style="color: var(--color-text-primary);">
+								Prompt Collections to Explore
+							</h2>
+						</div>
 						{#each libraryData.highlightedAuthors as author}
 							<AuthorSection {author} onAddToLibrary={handleAddToLibrary} />
 						{/each}
@@ -220,6 +264,14 @@
 
 				<!-- Regular authors -->
 				{#if libraryData.authors.length > 0}
+					<div class="mb-4">
+						<p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--color-text-muted);">
+							All Authors
+						</p>
+						<h2 class="text-2xl font-semibold" style="color: var(--color-text-primary);">
+							Explore the full public library
+						</h2>
+					</div>
 					{#each libraryData.authors as author}
 						<AuthorSection {author} onAddToLibrary={handleAddToLibrary} />
 					{/each}

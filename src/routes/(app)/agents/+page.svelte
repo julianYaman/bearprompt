@@ -213,6 +213,14 @@
 				<!-- Highlighted authors -->
 				{#if libraryData.highlightedAuthors.length > 0}
 					<div class="mb-8">
+						<div class="mb-4">
+							<p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--color-text-muted);">
+								Featured Authors
+							</p>
+							<h2 class="text-2xl font-semibold" style="color: var(--color-text-primary);">
+								Highlighted agent prompt collections
+							</h2>
+						</div>
 						{#each libraryData.highlightedAuthors as author}
 							<AuthorSection {author} basePath={BASE_PATH} itemLabel="agents" onAddToLibrary={handleAddToLibrary} />
 						{/each}
@@ -221,6 +229,14 @@
 
 				<!-- Regular authors -->
 				{#if libraryData.authors.length > 0}
+					<div class="mb-4">
+						<p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--color-text-muted);">
+							All Authors
+						</p>
+						<h2 class="text-2xl font-semibold" style="color: var(--color-text-primary);">
+							Discover more agent prompts
+						</h2>
+					</div>
 					{#each libraryData.authors as author}
 						<AuthorSection {author} basePath={BASE_PATH} itemLabel="agents" onAddToLibrary={handleAddToLibrary} />
 					{/each}

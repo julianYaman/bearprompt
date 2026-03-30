@@ -25,15 +25,29 @@ type PromptRow = {
 	author: { slug: string | null } | { slug: string | null }[] | null;
 };
 
+type CategoryRow = {
+	slug: string | null;
+	updated_at: string | null;
+};
+
 async function generateSitemapXml(): Promise<string> {
 	const supabase = getSupabase();
-	const { data, error } = await supabase
-		.from('prompts')
-		.select('slug, updated_at, type, author:author_id (slug)')
-		.order('updated_at', { ascending: false });
+	const [{ data, error }, { data: categoryData, error: categoryError }] = await Promise.all([
+		supabase
+			.from('prompts')
+			.select('slug, updated_at, type, author:author_id (slug)')
+			.order('updated_at', { ascending: false }),
+		supabase
+			.from('categories')
+			.select('slug, updated_at')
+			.order('sort_order', { ascending: true })
+	]);
 
 	if (error) {
 		throw error;
+	}
+	if (categoryError && categoryError.code !== '42P01' && categoryError.code !== 'PGRST205') {
+		throw categoryError;
 	}
 
 	const promptUrls: string[] = [];
@@ -60,11 +74,18 @@ async function generateSitemapXml(): Promise<string> {
 	}
 
 	const authorUrls: string[] = [];
+	const categoryUrls: string[] = [];
 	for (const [authorSlug, lastmod] of authorPromptPages.entries()) {
 		authorUrls.push(buildUrl(`${BASE_URL}/prompts/${authorSlug}`, lastmod || undefined));
 	}
 	for (const [authorSlug, lastmod] of authorAgentPages.entries()) {
 		authorUrls.push(buildUrl(`${BASE_URL}/agents/${authorSlug}`, lastmod || undefined));
+	}
+	for (const row of (categoryData || []) as CategoryRow[]) {
+		if (!row.slug) continue;
+		categoryUrls.push(
+			buildUrl(`${BASE_URL}/prompts/category/${row.slug}`, toIsoDate(row.updated_at))
+		);
 	}
 
 	const staticUrls = [
@@ -75,7 +96,7 @@ async function generateSitemapXml(): Promise<string> {
 		buildUrl(`${BASE_URL}/help`)
 	];
 
-	const urls = [...staticUrls, ...authorUrls, ...promptUrls].join('\n');
+	const urls = [...staticUrls, ...categoryUrls, ...authorUrls, ...promptUrls].join('\n');
 
 	return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }
