@@ -107,7 +107,7 @@
 		id: 'starter-prompts-chatgpt',
 		slug: 'starter-prompts-chatgpt',
 		name: 'Starter Prompts for ChatGPT',
-		description: 'A direct jump to OpenAI starter prompts and the official OpenAI author page.',
+		description: 'Start faster with official ChatGPT prompts from OpenAI.',
 		color: resolveThemeIsDark($theme, systemPrefersDark) ? '#f5f5f5' : '#080808',
 		icon_key: 'sparkles',
 		image_url:
