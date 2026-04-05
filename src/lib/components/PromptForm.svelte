@@ -1,23 +1,34 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import TagPicker from './TagPicker.svelte';
-	import { createPrompt, updatePrompt, deletePrompt, getPromptById, createFolder } from '$lib/db';
-	import { prompts, folders, activeFolderId, loadFolders } from '$lib/stores';
+	import {
+		createPrompt,
+		updatePrompt,
+		deletePrompt,
+		getPromptById,
+		createFolder,
+		createTag
+	} from '$lib/db';
+	import { prompts, folders, activeFolderId, loadFolders, tags as tagsStore } from '$lib/stores';
 	import { MAX_TITLE_LENGTH } from '$lib/utils';
 	import type { Prompt } from '$lib/types';
+	import type { SharedPromptPayload } from '$lib/share';
 
 	interface Props {
 		promptId?: string | null;
+		initialPrompt?: SharedPromptPayload | null;
 		onClose: () => void;
 	}
 
-	let { promptId = null, onClose }: Props = $props();
+	let { promptId = null, initialPrompt = null, onClose }: Props = $props();
 
 	let title = $state('');
 	let markdown = $state('');
 	let tagIds = $state<string[]>([]);
+	let pendingTagNames = $state<string[]>([]);
 	let folderId = $state<string | null>(null);
 	let isLoading = $state(true);
+	let hasInitialized = $state(false);
 	let isAddingFolder = $state(false);
 	let newFolderName = $state('');
 	let isSaving = $state(false);
@@ -28,6 +39,8 @@
 
 	// Load existing prompt data or initialize folder for new prompts
 	$effect(() => {
+		if (hasInitialized) return;
+
 		if (promptId) {
 			getPromptById(promptId)
 				.then((prompt) => {
@@ -38,16 +51,43 @@
 						folderId = prompt.folderId;
 					}
 					isLoading = false;
+					hasInitialized = true;
 				})
 				.catch((error) => {
 					console.error('Failed to load prompt:', error);
 					alert('Failed to load prompt. Please try again.');
 					isLoading = false;
+					hasInitialized = true;
 				});
 		} else {
+			const selectedTagIds: string[] = [];
+			const unresolvedTagNames: string[] = [];
+			const seenTagNames = new Set<string>();
+
+			for (const tagName of initialPrompt?.tags ?? []) {
+				const trimmed = tagName.trim();
+				if (!trimmed) continue;
+
+				const normalized = trimmed.toLowerCase();
+				if (seenTagNames.has(normalized)) continue;
+				seenTagNames.add(normalized);
+
+				const existingTag = $tagsStore.find((tag) => tag.name.toLowerCase() === normalized);
+				if (existingTag) {
+					selectedTagIds.push(existingTag.id);
+				} else {
+					unresolvedTagNames.push(trimmed);
+				}
+			}
+
+			title = initialPrompt?.title ?? '';
+			markdown = initialPrompt?.markdown ?? '';
+			tagIds = selectedTagIds;
+			pendingTagNames = unresolvedTagNames;
 			// For new prompts, pre-select the active folder (unless it's 'all')
 			folderId = $activeFolderId === 'all' ? null : $activeFolderId;
 			isLoading = false;
+			hasInitialized = true;
 		}
 	});
 
@@ -71,12 +111,33 @@
 		isSaving = true;
 
 		try {
+			const resolvedTagIds = [...tagIds];
+
+			if (!isEditing) {
+				for (const tagName of pendingTagNames) {
+					const trimmed = tagName.trim();
+					if (!trimmed) continue;
+
+					const existingTag = $tagsStore.find((tag) => tag.name.toLowerCase() === trimmed.toLowerCase());
+					if (existingTag) {
+						if (!resolvedTagIds.includes(existingTag.id)) {
+							resolvedTagIds.push(existingTag.id);
+						}
+						continue;
+					}
+
+					const createdTag = await createTag(trimmed);
+					tagsStore.update((tags) => [...tags, createdTag]);
+					resolvedTagIds.push(createdTag.id);
+				}
+			}
+
 			if (isEditing && promptId) {
 				// Update existing
 				const updated = await updatePrompt(promptId, {
 					title: title.trim(),
 					markdown,
-					tagIds,
+					tagIds: resolvedTagIds,
 					folderId
 				});
 				if (updated) {
@@ -86,7 +147,7 @@
 				}
 			} else {
 				// Create new
-				const newPrompt = await createPrompt(title.trim(), markdown, tagIds, folderId);
+				const newPrompt = await createPrompt(title.trim(), markdown, resolvedTagIds, folderId);
 				prompts.update((list) => [newPrompt, ...list]);
 			}
 			onClose();
@@ -113,6 +174,10 @@
 
 	function handleTagsChange(newIds: string[]) {
 		tagIds = newIds;
+	}
+
+	function removePendingTag(tagName: string) {
+		pendingTagNames = pendingTagNames.filter((name) => name !== tagName);
 	}
 
 	async function handleCreateFolder() {
@@ -205,6 +270,27 @@
 			</div>
 
 			<!-- Tags -->
+			{#if pendingTagNames.length > 0}
+				<div class="space-y-2">
+					<p class="text-sm" style="color: var(--color-text-secondary);">
+						These tags will be created when you save.
+					</p>
+					<div class="flex flex-wrap gap-2">
+						{#each pendingTagNames as tagName (tagName)}
+							<button
+								type="button"
+								onclick={() => removePendingTag(tagName)}
+								class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition-colors"
+								style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
+								aria-label={`Remove pending tag ${tagName}`}
+							>
+								{tagName}
+								<Icon name="x" size={12} />
+							</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
 			<TagPicker selectedIds={tagIds} onSelect={handleTagsChange} />
 
 			<!-- Folder -->

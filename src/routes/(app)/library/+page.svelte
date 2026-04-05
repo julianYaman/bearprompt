@@ -40,6 +40,7 @@
 		clearShareFromSession,
 		decryptSharedPrompt,
 		encryptSharedPrompt,
+		parseNewPromptHash,
 		parseShareHash,
 		readShareFromSession,
 		type SharedPromptPayload
@@ -57,7 +58,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let isStarterModalOpen = $state(false);
 	let selectedStarterCategoryId = $state<string>(STARTER_PROMPT_CATEGORIES[0]?.id ?? '');
 	let isAddingStarterPrompts = $state(false);
-	let onboardingFeedback = $state('');
+	let libraryFeedback = $state('');
+	let libraryFeedbackTone = $state<'success' | 'info'>('success');
 	let isShareModalOpen = $state(false);
 	let shareTargetPrompt = $state<Prompt | null>(null);
 	let shareLink = $state('');
@@ -73,10 +75,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let importStatus = $state<'loading' | 'ready' | 'error' | 'importing' | 'imported'>('loading');
 	let importError = $state('');
 	let importPayload = $state<SharedPromptPayload | null>(null);
+	let newPromptPayload = $state<SharedPromptPayload | null>(null);
 	let showCaptchaChallenge = $state(false);
 	let turnstileContainerEl = $state<HTMLDivElement | null>(null);
 	let activeTurnstileWidgetId: string | null = null;
-	let onboardingFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+	let libraryFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	type TurnstileApi = {
 		render: (
@@ -140,6 +143,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	function handleCreateNew() {
 		void markOnboardingComplete();
 		editingPromptId.set(null);
+		newPromptPayload = null;
 		isCreating.set(true);
 	}
 
@@ -151,6 +155,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	function handleCloseForm() {
 		isCreating.set(false);
 		editingPromptId.set(null);
+		newPromptPayload = null;
 	}
 
 	async function markOnboardingComplete() {
@@ -159,19 +164,20 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		await updateSettings({ hasCompletedOnboarding: true });
 	}
 
-	function showOnboardingFeedback(message: string) {
-		onboardingFeedback = message;
-		if (onboardingFeedbackTimeout) clearTimeout(onboardingFeedbackTimeout);
-		onboardingFeedbackTimeout = setTimeout(() => {
-			onboardingFeedback = '';
+	function showLibraryFeedback(message: string, tone: 'success' | 'info' = 'success') {
+		libraryFeedback = message;
+		libraryFeedbackTone = tone;
+		if (libraryFeedbackTimeout) clearTimeout(libraryFeedbackTimeout);
+		libraryFeedbackTimeout = setTimeout(() => {
+			libraryFeedback = '';
 		}, 4000);
 	}
 
-	function dismissOnboardingFeedback() {
-		onboardingFeedback = '';
-		if (onboardingFeedbackTimeout) {
-			clearTimeout(onboardingFeedbackTimeout);
-			onboardingFeedbackTimeout = null;
+	function dismissLibraryFeedback() {
+		libraryFeedback = '';
+		if (libraryFeedbackTimeout) {
+			clearTimeout(libraryFeedbackTimeout);
+			libraryFeedbackTimeout = null;
 		}
 	}
 
@@ -228,7 +234,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 			await loadTags();
 
 			isStarterModalOpen = false;
-			showOnboardingFeedback(
+			showLibraryFeedback(
 				`Added ${createdPrompts.length} ${
 					createdPrompts.length === 1 ? 'starter prompt' : 'starter prompts'
 				} to your library.`
@@ -607,15 +613,47 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		}
 	}
 
+	function clearUrlHash() {
+		if (window.location.hash) {
+			history.replaceState(null, '', window.location.pathname + window.location.search);
+		}
+	}
+
+	function loadNewPromptFromHash(hash: string): boolean {
+		if (!hash.startsWith('#new=')) return false;
+
+		const payload = parseNewPromptHash(hash);
+		clearUrlHash();
+
+		if (!payload) {
+			showLibraryFeedback('This prefilled prompt link is invalid.', 'info');
+			return true;
+		}
+
+		if ($isCreating || $editingPromptId !== null) {
+			showLibraryFeedback(
+				'Prefilled prompt link ignored because a prompt form is already open.',
+				'info'
+			);
+			return true;
+		}
+
+		newPromptPayload = payload;
+		editingPromptId.set(null);
+		isCreating.set(true);
+		void markOnboardingComplete();
+		return true;
+	}
+
 	async function loadShareFromUrl() {
+		if (loadNewPromptFromHash(window.location.hash)) return;
+
 		const sessionRef = readShareFromSession();
 		const hashRef = parseShareHash(window.location.hash);
 		const shareRef = hashRef || sessionRef;
 		if (!shareRef) return;
 
-		if (window.location.hash) {
-			history.replaceState(null, '', window.location.pathname + window.location.search);
-		}
+		clearUrlHash();
 
 		isImportModalOpen = true;
 		importStatus = 'loading';
@@ -720,7 +758,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		return () => {
 			window.removeEventListener('hashchange', onHashChange);
 			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
-			if (onboardingFeedbackTimeout) clearTimeout(onboardingFeedbackTimeout);
+			if (libraryFeedbackTimeout) clearTimeout(libraryFeedbackTimeout);
 			cleanupTurnstileWidget();
 		};
 	});
@@ -944,7 +982,13 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					class="mb-4 rounded-lg border p-3 text-xs leading-relaxed"
 					style="border-color: var(--color-border); background-color: var(--color-bg-secondary); color: var(--color-text-secondary);"
 				>
-					<div class="space-y-1">
+					<div class="flex items-center gap-3">
+						<div
+							class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
+							style="background-color: var(--color-bg-primary); color: var(--color-text-secondary);"
+						>
+							<Icon name="lock" size={16} />
+						</div>
 						<ul>
 							<li>The prompt is <b>end-to-end encrypted</b>. Bearprompt cannot access its content.</li>
 							<li>Anyone with this exact link can import the prompt. It expires in 14 days.</li>
@@ -1099,7 +1143,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 {/if}
 
 {#if showForm}
-	<PromptForm promptId={$editingPromptId} onClose={handleCloseForm} />
+	<PromptForm promptId={$editingPromptId} initialPrompt={newPromptPayload} onClose={handleCloseForm} />
 {:else}
 	<div class="h-full p-4 md:p-6">
 		<!-- Headline / Breadcrumb -->
@@ -1136,25 +1180,41 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		</div>
 
 		<!-- Search and Filter -->
-		{#if onboardingFeedback}
+		{#if libraryFeedback}
 			<div
 				class="mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-3"
-				style="border-color: color-mix(in oklab, var(--color-success) 30%, var(--color-border)); background-color: color-mix(in oklab, var(--color-success) 12%, var(--color-bg-primary));"
+				style={`border-color: ${
+					libraryFeedbackTone === 'success'
+						? 'color-mix(in oklab, var(--color-success) 30%, var(--color-border))'
+						: 'color-mix(in oklab, var(--color-accent) 30%, var(--color-border))'
+				}; background-color: ${
+					libraryFeedbackTone === 'success'
+						? 'color-mix(in oklab, var(--color-success) 12%, var(--color-bg-primary))'
+						: 'color-mix(in oklab, var(--color-accent) 10%, var(--color-bg-primary))'
+				};`}
 			>
 				<div class="flex min-w-0 items-center gap-3">
 					<div
 						class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-						style="background-color: color-mix(in oklab, var(--color-success) 22%, transparent); color: var(--color-success);"
+						style={`background-color: ${
+							libraryFeedbackTone === 'success'
+								? 'color-mix(in oklab, var(--color-success) 22%, transparent)'
+								: 'color-mix(in oklab, var(--color-accent) 18%, transparent)'
+						}; color: ${
+							libraryFeedbackTone === 'success'
+								? 'var(--color-success)'
+								: 'var(--color-accent)'
+						};`}
 					>
-						<Icon name="check" size={16} />
+						<Icon name={libraryFeedbackTone === 'success' ? 'check' : 'info'} size={16} />
 					</div>
 					<p class="text-sm font-medium leading-relaxed" style="color: var(--color-text-primary);">
-						{onboardingFeedback}
+						{libraryFeedback}
 					</p>
 				</div>
 				<button
 					type="button"
-					onclick={dismissOnboardingFeedback}
+					onclick={dismissLibraryFeedback}
 					class="rounded p-1 transition-colors"
 					style="color: var(--color-text-muted);"
 					aria-label="Dismiss success message"

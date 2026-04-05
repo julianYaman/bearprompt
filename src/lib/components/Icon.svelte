@@ -50,7 +50,10 @@
 			| 'folder'
 			| 'folder-open'
 			| 'chevron-right'
-			| 'share';
+			| 'share'
+			| 'message-square'
+			| 'triangle-alert'
+			| 'lock';
 		size?: number;
 		class?: string;
 	}
@@ -193,5 +196,14 @@
 			<circle cx="18" cy="19" r="3" />
 			<path d="m8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5" />
 		</g>
+	{:else if name === 'message-square'}
+		<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+	{:else if name === 'triangle-alert'}
+		<path d="m10.29 3.86-7.54 13.08A2 2 0 0 0 4.48 20h15.04a2 2 0 0 0 1.73-3.06L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+		<path d="M12 9v4" />
+		<path d="M12 17h.01" />
+	{:else if name === 'lock'}
+		<rect width="18" height="12" x="3" y="10" rx="2" />
+		<path d="M7 10V7a5 5 0 0 1 10 0v3" />
 	{/if}
 </svg>

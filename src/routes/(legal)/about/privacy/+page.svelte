@@ -5,7 +5,7 @@
 
 <article>
 	<h1>Privacy Policy</h1>
-	<p class="last-updated">Last updated: March 29, 2026</p>
+	<p class="last-updated">Last updated: April 5, 2026</p>
 
 	<p>
 		Welcome to Bearprompt ("we", "us", or "our"). We are committed to protecting your privacy. 
@@ -47,7 +47,18 @@
 		<li>Shared payloads are automatically deleted after 14 days</li>
 		<li>Links can be revoked by the share creator while the share dialog remains open</li>
 		<li>Anyone with the full link can import that shared prompt</li>
+		<li>End-to-end encryption does not protect against malware, malicious browser extensions, injected scripts, or other compromise on your device/browser</li>
 	</ul>
+	<p>
+		End-to-end encrypted sharing protects prompt content from access by our servers because the decryption key
+		remains client-side. However, if your browser, device, or JavaScript environment is compromised, encrypted
+		content, shared links, session storage values, decryption keys, and decrypted prompt data may be exposed
+		before, during, or after decryption.
+	</p>
+	<p>
+		You are responsible for maintaining a trusted browser environment, including reviewing installed extensions,
+		avoiding untrusted devices, and protecting access to shared links.
+	</p>
 
 	<h2>4. Analytics, Fonts, and Security Services</h2>
 	<p>

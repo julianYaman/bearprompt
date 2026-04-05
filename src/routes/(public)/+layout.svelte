@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../../app.css';
 	import { onMount } from 'svelte';
+	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';
 	import { initializeTheme } from '$lib/theme';
 
 	let { children } = $props();
@@ -25,6 +26,7 @@
 
 <div class="marketing-page">
 	{@render children()}
+	<FeedbackWidget />
 </div>
 
 <style>
