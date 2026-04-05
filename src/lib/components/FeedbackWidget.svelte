@@ -54,6 +54,7 @@
 				href={feedbackUrl}
 				target="_blank"
 				rel="noreferrer"
+				data-umami-event="Open Feedback Form"
 			>
 				<span class="feedback-option__icon">
 					<Icon name="message-square" size={18} />
@@ -66,6 +67,7 @@
 				href={issueUrl}
 				target="_blank"
 				rel="noreferrer"
+				data-umami-event="Open Report Issue"
 			>
 				<span class="feedback-option__icon feedback-option__icon--warning">
 					<Icon name="triangle-alert" size={18} />
