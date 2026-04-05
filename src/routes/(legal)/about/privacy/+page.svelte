@@ -5,7 +5,7 @@
 
 <article>
 	<h1>Privacy Policy</h1>
-	<p class="last-updated">Last updated: March 29, 2026</p>
+	<p class="last-updated">Last updated: April 5, 2026</p>
 
 	<p>
 		Welcome to Bearprompt ("we", "us", or "our"). We are committed to protecting your privacy. 
