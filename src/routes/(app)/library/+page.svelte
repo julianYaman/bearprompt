@@ -75,6 +75,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	let importStatus = $state<'loading' | 'ready' | 'error' | 'importing' | 'imported'>('loading');
 	let importError = $state('');
 	let importPayload = $state<SharedPromptPayload | null>(null);
+	let importCopied = $state(false);
+	let importCopyTimeout: ReturnType<typeof setTimeout> | null = null;
 	let newPromptPayload = $state<SharedPromptPayload | null>(null);
 	let showCaptchaChallenge = $state(false);
 	let turnstileContainerEl = $state<HTMLDivElement | null>(null);
@@ -579,6 +581,26 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		importStatus = 'loading';
 		importError = '';
 		importPayload = null;
+		importCopied = false;
+		if (importCopyTimeout) {
+			clearTimeout(importCopyTimeout);
+			importCopyTimeout = null;
+		}
+	}
+
+	async function handleCopyImportedPrompt() {
+		if (!importPayload) return;
+
+		try {
+			await navigator.clipboard.writeText(importPayload.markdown);
+			importCopied = true;
+			if (importCopyTimeout) clearTimeout(importCopyTimeout);
+			importCopyTimeout = setTimeout(() => {
+				importCopied = false;
+			}, 1500);
+		} catch {
+			importError = 'Failed to copy shared prompt.';
+		}
 	}
 
 	async function importSharedPromptToLibrary() {
@@ -758,6 +780,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		return () => {
 			window.removeEventListener('hashchange', onHashChange);
 			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
+			if (importCopyTimeout) clearTimeout(importCopyTimeout);
 			if (libraryFeedbackTimeout) clearTimeout(libraryFeedbackTimeout);
 			cleanupTurnstileWidget();
 		};
@@ -1125,7 +1148,17 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								? 'Adding...'
 								: importStatus === 'imported'
 									? 'Added'
-									: 'Add to library'}
+								: 'Add to library'}
+						</button>
+						<button
+							type="button"
+							onclick={handleCopyImportedPrompt}
+							disabled={importStatus === 'importing'}
+							class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+							style="border-color: var(--color-border); color: var(--color-text-primary); background-color: transparent;"
+						>
+							<Icon name={importCopied ? 'check' : 'copy'} size={16} />
+							{importCopied ? 'Copied' : 'Copy'}
 						</button>
 						<button
 							type="button"
