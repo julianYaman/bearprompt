@@ -8,6 +8,7 @@
 	import MobileDrawer from '$lib/components/MobileDrawer.svelte';
 	import AboutModal from '$lib/components/AboutModal.svelte';
 	import CopyAnnouncer from '$lib/components/CopyAnnouncer.svelte';
+	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';
 	import { initializeTheme } from '$lib/theme';
 	import { prompts, tags, folders, mobileMenuOpen } from '$lib/stores';
 	import { getAllPrompts, getAllTags, getAllFolders } from '$lib/db';
@@ -124,6 +125,7 @@
 
 <!-- Modals -->
 <AboutModal />
+<FeedbackWidget />
 
 <!-- Accessibility -->
 <CopyAnnouncer />
