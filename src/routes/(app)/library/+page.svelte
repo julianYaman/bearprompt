@@ -985,7 +985,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					<div class="flex items-center gap-3">
 						<div
 							class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full"
-							style="background-color: color-mix(in oklab, white 75%, transparent); color: var(--color-text-secondary);"
+							style="background-color: var(--color-bg-primary); color: var(--color-text-secondary);"
 						>
 							<Icon name="lock" size={16} />
 						</div>
