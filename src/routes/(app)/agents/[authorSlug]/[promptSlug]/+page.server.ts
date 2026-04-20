@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { getSupabase } from '$lib/supabase';
-import { getPromptBySlug } from '$lib/server/queries';
-import { getCachedPromptData, CACHE_CONTROL } from '$lib/server/cache';
+import { getPromptBySlug, getRelatedPrompts } from '$lib/server/queries';
+import { getCachedPromptData, getCachedRelatedPrompts, CACHE_CONTROL } from '$lib/server/cache';
 import { error } from '@sveltejs/kit';
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
@@ -85,6 +85,17 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 			throw error(404, 'Agent prompt not found');
 		}
 
+		const relatedPrompts = (async () => {
+			try {
+				return await getCachedRelatedPrompts('agents', authorSlug, promptSlug, () =>
+					getRelatedPrompts(supabase, prompt, 4)
+				);
+			} catch (relatedError) {
+				console.error('Failed to load related agents:', relatedError);
+				return [];
+			}
+		})();
+
 		// Pre-render and sanitize additional_information on the server so the
 		// client receives safe HTML — no Markdown library is ever shipped to or
 		// executed in the browser.
@@ -94,7 +105,8 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
 		return {
 			prompt,
-			additionalInfoHtml
+			additionalInfoHtml,
+			relatedPrompts
 		};
 	} catch (err) {
 		// Re-throw SvelteKit errors (like 404)

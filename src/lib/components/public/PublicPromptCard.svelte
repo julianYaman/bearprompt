@@ -152,6 +152,7 @@
 	<!-- Content Section - Links to prompt detail page -->
 	<a
 		href={promptDetailUrl}
+		data-sveltekit-preload-data="hover"
 		class="content-section flex h-32 flex-col justify-between border-t p-4 transition-colors hover:bg-opacity-80"
 		style="border-color: var(--color-border); background-color: var(--color-bg-secondary);"
 	>

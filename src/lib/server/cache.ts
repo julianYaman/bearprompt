@@ -15,6 +15,7 @@ const TTL = {
 	MAIN_PAGE: 3 * 60 * 60 * 1000,      // 3 hours
 	AUTHOR_PAGE: 1 * 60 * 60 * 1000,    // 1 hour
 	PROMPT_PAGE: 12 * 60 * 60 * 1000,   // 12 hours
+	RELATED_PROMPTS: 72 * 60 * 60 * 1000, // 72 hours
 	SEARCH: 1 * 60 * 60 * 1000,         // 1 hour
 	SITEMAP: 24 * 60 * 60 * 1000        // 24 hours
 };
@@ -80,6 +81,11 @@ const categoryListCache = new LRUCache<string, PublicCategory[]>({
 const categoryPageCache = new LRUCache<string, CategoryPageData>({
 	max: 100,
 	ttl: TTL.AUTHOR_PAGE
+});
+
+const relatedPromptsCache = new LRUCache<string, PublicPrompt[]>({
+	max: 1000,
+	ttl: TTL.RELATED_PROMPTS
 });
 
 // Cache for sitemap XML
@@ -264,6 +270,23 @@ export async function getCachedCategoryPageData(
 	return data;
 }
 
+export async function getCachedRelatedPrompts(
+	routeGroup: 'prompts' | 'agents',
+	authorSlug: string,
+	promptSlug: string,
+	fetcher: () => Promise<PublicPrompt[]>
+): Promise<PublicPrompt[]> {
+	const key = `related:${routeGroup}:${authorSlug}:${promptSlug}`;
+	const cached = relatedPromptsCache.get(key);
+	if (cached) {
+		return cached;
+	}
+
+	const data = await fetcher();
+	relatedPromptsCache.set(key, data);
+	return data;
+}
+
 /**
  * Get cached sitemap XML or fetch fresh
  */
@@ -287,6 +310,7 @@ export function clearAllCaches(): void {
 	libraryCache.clear();
 	authorCache.clear();
 	promptCache.clear();
+	relatedPromptsCache.clear();
 	searchCache.clear();
 	agentLibraryCache.clear();
 	agentSearchCache.clear();
@@ -321,14 +345,25 @@ export function clearAuthorCache(authorSlug?: string): void {
 export function clearPromptCache(authorSlug?: string, promptSlug?: string): void {
 	if (authorSlug && promptSlug) {
 		promptCache.delete(`prompt:${authorSlug}:${promptSlug}`);
+		relatedPromptsCache.delete(`related:prompts:${authorSlug}:${promptSlug}`);
+		relatedPromptsCache.delete(`related:agents:${authorSlug}:${promptSlug}`);
 	} else if (authorSlug) {
 		for (const key of promptCache.keys()) {
 			if (key.startsWith(`prompt:${authorSlug}:`)) {
 				promptCache.delete(key);
 			}
 		}
+		for (const key of relatedPromptsCache.keys()) {
+			if (
+				key.startsWith(`related:prompts:${authorSlug}:`) ||
+				key.startsWith(`related:agents:${authorSlug}:`)
+			) {
+				relatedPromptsCache.delete(key);
+			}
+		}
 	} else {
 		promptCache.clear();
+		relatedPromptsCache.clear();
 	}
 }
 
@@ -364,6 +399,7 @@ export function getCacheStats() {
 		library: { size: libraryCache.size, max: 50 },
 		author: { size: authorCache.size, max: 100 },
 		prompt: { size: promptCache.size, max: 500 },
+		relatedPrompts: { size: relatedPromptsCache.size, max: 1000 },
 		search: { size: searchCache.size, max: 100 },
 		agentLibrary: { size: agentLibraryCache.size, max: 50 },
 		agentSearch: { size: agentSearchCache.size, max: 100 },

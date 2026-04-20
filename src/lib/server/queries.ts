@@ -26,6 +26,16 @@ type CategoryTagRow = {
 	tag?: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
+type PromptCategoryTagRow = {
+	category_id: string;
+	tag_id: string;
+};
+
+type PromptCandidateRow = {
+	tag_id: string;
+	prompt: PublicPrompt | PublicPrompt[] | null;
+};
+
 function sortPromptsAlphabetically<T extends Pick<PublicPrompt, 'title'>>(prompts: T[]): T[] {
 	return [...prompts].sort((a, b) => a.title.localeCompare(b.title));
 }
@@ -93,6 +103,46 @@ async function attachTagsToPrompts(
 			tags: tagMap.get(prompt.id) || []
 		}))
 	);
+}
+
+async function attachTagsToPromptsPreservingOrder(
+	supabase: SupabaseClient,
+	prompts: PublicPrompt[]
+): Promise<PublicPrompt[]> {
+	const promptOrder = new Map(prompts.map((candidate, index) => [candidate.id, index]));
+
+	return (await attachTagsToPrompts(supabase, prompts)).sort(
+		(a, b) =>
+			(promptOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+			(promptOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+	);
+}
+
+async function getFallbackRelatedPrompts(
+	supabase: SupabaseClient,
+	prompt: PublicPrompt,
+	excludedPromptIds: Set<string>,
+	limit: number
+): Promise<PublicPrompt[]> {
+	if (limit <= 0) return [];
+
+	const { data, error } = await supabase
+		.from('prompts')
+		.select(
+			`
+			*,
+			author:author_id (*)
+		`
+		)
+		.eq('type', prompt.type)
+		.neq('id', prompt.id)
+		.order('title', { ascending: true })
+		.limit(Math.max(limit * 5, 20));
+
+	if (error) throw error;
+
+	const fallbackPrompts = (data || []).filter((candidate) => !excludedPromptIds.has(candidate.id));
+	return attachTagsToPrompts(supabase, fallbackPrompts.slice(0, limit));
 }
 
 /**
@@ -505,6 +555,183 @@ export async function getCategoryPageData(
 		currentPage: page,
 		totalPages
 	};
+}
+
+export async function getRelatedPrompts(
+	supabase: SupabaseClient,
+	prompt: PublicPrompt,
+	limit: number = 4
+): Promise<PublicPrompt[]> {
+	const currentTagIds = prompt.tags.map((tag) => tag.id);
+	const currentTagIdSet = new Set(currentTagIds);
+
+	if (currentTagIds.length === 0) {
+		return getFallbackRelatedPrompts(supabase, prompt, new Set<string>(), limit);
+	}
+
+	const { data: sharedTagRows, error: sharedTagError } = await supabase
+		.from('tag-to-prompt')
+		.select(
+			`
+			tag_id,
+			prompt:prompt_id (
+				*,
+				author:author_id (*)
+			)
+		`
+		)
+		.in('tag_id', currentTagIds);
+
+	if (sharedTagError) throw sharedTagError;
+
+	const candidatesById = new Map<
+		string,
+		{
+			prompt: PublicPrompt;
+			sharedTagIds: Set<string>;
+			sharedCategoryIds: Set<string>;
+		}
+	>();
+
+	for (const row of (sharedTagRows || []) as PromptCandidateRow[]) {
+		const candidatePrompt = normalizeJoinedRow(row.prompt);
+		if (!candidatePrompt || candidatePrompt.id === prompt.id || candidatePrompt.type !== prompt.type) {
+			continue;
+		}
+
+		const existing = candidatesById.get(candidatePrompt.id) ?? {
+			prompt: candidatePrompt,
+			sharedTagIds: new Set<string>(),
+			sharedCategoryIds: new Set<string>()
+		};
+
+		existing.sharedTagIds.add(row.tag_id);
+		candidatesById.set(candidatePrompt.id, existing);
+	}
+
+	const rankCandidates = () =>
+		[...candidatesById.values()]
+			.filter((candidate) => candidate.sharedTagIds.size > 0 || candidate.sharedCategoryIds.size > 0)
+			.sort((a, b) => {
+				if (b.sharedTagIds.size !== a.sharedTagIds.size) {
+					return b.sharedTagIds.size - a.sharedTagIds.size;
+				}
+
+				if (b.sharedCategoryIds.size !== a.sharedCategoryIds.size) {
+					return b.sharedCategoryIds.size - a.sharedCategoryIds.size;
+				}
+
+				return a.prompt.title.localeCompare(b.prompt.title);
+			})
+			.map((candidate) => candidate.prompt);
+
+	let rankedCandidates = rankCandidates();
+
+	if (rankedCandidates.length >= limit) {
+		return attachTagsToPromptsPreservingOrder(supabase, rankedCandidates.slice(0, limit));
+	}
+
+	const { data: matchingCategoryRows, error: matchingCategoryError } = await supabase
+		.from('category_tags')
+		.select('category_id, tag_id')
+		.in('tag_id', currentTagIds);
+
+	if (matchingCategoryError) throw matchingCategoryError;
+
+	const currentCategoryIds = [
+		...new Set((matchingCategoryRows || []).map((row) => row.category_id))
+	];
+	const currentCategoryIdSet = new Set(currentCategoryIds);
+
+	const { data: categoryTagRows, error: categoryTagError } = currentCategoryIds.length
+		? await supabase
+				.from('category_tags')
+				.select('category_id, tag_id')
+				.in('category_id', currentCategoryIds)
+		: { data: [], error: null };
+
+	if (categoryTagError) throw categoryTagError;
+
+	const categoryIdsByTag = new Map<string, Set<string>>();
+
+	for (const row of (categoryTagRows || []) as PromptCategoryTagRow[]) {
+		const tagCategoryIds = categoryIdsByTag.get(row.tag_id) || new Set<string>();
+		if (currentCategoryIdSet.has(row.category_id)) {
+			tagCategoryIds.add(row.category_id);
+		}
+		categoryIdsByTag.set(row.tag_id, tagCategoryIds);
+	}
+
+	for (const candidate of candidatesById.values()) {
+		for (const sharedTagId of candidate.sharedTagIds) {
+			for (const categoryId of categoryIdsByTag.get(sharedTagId) || []) {
+				candidate.sharedCategoryIds.add(categoryId);
+			}
+		}
+	}
+
+	const categoryFallbackTagIds = [...new Set(
+		(categoryTagRows || [])
+			.map((row) => row.tag_id)
+			.filter((tagId) => !currentTagIdSet.has(tagId))
+	)];
+
+	if (categoryFallbackTagIds.length > 0) {
+		const { data: categoryCandidateRows, error: categoryCandidateError } = await supabase
+			.from('tag-to-prompt')
+			.select(
+				`
+				tag_id,
+				prompt:prompt_id (
+					*,
+					author:author_id (*)
+				)
+			`
+			)
+			.in('tag_id', categoryFallbackTagIds);
+
+		if (categoryCandidateError) throw categoryCandidateError;
+
+		for (const row of (categoryCandidateRows || []) as PromptCandidateRow[]) {
+			const candidatePrompt = normalizeJoinedRow(row.prompt);
+			if (!candidatePrompt || candidatePrompt.id === prompt.id || candidatePrompt.type !== prompt.type) {
+				continue;
+			}
+
+			const existing = candidatesById.get(candidatePrompt.id) ?? {
+				prompt: candidatePrompt,
+				sharedTagIds: new Set<string>(),
+				sharedCategoryIds: new Set<string>()
+			};
+
+			for (const categoryId of categoryIdsByTag.get(row.tag_id) || []) {
+				existing.sharedCategoryIds.add(categoryId);
+			}
+
+			candidatesById.set(candidatePrompt.id, existing);
+		}
+	}
+
+	rankedCandidates = rankCandidates();
+
+	const primaryPrompts = await attachTagsToPromptsPreservingOrder(
+		supabase,
+		rankedCandidates.slice(0, limit)
+	);
+
+	if (primaryPrompts.length >= limit) {
+		return primaryPrompts;
+	}
+
+	const excludedPromptIds = new Set(primaryPrompts.map((candidate) => candidate.id));
+	const fallbackPrompts = await getFallbackRelatedPrompts(
+		supabase,
+		prompt,
+		excludedPromptIds,
+		limit - primaryPrompts.length
+	);
+
+	return [...primaryPrompts, ...fallbackPrompts];
 }
 
 /**

@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { getSupabase } from '$lib/supabase';
-import { getPromptBySlug } from '$lib/server/queries';
-import { getCachedPromptData, CACHE_CONTROL } from '$lib/server/cache';
+import { getPromptBySlug, getRelatedPrompts } from '$lib/server/queries';
+import { getCachedPromptData, getCachedRelatedPrompts, CACHE_CONTROL } from '$lib/server/cache';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
@@ -22,8 +22,20 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 			throw error(404, 'Prompt not found');
 		}
 
+		const relatedPrompts = (async () => {
+			try {
+				return await getCachedRelatedPrompts('prompts', authorSlug, promptSlug, () =>
+					getRelatedPrompts(supabase, prompt, 4)
+				);
+			} catch (relatedError) {
+				console.error('Failed to load related prompts:', relatedError);
+				return [];
+			}
+		})();
+
 		return {
-			prompt
+			prompt,
+			relatedPrompts
 		};
 	} catch (err) {
 		// Re-throw SvelteKit errors (like 404)

@@ -2,6 +2,9 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
 	import AgentToolLinks from '$lib/components/public/AgentToolLinks.svelte';
+	import PublicPromptCard from '$lib/components/public/PublicPromptCard.svelte';
+	import PromptCardSkeleton from '$lib/components/public/PromptCardSkeleton.svelte';
+	import type { PublicPrompt } from '$lib/types/public';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
 	import { buildPromptOgImageUrl } from '$lib/seo';
 	import { serializeJsonLd } from '$lib/security';
@@ -17,7 +20,7 @@
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 	let addTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	const prompt = data.prompt;
+	let prompt = $derived(data.prompt);
 
 	const PROMPT_LINE_THRESHOLD = 30;
 	const isLongPrompt = $derived(
@@ -25,40 +28,46 @@
 	);
 
 	// SEO: Generate meta description
-	const metaDescription = prompt.description || `AI agent prompt for ${prompt.title}`;
+	let metaDescription = $derived(prompt.description || `AI agent prompt for ${prompt.title}`);
 
 	// SEO: Generate page title
-	const pageTitle = `${prompt.title} | Agent Prompts | Bearprompt`;
+	let pageTitle = $derived(`${prompt.title} | Agent Prompts | Bearprompt`);
 
 	// SEO: Canonical URL
-	const canonicalUrl = prompt.author
+	let canonicalUrl = $derived(
+		prompt.author
 		? `https://bearprompt.com/agents/${prompt.author.slug}/${prompt.slug}`
-		: `https://bearprompt.com/agents`;
+		: `https://bearprompt.com/agents`
+	);
 
-	const ogImageUrl = prompt.author
+	let ogImageUrl = $derived(
+		prompt.author
 		? buildPromptOgImageUrl('agents', prompt.author.slug, prompt.slug)
-		: 'https://bearprompt.com/og-image.png';
+		: 'https://bearprompt.com/og-image.png'
+	);
 
 	// SEO: JSON-LD structured data
-	const jsonLd = serializeJsonLd({
-		'@context': 'https://schema.org',
-		'@type': 'CreativeWork',
-		name: prompt.title,
-		description: metaDescription,
-		url: canonicalUrl,
-		datePublished: prompt.created_at,
-		...(prompt.author && {
-			author: {
-				'@type': 'Thing',
-				name: prompt.author.name,
-				url: `https://bearprompt.com/agents/${prompt.author.slug}`,
-				...(prompt.author.avatar_url && { image: prompt.author.avatar_url })
-			}
-		}),
-		...(prompt.tags.length > 0 && {
-			keywords: prompt.tags.map((tag) => tag.name).join(', ')
+	let jsonLd = $derived(
+		serializeJsonLd({
+			'@context': 'https://schema.org',
+			'@type': 'CreativeWork',
+			name: prompt.title,
+			description: metaDescription,
+			url: canonicalUrl,
+			datePublished: prompt.created_at,
+			...(prompt.author && {
+				author: {
+					'@type': 'Thing',
+					name: prompt.author.name,
+					url: `https://bearprompt.com/agents/${prompt.author.slug}`,
+					...(prompt.author.avatar_url && { image: prompt.author.avatar_url })
+				}
+			}),
+			...(prompt.tags.length > 0 && {
+				keywords: prompt.tags.map((tag) => tag.name).join(', ')
+			})
 		})
-	});
+	);
 
 	async function handleCopy() {
 		if (!navigator.clipboard) {
@@ -114,6 +123,29 @@
 			console.error('Failed to add to library:', error);
 			alert('Failed to add prompt to library.');
 		}
+	}
+
+	async function handleAddRelatedToLibrary(relatedPrompt: PublicPrompt) {
+		const existingTags = await getAllTags();
+		const tagIds: string[] = [];
+
+		for (const publicTag of relatedPrompt.tags) {
+			const existing = existingTags.find(
+				(tag) => tag.name.toLowerCase() === publicTag.name.toLowerCase()
+			);
+
+			if (existing) {
+				tagIds.push(existing.id);
+			} else {
+				const newTag = await createTag(publicTag.name);
+				tagIds.push(newTag.id);
+				existingTags.push(newTag);
+			}
+		}
+
+		await createPrompt(relatedPrompt.title, relatedPrompt.prompt, tagIds);
+		await loadPrompts();
+		await loadTags();
 	}
 </script>
 
@@ -323,6 +355,43 @@
 			<AgentToolLinks tools={prompt.tools} />
 		{/if}
 	</article>
+
+	{#await data.relatedPrompts}
+		<section class="mt-8">
+			<div class="mb-4">
+				<h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">Related agents</h2>
+				<p class="mt-1 text-sm" style="color: var(--color-text-secondary);">
+					Loading similar agents...
+				</p>
+			</div>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+				{#each Array(4) as _}
+					<PromptCardSkeleton />
+				{/each}
+			</div>
+		</section>
+	{:then relatedPrompts}
+		{#if relatedPrompts.length > 0}
+			<section class="mt-8">
+				<div class="mb-4">
+					<h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">Related agents</h2>
+					<p class="mt-1 text-sm" style="color: var(--color-text-secondary);">
+						More agents with similar tags.
+					</p>
+				</div>
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					{#each relatedPrompts as relatedPrompt (relatedPrompt.id)}
+						<PublicPromptCard
+							prompt={relatedPrompt}
+							showAuthor={true}
+							basePath={BASE_PATH}
+							onAddToLibrary={handleAddRelatedToLibrary}
+						/>
+					{/each}
+				</div>
+			</section>
+		{/if}
+	{/await}
 </div>
 
 <style>
