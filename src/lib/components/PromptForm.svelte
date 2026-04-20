@@ -10,7 +10,7 @@
 		createTag
 	} from '$lib/db';
 	import { prompts, folders, activeFolderId, loadFolders, tags as tagsStore } from '$lib/stores';
-	import { MAX_TITLE_LENGTH } from '$lib/utils';
+	import { estimateTokenCount, MAX_TITLE_LENGTH } from '$lib/utils';
 	import type { Prompt } from '$lib/types';
 	import type { SharedPromptPayload } from '$lib/share';
 
@@ -36,6 +36,10 @@
 	let titleError = $state('');
 
 	let isEditing = $derived(!!promptId);
+	let estimatedTokenCount = $derived(estimateTokenCount(markdown));
+	let estimatedTokenLabel = $derived(
+		`${estimatedTokenCount} ${estimatedTokenCount === 1 ? 'token' : 'tokens'}`
+	);
 
 	// Load existing prompt data or initialize folder for new prompts
 	$effect(() => {
@@ -267,6 +271,9 @@
 					class="w-full resize-y rounded-lg border px-4 py-3 font-mono text-sm outline-none transition-colors"
 					style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary); min-height: 200px;"
 				></textarea>
+				<p class="mt-1 text-right text-xs" style="color: var(--color-text-muted);">
+					Estimated size: {estimatedTokenLabel}
+				</p>
 			</div>
 
 			<!-- Tags -->

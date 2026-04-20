@@ -30,6 +30,16 @@ export function stripMarkdown(text: string): string {
 		.trim();
 }
 
+/**
+ * Estimate token count using a lightweight character-based heuristic.
+ */
+export function estimateTokenCount(text: string): number {
+	const trimmed = text.trim();
+	if (!trimmed) return 0;
+
+	return Math.max(1, Math.ceil(trimmed.length / 4));
+}
+
 // ─── Export / Download Utilities ─────────────────────────────────────────────
 
 /**
