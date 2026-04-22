@@ -434,7 +434,11 @@ export async function getPromptCategories(
 			name: category.name,
 			description: category.description,
 			color: category.color,
+			color_light: category.color_light,
+			color_dark: category.color_dark,
 			icon_key: category.icon_key,
+			image_url: category.image_url,
+			source_url: category.source_url,
 			promptCount: promptIds.size,
 			tags: rows
 				.map((row) => normalizeJoinedRow(row.tag))

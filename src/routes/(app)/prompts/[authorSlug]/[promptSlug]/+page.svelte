@@ -315,6 +315,21 @@
 			{/if}
 		</section>
 
+		<!-- Additional Information (markdown) -->
+		{#if data.additionalInfoHtml}
+			<section class="border-b p-6" style="border-color: var(--color-border);">
+				<h2
+					class="mb-3 text-sm font-semibold uppercase tracking-wide"
+					style="color: var(--color-text-muted);"
+				>
+					Additional Information
+				</h2>
+				<div class="prose prose-sm max-w-none">
+					{@html data.additionalInfoHtml}
+				</div>
+			</section>
+		{/if}
+
 		<!-- Tags -->
 		{#if prompt.tags && prompt.tags.length > 0}
 			<section class="border-b p-6" style="border-color: var(--color-border);">

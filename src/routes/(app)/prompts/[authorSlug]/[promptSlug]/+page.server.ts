@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { getSupabase } from '$lib/supabase';
 import { getPromptBySlug, getRelatedPrompts } from '$lib/server/queries';
 import { getCachedPromptData, getCachedRelatedPrompts, CACHE_CONTROL } from '$lib/server/cache';
+import { renderMarkdown } from '$lib/server/markdown';
 import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
@@ -33,8 +34,13 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 			}
 		})();
 
+		const additionalInfoHtml = prompt.additional_information
+			? renderMarkdown(prompt.additional_information)
+			: null;
+
 		return {
 			prompt,
+			additionalInfoHtml,
 			relatedPrompts
 		};
 	} catch (err) {

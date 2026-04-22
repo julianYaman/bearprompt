@@ -50,11 +50,14 @@ export interface PublicCategory {
 	name: string;
 	description: string;
 	color: string;
+	color_light?: string | null;
+	color_dark?: string | null;
 	icon_key: CategoryIconKey | null;
-	image_url?: string;
+	image_url?: string | null;
 	promptCount: number;
 	tags: PublicTag[];
 	externalUrl?: string;
+	source_url?: string | null;
 }
 
 export interface AgentTool {

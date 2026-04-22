@@ -123,3 +123,16 @@ export function resolveFeaturedAuthorColor(
 		? (author.featured_color_dark ?? author.featured_color_light)
 		: (author.featured_color_light ?? author.featured_color_dark);
 }
+
+export function resolveFeaturedCategoryColor(
+	category: {
+		color: string;
+		color_light?: string | null;
+		color_dark?: string | null;
+	},
+	isDark: boolean
+): string {
+	return isDark
+		? (category.color_dark ?? category.color_light ?? category.color)
+		: (category.color_light ?? category.color_dark ?? category.color);
+}

@@ -1,19 +1,44 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import Pagination from '$lib/components/public/Pagination.svelte';
 	import PublicPromptCard from '$lib/components/public/PublicPromptCard.svelte';
 	import { createPrompt, createTag, getAllTags } from '$lib/db';
 	import { buildCategoryOgImageUrl } from '$lib/seo';
-	import { loadPrompts, loadTags } from '$lib/stores';
-	import { buildFeatureBorder, buildFeatureGradient } from '$lib/utils';
+	import { loadPrompts, loadTags, theme } from '$lib/stores';
+	import {
+		buildFeatureBorder,
+		buildFeatureGradient,
+		resolveFeaturedCategoryColor,
+		resolveThemeIsDark
+	} from '$lib/utils';
 	import type { PublicPrompt } from '$lib/types/public';
 
 	let { data } = $props();
+	let systemPrefersDark = $state(false);
 
-	const headerBackground = $derived(buildFeatureGradient(data.category.color, 0.2));
-	const headerBorder = $derived(buildFeatureBorder(data.category.color, 0.6));
+	const isDark = $derived(resolveThemeIsDark($theme, systemPrefersDark));
+	const categoryColor = $derived(resolveFeaturedCategoryColor(data.category, isDark));
+
+	const headerBackground = $derived(buildFeatureGradient(categoryColor, 0.2));
+	const headerBorder = $derived(buildFeatureBorder(categoryColor, 0.6));
 	const categoryIcon = $derived(data.category.icon_key ?? 'sparkles');
 	const ogImageUrl = $derived(buildCategoryOgImageUrl(data.category.slug));
+	const isNewCategory = $derived(data.category.slug === 'chatgpt-images-2-0');
+
+	onMount(() => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const updatePreference = () => {
+			systemPrefersDark = mediaQuery.matches;
+		};
+
+		updatePreference();
+		mediaQuery.addEventListener('change', updatePreference);
+
+		return () => {
+			mediaQuery.removeEventListener('change', updatePreference);
+		};
+	});
 
 	async function handleAddToLibrary(prompt: PublicPrompt) {
 		const existingTags = await getAllTags();
@@ -76,19 +101,35 @@
 	>
 		<div>
 			<div>
-				<p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em]" style={`color: ${data.category.color};`}>
+				<p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em]" style={`color: ${categoryColor};`}>
 					Category
 				</p>
-				<div class="flex items-center gap-3">
+				<div class="flex items-start gap-3">
 					<div
-						class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-						style={`background-color: color-mix(in srgb, ${data.category.color} 14%, transparent); color: ${data.category.color};`}
+						class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full"
+						style={`background-color: color-mix(in srgb, ${categoryColor} 14%, transparent); color: ${categoryColor};`}
 					>
-						<Icon name={categoryIcon} size={20} />
+						{#if data.category.image_url}
+							<img src={data.category.image_url} alt={`${data.category.name} logo`} class="h-full w-full object-cover" />
+						{:else}
+							<Icon name={categoryIcon} size={20} />
+						{/if}
 					</div>
-					<h1 class="text-3xl font-semibold" style={`color: ${data.category.color};`}>
-						{data.category.name}
-					</h1>
+					<div class="min-w-0">
+						<div class="flex flex-wrap items-start gap-2">
+							<h1 class="text-3xl font-semibold" style={`color: ${categoryColor};`}>
+								{data.category.name}
+							</h1>
+							{#if isNewCategory}
+								<span
+									class="mt-1 shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
+									style={`background-color: ${categoryColor}; color: var(--color-bg-primary);`}
+								>
+									New
+								</span>
+							{/if}
+						</div>
+					</div>
 				</div>
 				<div class="mt-2 text-sm" style="color: var(--color-text-primary);">
 					{data.totalPrompts} prompt{data.totalPrompts === 1 ? '' : 's'}
@@ -96,6 +137,20 @@
 				<p class="mt-3 max-w-3xl text-sm leading-6" style="color: var(--color-text-secondary);">
 					{data.category.description}
 				</p>
+				{#if data.category.source_url}
+					<p class="mt-3 text-sm" style="color: var(--color-text-secondary);">
+						<a
+							href={data.category.source_url}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center gap-1"
+							style="color: var(--color-accent);"
+						>
+							Source: OpenAI launch page
+							<Icon name="external-link" size={14} />
+						</a>
+					</p>
+				{/if}
 			</div>
 		</div>
 

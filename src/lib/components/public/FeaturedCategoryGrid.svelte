@@ -1,6 +1,14 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { buildFeatureBorder, buildFeatureGradient, hexToRgba } from '$lib/utils';
+	import { theme } from '$lib/stores';
+	import {
+		buildFeatureBorder,
+		buildFeatureGradient,
+		hexToRgba,
+		resolveFeaturedCategoryColor,
+		resolveThemeIsDark
+	} from '$lib/utils';
 	import type { PublicCategory } from '$lib/types/public';
 
 	interface Props {
@@ -8,6 +16,8 @@
 	}
 
 	let { categories }: Props = $props();
+	let systemPrefersDark = $state(false);
+	const isDark = $derived(resolveThemeIsDark($theme, systemPrefersDark));
 
 	function getCategoryHref(category: PublicCategory): string {
 		return category.externalUrl || `/prompts/category/${category.slug}`;
@@ -18,12 +28,34 @@
 	}
 
 	function getHoverShadow(category: PublicCategory): string {
-		return `0 16px 28px ${hexToRgba(category.color, 0.18)}`;
+		return `0 16px 28px ${hexToRgba(getCategoryColor(category), 0.18)}`;
 	}
 
 	function getCategoryIcon(category: PublicCategory): NonNullable<PublicCategory['icon_key']> | 'sparkles' {
 		return category.icon_key ?? 'sparkles';
 	}
+
+	function getCategoryColor(category: PublicCategory): string {
+		return resolveFeaturedCategoryColor(category, isDark);
+	}
+
+	function isNewCategory(category: PublicCategory): boolean {
+		return category.slug === 'chatgpt-images-2-0';
+	}
+
+	onMount(() => {
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const updatePreference = () => {
+			systemPrefersDark = mediaQuery.matches;
+		};
+
+		updatePreference();
+		mediaQuery.addEventListener('change', updatePreference);
+
+		return () => {
+			mediaQuery.removeEventListener('change', updatePreference);
+		};
+	});
 </script>
 
 {#if categories.length > 0}
@@ -41,20 +73,21 @@
 
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 			{#each categories as category (category.slug)}
+				{@const categoryColor = getCategoryColor(category)}
 				<a
 					href={getCategoryHref(category)}
 					class="category-card group relative overflow-hidden rounded-2xl border p-5 transition-all duration-200"
-					style={`border-color: ${buildFeatureBorder(category.color)}; background: ${buildFeatureGradient(category.color, 0.2)}; --category-hover-shadow: ${getHoverShadow(category)};`}
+					style={`border-color: ${buildFeatureBorder(categoryColor)}; background: ${buildFeatureGradient(categoryColor, 0.2)}; --category-hover-shadow: ${getHoverShadow(category)};`}
 					target={isExternalLink(category) ? '_blank' : undefined}
 					rel={isExternalLink(category) ? 'noopener noreferrer' : undefined}
 				>
 					<div class="relative z-10 flex h-full flex-col justify-between gap-6">
 						<div>
 							<div class="mb-2 flex items-center justify-between gap-3">
-								<div class="flex items-center gap-3">
+								<div class="flex min-w-0 items-center gap-3">
 									<div
 										class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full"
-										style={`background-color: ${hexToRgba(category.color, 0.14)}; color: ${category.color};`}
+										style={`background-color: ${hexToRgba(categoryColor, 0.14)}; color: ${categoryColor};`}
 									>
 										{#if category.image_url}
 											<img
@@ -66,11 +99,27 @@
 											<Icon name={getCategoryIcon(category)} size={18} />
 										{/if}
 									</div>
-									<h3 class="text-xl font-semibold" style={`color: ${category.color};`}>
-										{category.name}
-									</h3>
+									<div class="min-w-0">
+										<div class="flex flex-wrap items-center gap-2">
+											<h3 class="min-w-0 text-xl font-semibold leading-tight" style={`color: ${categoryColor};`}>
+												{category.name}
+											</h3>
+											{#if isNewCategory(category)}
+												<span
+													class="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
+													style={`background-color: ${categoryColor}; color: var(--color-bg-primary);`}
+												>
+													New
+												</span>
+											{/if}
+										</div>
+									</div>
 								</div>
-								<Icon name={isExternalLink(category) ? 'external-link' : 'arrow-right'} size={18} />
+								<Icon
+									name={isExternalLink(category) ? 'external-link' : 'arrow-right'}
+									size={18}
+									class="shrink-0"
+								/>
 							</div>
 							<p class="max-w-sm text-sm leading-6" style="color: var(--color-text-secondary);">
 								{category.description}
