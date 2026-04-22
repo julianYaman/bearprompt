@@ -92,6 +92,10 @@ body {
 }
 
 .prose :where(img):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+	display: block;
+	width: 80%;
+	max-width: 100%;
+	margin-inline: auto;
 	border-radius: 0.75rem;
 	overflow: hidden;
 }
