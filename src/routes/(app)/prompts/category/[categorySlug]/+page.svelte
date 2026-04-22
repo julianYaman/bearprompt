@@ -104,7 +104,7 @@
 				<p class="mb-2 text-xs font-semibold uppercase tracking-[0.18em]" style={`color: ${categoryColor};`}>
 					Category
 				</p>
-				<div class="flex items-start gap-3">
+				<div class="flex items-center gap-3">
 					<div
 						class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full"
 						style={`background-color: color-mix(in srgb, ${categoryColor} 14%, transparent); color: ${categoryColor};`}
@@ -116,13 +116,13 @@
 						{/if}
 					</div>
 					<div class="min-w-0">
-						<div class="flex flex-wrap items-start gap-2">
+						<div class="flex flex-wrap items-center gap-2">
 							<h1 class="text-3xl font-semibold" style={`color: ${categoryColor};`}>
 								{data.category.name}
 							</h1>
 							{#if isNewCategory}
 								<span
-									class="mt-1 shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
+									class="shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
 									style={`background-color: ${categoryColor}; color: var(--color-bg-primary);`}
 								>
 									New
