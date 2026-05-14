@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import PromptVariablesModal from './PromptVariablesModal.svelte';
 	import { copiedPromptId, tags as tagsStore } from '$lib/stores';
+	import { hasPromptVariables } from '$lib/prompt-variables';
 	import { stripMarkdown, COPY_TIMEOUT_MS, MAX_VISIBLE_TAGS } from '$lib/utils';
 	import type { Prompt, Tag } from '$lib/types';
 
@@ -17,6 +19,7 @@
 
 	let copyState: 'idle' | 'copied' = $state('idle');
 	let isPreviewHovering = $state(false);
+	let showVariablesModal = $state(false);
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	// Clear the copy-reset timer when the card is unmounted
@@ -35,10 +38,16 @@
 
 	// Generate preview text (strip markdown and truncate)
 	let previewText = $derived(stripMarkdown(prompt.markdown));
+	let promptHasVariables = $derived(hasPromptVariables(prompt.markdown));
 
 	async function handleCopy(event: MouseEvent | KeyboardEvent) {
 		if (selectMode) return;
 		event.stopPropagation();
+
+		if (promptHasVariables) {
+			showVariablesModal = true;
+			return;
+		}
 
 		if (!navigator.clipboard) {
 			alert('Clipboard API not available. Please copy manually.');
@@ -128,7 +137,7 @@
 		onkeydown={selectMode ? undefined : handlePreviewKeydown}
 		tabindex={selectMode ? undefined : 0}
 		role={selectMode ? undefined : 'button'}
-		aria-label={selectMode ? undefined : `Copy prompt: ${prompt.title}`}
+		aria-label={selectMode ? undefined : `${promptHasVariables ? 'Use' : 'Copy'} prompt: ${prompt.title}`}
 	>
 		<!-- Preview text with fade -->
 		<div class="preview-fade h-full select-none whitespace-pre-line text-sm leading-relaxed" style="color: var(--color-text-secondary);">
@@ -144,10 +153,10 @@
 		>
 			<div
 				class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-transform"
-				style="background-color: {copyState === 'copied' ? 'var(--color-success)' : 'var(--color-accent)'};"
+				style="background-color: {!promptHasVariables && copyState === 'copied' ? 'var(--color-success)' : 'var(--color-accent)'};"
 			>
-				<Icon name={copyState === 'copied' ? 'check' : 'copy'} size={16} />
-				{copyState === 'copied' ? 'Copied!' : 'Copy'}
+				<Icon name={!promptHasVariables && copyState === 'copied' ? 'check' : promptHasVariables ? 'sparkles' : 'copy'} size={16} />
+				{!promptHasVariables && copyState === 'copied' ? 'Copied!' : promptHasVariables ? 'Use' : 'Copy'}
 			</div>
 		</div>
 	</div>
@@ -212,6 +221,14 @@
 		{/if}
 	</div>
 </article>
+
+{#if showVariablesModal}
+	<PromptVariablesModal
+		title={prompt.title}
+		prompt={prompt.markdown}
+		onClose={() => (showVariablesModal = false)}
+	/>
+{/if}
 
 <style>
 	.preview-fade {
