@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { getSupabase } from '$lib/supabase';
 import { getCachedSitemapXml, CACHE_CONTROL } from '$lib/server/cache';
+import { getBlogPosts } from '$lib/server/blog';
 
 const BASE_URL = 'https://bearprompt.com';
 
@@ -32,7 +33,7 @@ type CategoryRow = {
 
 async function generateSitemapXml(): Promise<string> {
 	const supabase = getSupabase();
-	const [{ data, error }, { data: categoryData, error: categoryError }] = await Promise.all([
+	const [{ data, error }, { data: categoryData, error: categoryError }, blogPosts] = await Promise.all([
 		supabase
 			.from('prompts')
 			.select('slug, updated_at, type, author:author_id (slug)')
@@ -40,7 +41,8 @@ async function generateSitemapXml(): Promise<string> {
 		supabase
 			.from('categories')
 			.select('slug, updated_at')
-			.order('sort_order', { ascending: true })
+			.order('sort_order', { ascending: true }),
+		getBlogPosts()
 	]);
 
 	if (error) {
@@ -88,15 +90,20 @@ async function generateSitemapXml(): Promise<string> {
 		);
 	}
 
+	const blogUrls = blogPosts.map((post) =>
+		buildUrl(`${BASE_URL}/blog/${post.slug}`, toIsoDate(post.updatedAt || post.publishedAt))
+	);
+
 	const staticUrls = [
 		buildUrl(`${BASE_URL}/`),
+		buildUrl(`${BASE_URL}/blog`),
 		buildUrl(`${BASE_URL}/prompts`),
 		buildUrl(`${BASE_URL}/agents`),
 		buildUrl(`${BASE_URL}/library`),
 		buildUrl(`${BASE_URL}/help`)
 	];
 
-	const urls = [...staticUrls, ...categoryUrls, ...authorUrls, ...promptUrls].join('\n');
+	const urls = [...staticUrls, ...blogUrls, ...categoryUrls, ...authorUrls, ...promptUrls].join('\n');
 
 	return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }

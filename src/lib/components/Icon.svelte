@@ -53,7 +53,8 @@
 			| 'share'
 			| 'message-square'
 			| 'triangle-alert'
-			| 'lock';
+			| 'lock'
+			| 'rss';
 		size?: number;
 		class?: string;
 	}
@@ -205,5 +206,9 @@
 	{:else if name === 'lock'}
 		<rect width="18" height="12" x="3" y="10" rx="2" />
 		<path d="M7 10V7a5 5 0 0 1 10 0v3" />
+	{:else if name === 'rss'}
+		<path d="M4 11a9 9 0 0 1 9 9" />
+		<path d="M4 4a16 16 0 0 1 16 16" />
+		<circle cx="5" cy="19" r="1" />
 	{/if}
 </svg>

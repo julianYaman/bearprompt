@@ -214,6 +214,7 @@
 				<span class="neo-navbar-title">Bearprompt</span>
 			</a>
 			<div class="neo-navbar-links">
+				<a href="/blog" class="neo-navbar-link">Blog</a>
 				<a href="#how-it-works" class="neo-navbar-link">How it works</a>
 				<a href="#faq" class="neo-navbar-link">FAQ</a>
 				<a
@@ -242,6 +243,7 @@
 		</div>
 		{#if mobileMenuOpen}
 			<div class="neo-mobile-menu">
+				<a href="/blog" class="neo-mobile-link" onclick={closeMobileMenu}>Blog</a>
 				<a href="#how-it-works" class="neo-mobile-link" onclick={closeMobileMenu}>How it works</a>
 				<a href="#faq" class="neo-mobile-link" onclick={closeMobileMenu}>FAQ</a>
 				<a
