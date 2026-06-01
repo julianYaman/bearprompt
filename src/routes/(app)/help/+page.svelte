@@ -26,6 +26,10 @@
 				{
 					question: 'Can I export my prompts?',
 					answer: 'Yes! You can export all your prompts at any time. This makes it easy to back up your library or transfer it to another browser or device.'
+				},
+				{
+					question: 'How do I use prompt variables?',
+					answer: 'Wrap any changeable part of your prompt in double curly braces, like {{topic}} or {{product}}. When you copy the prompt, Bearprompt turns it into a small form so you can fill in the values. You can also use {{tone:select(formal|friendly|casual)}} for dropdowns and {{feedback:textarea}} for longer context. If the same variable appears more than once, you only fill it in once. See the full guide in our <a href="/blog/prompt-variables">How to Use Prompt Variables</a> blog post.'
 				}
 			]
 		},
@@ -154,11 +158,11 @@
 									<span>{faq.question}</span>
 									<Icon name="chevron-down" size={20} class="faq-chevron" />
 								</button>
-								{#if openQuestions.has(key)}
-									<div class="faq-answer">
-										<p>{faq.answer}</p>
-									</div>
-								{/if}
+							{#if openQuestions.has(key)}
+								<div class="faq-answer">
+									<p>{@html faq.answer}</p>
+								</div>
+							{/if}
 							</div>
 						{/each}
 					</div>
@@ -265,6 +269,17 @@
 		font-size: 0.875rem;
 		color: var(--color-text-secondary);
 		line-height: 1.7;
+	}
+
+	.faq-answer :global(a) {
+		color: var(--color-accent);
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.faq-answer :global(a):hover {
+		opacity: 0.8;
 	}
 
 	.prompt-content {

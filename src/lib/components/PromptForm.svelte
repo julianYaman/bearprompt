@@ -271,9 +271,22 @@
 					class="w-full resize-y rounded-lg border px-4 py-3 font-mono text-sm outline-none transition-colors"
 					style="background-color: var(--color-bg-primary); border-color: var(--color-border); color: var(--color-text-primary); min-height: 200px;"
 				></textarea>
-				<p class="mt-1 text-right text-xs" style="color: var(--color-text-muted);">
-					Estimated size: {estimatedTokenLabel}
-				</p>
+				<div class="mt-1 flex items-center justify-between gap-2 text-xs">
+					<a
+						href="/blog/prompt-variables"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="new-feature-badge"
+						aria-label="New: Prompt Variables - read the blog post"
+					>
+						<span class="new-feature-pulse" aria-hidden="true"></span>
+						<span class="new-feature-label">NEW</span>
+						<span class="new-feature-name">Prompt Variables</span>
+					</a>
+					<span style="color: var(--color-text-muted);">
+						Estimated size: {estimatedTokenLabel}
+					</span>
+				</div>
 			</div>
 
 			<!-- Tags -->
@@ -459,5 +472,83 @@
 	button:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 2px;
+	}
+
+	.new-feature-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 9999px;
+		border: 1px solid var(--color-accent);
+		background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
+		color: var(--color-accent);
+		text-decoration: none;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		transition: background-color 0.15s ease, transform 0.15s ease;
+	}
+
+	.new-feature-badge:hover {
+		background-color: color-mix(in srgb, var(--color-accent) 16%, transparent);
+		transform: translateY(-1px);
+	}
+
+	.new-feature-badge:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	.new-feature-pulse {
+		position: relative;
+		display: inline-block;
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 50%;
+		background-color: var(--color-accent);
+	}
+
+	.new-feature-pulse::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background-color: var(--color-accent);
+		opacity: 0.6;
+		animation: new-feature-pulse 2s ease-out infinite;
+	}
+
+	.new-feature-label {
+		font-weight: 800;
+	}
+
+	.new-feature-name {
+		font-weight: 600;
+		text-transform: none;
+		letter-spacing: 0;
+		color: var(--color-text-secondary);
+	}
+
+	@keyframes new-feature-pulse {
+		0% {
+			transform: scale(1);
+			opacity: 0.6;
+		}
+		70% {
+			transform: scale(2.2);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(2.2);
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.new-feature-pulse::after {
+			animation: none;
+		}
 	}
 </style>
