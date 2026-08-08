@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { v4 as uuidv4 } from 'uuid';
-import type { Prompt, Tag, Folder, Settings, ExportData } from './types';
+import { DEFAULT_PROVIDERS, mergeProviderSettings, normalizeProviderOrder } from './ai-providers';
+import type { AiProviderConfig, Prompt, Tag, Folder, Settings, ExportData } from './types';
 
 const DB_NAME = 'promptlib';
 const DB_VERSION = 2;
@@ -328,13 +329,14 @@ const DEFAULT_SETTINGS: Settings = {
 	hasCompletedOnboarding: false,
 	ui: {
 		cardSize: 'm'
-	}
+	},
+	aiProviders: DEFAULT_PROVIDERS.map((provider) => ({ ...provider }))
 };
 
 export async function getSettings(): Promise<Settings> {
 	const db = await getDB();
 	const settings = await db.get('settings', 1);
-	if (!settings) return DEFAULT_SETTINGS;
+	if (!settings) return { ...DEFAULT_SETTINGS, aiProviders: DEFAULT_PROVIDERS.map((p) => ({ ...p })) };
 
 	return {
 		...DEFAULT_SETTINGS,
@@ -342,7 +344,8 @@ export async function getSettings(): Promise<Settings> {
 		ui: {
 			...DEFAULT_SETTINGS.ui,
 			...settings.ui
-		}
+		},
+		aiProviders: mergeProviderSettings(settings.aiProviders)
 	};
 }
 
@@ -356,16 +359,34 @@ export async function updateSettings(updates: Partial<Omit<Settings, 'version'>>
 			...current.ui,
 			...updates.ui
 		},
+		aiProviders: updates.aiProviders
+			? normalizeProviderOrder(updates.aiProviders)
+			: current.aiProviders,
 		version: 1
 	};
 	await db.put('settings', updated);
 	return updated;
 }
 
+export async function getAiProviders(): Promise<AiProviderConfig[]> {
+	const settings = await getSettings();
+	return settings.aiProviders;
+}
+
+export async function saveAiProviders(providers: AiProviderConfig[]): Promise<AiProviderConfig[]> {
+	const updated = await updateSettings({ aiProviders: normalizeProviderOrder(providers) });
+	return updated.aiProviders;
+}
+
 // ============ IMPORT / EXPORT ============
 
 export async function exportLibrary(): Promise<ExportData> {
-	const [prompts, tags, folders] = await Promise.all([getAllPrompts(), getAllTags(), getAllFolders()]);
+	const [prompts, tags, folders, settings] = await Promise.all([
+		getAllPrompts(),
+		getAllTags(),
+		getAllFolders(),
+		getSettings()
+	]);
 
 	return {
 		exportVersion: 1,
@@ -373,7 +394,8 @@ export async function exportLibrary(): Promise<ExportData> {
 		data: {
 			prompts,
 			tags,
-			folders
+			folders,
+			aiProviders: settings.aiProviders
 		}
 	};
 }
@@ -496,6 +518,47 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 		result.promptsImported++;
 	}
 
+	// Import AI providers when present (merge with existing settings)
+	if (Array.isArray(data.data.aiProviders) && data.data.aiProviders.length > 0) {
+		const current = await getSettings();
+		const byId = new Map(current.aiProviders.map((provider) => [provider.id, provider]));
+
+		for (const incoming of data.data.aiProviders) {
+			if (!incoming || typeof incoming !== 'object') continue;
+			if (typeof incoming.id !== 'string' || !incoming.id.trim()) continue;
+			if (typeof incoming.name !== 'string' || !incoming.name.trim()) continue;
+			if (typeof incoming.urlTemplate !== 'string' || !incoming.urlTemplate.trim()) continue;
+
+			const existing = byId.get(incoming.id);
+			if (existing?.isBuiltIn || incoming.isBuiltIn) {
+				byId.set(incoming.id, {
+					id: incoming.id,
+					name: incoming.name.trim(),
+					urlTemplate: incoming.urlTemplate.trim(),
+					isBuiltIn: true,
+					enabled: incoming.enabled !== false,
+					sortOrder:
+						typeof incoming.sortOrder === 'number'
+							? incoming.sortOrder
+							: (existing?.sortOrder ?? byId.size)
+				});
+				continue;
+			}
+
+			byId.set(incoming.id, {
+				id: incoming.id,
+				name: incoming.name.trim(),
+				urlTemplate: incoming.urlTemplate.trim(),
+				isBuiltIn: false,
+				enabled: incoming.enabled !== false,
+				sortOrder:
+					typeof incoming.sortOrder === 'number' ? incoming.sortOrder : byId.size
+			});
+		}
+
+		await saveAiProviders(mergeProviderSettings([...byId.values()]));
+	}
+
 	return result;
 }
 
@@ -512,6 +575,8 @@ export function validateImportData(data: unknown): data is ExportData {
 	if (!Array.isArray(inner.tags)) return false;
 	// folders is optional for backward compatibility with old exports
 	if (inner.folders !== undefined && !Array.isArray(inner.folders)) return false;
+	// aiProviders is optional for backward compatibility with old exports
+	if (inner.aiProviders !== undefined && !Array.isArray(inner.aiProviders)) return false;
 
 	return true;
 }

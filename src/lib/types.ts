@@ -24,6 +24,15 @@ export interface Tag {
 	createdAt: string;
 }
 
+export interface AiProviderConfig {
+	id: string;
+	name: string;
+	urlTemplate: string;
+	isBuiltIn: boolean;
+	enabled: boolean;
+	sortOrder: number;
+}
+
 export interface Settings {
 	version: number;
 	theme: 'system' | 'light' | 'dark';
@@ -31,6 +40,7 @@ export interface Settings {
 	ui: {
 		cardSize: 'm' | 'l';
 	};
+	aiProviders: AiProviderConfig[];
 }
 
 export interface ExportData {
@@ -40,6 +50,7 @@ export interface ExportData {
 		prompts: Prompt[];
 		tags: Tag[];
 		folders: Folder[];
+		aiProviders?: AiProviderConfig[];
 	};
 }
 
