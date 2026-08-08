@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store';
-import type { Prompt, Tag, Folder, ThemeMode, SortOption } from './types';
-import { getAllPrompts, getAllTags, getAllFolders } from './db';
+import type { Prompt, Tag, Folder, ThemeMode, SortOption, AiProviderConfig } from './types';
+import { getAllPrompts, getAllTags, getAllFolders, getAiProviders, saveAiProviders } from './db';
+import { DEFAULT_PROVIDERS, mergeProviderSettings } from './ai-providers';
 
 // UI State
 export const sidebarOpen = writable(false);
@@ -35,6 +36,15 @@ export const copiedPromptId = writable<string | null>(null);
 // Multi-select state for prompt cards
 export const isPromptSelectMode = writable(false);
 export const selectedPromptIds = writable<Set<string>>(new Set());
+
+// AI providers (populated from IndexedDB settings)
+export const aiProviders = writable<AiProviderConfig[]>(
+	DEFAULT_PROVIDERS.map((provider) => ({ ...provider }))
+);
+
+export const enabledAiProviders = derived(aiProviders, ($aiProviders) =>
+	mergeProviderSettings($aiProviders).filter((provider) => provider.enabled)
+);
 
 
 // Filtered and sorted prompts (derived)
@@ -102,4 +112,15 @@ export async function loadTags(): Promise<void> {
 export async function loadFolders(): Promise<void> {
 	const allFolders = await getAllFolders();
 	folders.set(allFolders);
+}
+
+export async function loadAiProviders(): Promise<void> {
+	const providers = await getAiProviders();
+	aiProviders.set(providers);
+}
+
+export async function persistAiProviders(providers: AiProviderConfig[]): Promise<AiProviderConfig[]> {
+	const saved = await saveAiProviders(providers);
+	aiProviders.set(saved);
+	return saved;
 }

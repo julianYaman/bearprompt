@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import Icon from './Icon.svelte';
+	import OpenInMenu from './OpenInMenu.svelte';
 	import {
 		formatVariableLabel,
 		parsePromptVariables,
@@ -20,21 +21,12 @@
 	let values = $state<Record<string, string>>({});
 	let focusedVariableName = $state<string | null>(null);
 	let copyState = $state<'idle' | 'copied' | 'opened'>('idle');
-	let openMenu = $state(false);
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
-	let openMenuContainer: HTMLDivElement | undefined = $state();
 	const fieldRefs = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 
 	const variables = $derived(parsePromptVariables(prompt));
 	const renderedPrompt = $derived(renderPrompt(prompt, values));
 	const previewTokens = $derived(tokenizePromptForPreview(prompt, values));
-
-	const providerUrls = $derived({
-		chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(renderedPrompt)}`,
-		claude: `https://claude.ai/new?q=${encodeURIComponent(renderedPrompt)}`,
-		perplexity: `https://www.perplexity.ai/search?q=${encodeURIComponent(renderedPrompt)}`,
-		grok: `https://grok.com/?q=${encodeURIComponent(renderedPrompt)}`
-	});
 
 	onMount(() => {
 		void tick().then(() => {
@@ -91,12 +83,6 @@
 		await copyRenderedPrompt();
 	}
 
-	function handleOpenProvider(provider: keyof typeof providerUrls) {
-		resetFeedback('opened');
-		openMenu = false;
-		window.open(providerUrls[provider], '_blank', 'noopener,noreferrer');
-	}
-
 	function focusVariable(name: string) {
 		fieldRefs.get(name)?.focus();
 	}
@@ -141,20 +127,12 @@
 		}
 	}
 
-	function handleWindowClick(event: MouseEvent) {
-		if (!openMenu || !openMenuContainer) return;
-
-		if (event.target instanceof Node && !openMenuContainer.contains(event.target)) {
-			openMenu = false;
-		}
-	}
-
 	function formatOption(option: string): string {
 		return option ? option[0].toUpperCase() + option.slice(1) : option;
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} onclick={handleWindowClick} />
+<svelte:window onkeydown={handleKeydown} />
 
 <!-- svelte-ignore a11y_interactive_supports_focus a11y_click_events_have_key_events -->
 <div
@@ -300,68 +278,12 @@
 				{copyState === 'copied' ? 'Copied' : 'Copy'}
 			</button>
 
-			<div class="relative" bind:this={openMenuContainer}>
-				<button
-					type="button"
-					onclick={() => (openMenu = !openMenu)}
-					class="modal-button modal-button-secondary inline-flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors"
-					style="background-color: {copyState === 'opened' ? 'var(--color-success)' : 'var(--color-bg-secondary)'}; border-color: var(--color-border); color: {copyState === 'opened' ? 'white' : 'var(--color-text-primary)'};"
-				>
-					<Icon name={copyState === 'opened' ? 'check' : 'external-link'} size={16} />
-					{copyState === 'opened' ? 'Opened' : 'Open in...'}
-					{#if copyState !== 'opened'}
-						<Icon name="chevron-down" size={14} />
-					{/if}
-				</button>
-
-				{#if openMenu}
-					<div
-						class="absolute bottom-full left-0 z-10 mb-2 w-44 overflow-hidden rounded-lg border shadow-lg"
-						style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
-					>
-						<button
-							type="button"
-							onclick={() => handleOpenProvider('chatgpt')}
-							class="dropdown-item flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors"
-							style="color: var(--color-text-primary);"
-						>
-							<Icon name="chatgpt" size={18} />
-							ChatGPT
-							<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-						</button>
-						<button
-							type="button"
-							onclick={() => handleOpenProvider('claude')}
-							class="dropdown-item flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors"
-							style="color: var(--color-text-primary);"
-						>
-							<Icon name="claude" size={18} />
-							Claude
-							<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-						</button>
-						<button
-							type="button"
-							onclick={() => handleOpenProvider('perplexity')}
-							class="dropdown-item flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors"
-							style="color: var(--color-text-primary);"
-						>
-							<Icon name="perplexity" size={18} />
-							Perplexity
-							<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-						</button>
-						<button
-							type="button"
-							onclick={() => handleOpenProvider('grok')}
-							class="dropdown-item flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors"
-							style="color: var(--color-text-primary);"
-						>
-							<Icon name="grok" size={18} />
-							Grok
-							<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-						</button>
-					</div>
-				{/if}
-			</div>
+			<OpenInMenu
+				promptText={renderedPrompt}
+				variant="modal-footer"
+				opened={copyState === 'opened'}
+				onOpened={() => resetFeedback('opened')}
+			/>
 
 			<button
 				type="button"
@@ -398,10 +320,6 @@
 	textarea:focus {
 		border-color: var(--color-accent) !important;
 		box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-accent) 28%, transparent);
-	}
-
-	.dropdown-item:hover {
-		background-color: var(--color-bg-tertiary);
 	}
 
 	.modal-button-primary:hover {
