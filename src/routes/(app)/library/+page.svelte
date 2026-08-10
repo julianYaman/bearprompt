@@ -23,7 +23,8 @@
 		activeFolderId,
 		loadPrompts,
 		loadTags,
-		loadFolders
+		loadFolders,
+		whatsNewOpen
 	} from '$lib/stores';
 	import {
 		createPrompt,
@@ -35,6 +36,7 @@
 		updateFolder,
 		updateSettings
 	} from '$lib/db';
+	import { shouldAutoShowWhatsNew } from '$lib/whats-new';
 	import {
 		buildShareUrl,
 		clearShareFromSession,
@@ -768,8 +770,15 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	}
 
 	onMount(() => {
+		let whatsNewTimeout: ReturnType<typeof setTimeout> | null = null;
+
 		void getSettings().then((settings) => {
 			hasCompletedOnboarding = settings.hasCompletedOnboarding;
+			if (shouldAutoShowWhatsNew(settings)) {
+				whatsNewTimeout = setTimeout(() => {
+					whatsNewOpen.set(true);
+				}, 600);
+			}
 		});
 		void loadShareFromUrl();
 		const onHashChange = () => {
@@ -779,6 +788,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 		return () => {
 			window.removeEventListener('hashchange', onHashChange);
+			if (whatsNewTimeout) clearTimeout(whatsNewTimeout);
 			if (shareCopyTimeout) clearTimeout(shareCopyTimeout);
 			if (importCopyTimeout) clearTimeout(importCopyTimeout);
 			if (libraryFeedbackTimeout) clearTimeout(libraryFeedbackTimeout);

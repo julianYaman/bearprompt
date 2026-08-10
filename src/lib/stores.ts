@@ -7,6 +7,7 @@ import { DEFAULT_PROVIDERS, mergeProviderSettings } from './ai-providers';
 export const sidebarOpen = writable(false);
 export const mobileMenuOpen = writable(false);
 export const aboutOpen = writable(false);
+export const whatsNewOpen = writable(false);
 
 // Theme
 export const theme = writable<ThemeMode>('system');

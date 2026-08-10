@@ -327,6 +327,7 @@ const DEFAULT_SETTINGS: Settings = {
 	version: 1,
 	theme: 'system',
 	hasCompletedOnboarding: false,
+	lastSeenWhatsNewId: null,
 	ui: {
 		cardSize: 'm'
 	},
@@ -341,6 +342,7 @@ export async function getSettings(): Promise<Settings> {
 	return {
 		...DEFAULT_SETTINGS,
 		...settings,
+		lastSeenWhatsNewId: settings.lastSeenWhatsNewId ?? DEFAULT_SETTINGS.lastSeenWhatsNewId,
 		ui: {
 			...DEFAULT_SETTINGS.ui,
 			...settings.ui
