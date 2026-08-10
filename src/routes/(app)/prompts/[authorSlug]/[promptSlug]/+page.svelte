@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import OpenInMenu from '$lib/components/OpenInMenu.svelte';
 	import PublicPromptCard from '$lib/components/public/PublicPromptCard.svelte';
 	import PromptCardSkeleton from '$lib/components/public/PromptCardSkeleton.svelte';
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
@@ -13,7 +14,6 @@
 
 	let copyState: 'idle' | 'copied' = $state('idle');
 	let addState: 'idle' | 'added' = $state('idle');
-	let dropdownOpen = $state(false);
 	let promptExpanded = $state(false);
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 	let addTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -67,14 +67,6 @@
 		})
 	);
 
-	// Generate AI provider URLs
-	const providerUrls = $derived({
-		chatgpt: `https://chat.openai.com/?q=${encodeURIComponent(prompt.prompt)}`,
-		claude: `https://claude.ai/new?q=${encodeURIComponent(prompt.prompt)}`,
-		perplexity: `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt.prompt)}`,
-		grok: `https://grok.com/?q=${encodeURIComponent(prompt.prompt)}`
-	});
-
 	async function handleAddRelatedToLibrary(relatedPrompt: PublicPrompt) {
 		const existingTags = await getAllTags();
 		const tagIds: string[] = [];
@@ -96,10 +88,6 @@
 		await createPrompt(relatedPrompt.title, relatedPrompt.prompt, tagIds);
 		await loadPrompts();
 		await loadTags();
-	}
-
-	function closeDropdown() {
-		dropdownOpen = false;
 	}
 
 	async function handleCopy() {
@@ -360,89 +348,7 @@
 			>
 				Use it now
 			</h2>
-			<div class="flex flex-wrap gap-3">
-				<a
-					href={providerUrls.chatgpt}
-					target="_blank"
-					rel="noopener noreferrer"
-					data-umami-event="Open Prompt In Provider"
-					data-umami-event-provider="ChatGPT"
-					data-umami-event-prompt={prompt.slug || prompt.id}
-					class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
-				>
-					<Icon name="chatgpt" size={18} />
-					ChatGPT
-					<Icon name="external-link" size={14} class="opacity-50" />
-				</a>
-				<a
-					href={providerUrls.claude}
-					target="_blank"
-					rel="noopener noreferrer"
-					data-umami-event="Open Prompt In Provider"
-					data-umami-event-provider="Claude"
-					data-umami-event-prompt={prompt.slug || prompt.id}
-					class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-					style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
-				>
-					<Icon name="claude" size={18} />
-					Claude
-					<Icon name="external-link" size={14} class="opacity-50" />
-				</a>
-
-				<!-- More providers dropdown -->
-				<div class="relative">
-					<button
-						type="button"
-						onclick={() => (dropdownOpen = !dropdownOpen)}
-						class="use-btn flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-						style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
-					>
-						<Icon name="sparkles" size={18} />
-						More
-						<Icon name="chevron-down" size={14} />
-					</button>
-
-					{#if dropdownOpen}
-						<div
-							class="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border shadow-lg"
-							style="background-color: var(--color-bg-primary); border-color: var(--color-border);"
-							onmouseleave={closeDropdown}
-						>
-							<a
-								href={providerUrls.perplexity}
-								target="_blank"
-								rel="noopener noreferrer"
-								onclick={closeDropdown}
-								data-umami-event="Open Prompt In Provider"
-								data-umami-event-provider="Perplexity"
-								data-umami-event-prompt={prompt.slug || prompt.id}
-								class="dropdown-item flex items-center gap-2 px-4 py-2.5 text-sm transition-colors"
-								style="color: var(--color-text-primary);"
-							>
-								<Icon name="perplexity" size={18} />
-								Perplexity
-								<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-							</a>
-							<a
-								href={providerUrls.grok}
-								target="_blank"
-								rel="noopener noreferrer"
-								onclick={closeDropdown}
-								data-umami-event="Open Prompt In Provider"
-								data-umami-event-provider="Grok"
-								data-umami-event-prompt={prompt.slug || prompt.id}
-								class="dropdown-item flex items-center gap-2 px-4 py-2.5 text-sm transition-colors"
-								style="color: var(--color-text-primary);"
-							>
-								<Icon name="grok" size={18} />
-								Grok
-								<Icon name="external-link" size={12} class="ml-auto opacity-50" />
-							</a>
-						</div>
-					{/if}
-				</div>
-			</div>
+			<OpenInMenu promptText={prompt.prompt} variant="buttons" />
 		</section>
 	</article>
 
@@ -490,22 +396,6 @@
 
 	button {
 		cursor: pointer;
-	}
-
-	.use-btn:hover {
-		background-color: var(--color-bg-tertiary) !important;
-	}
-
-	:global(.dark) .use-btn:hover {
-		color: var(--color-accent) !important;
-	}
-
-	.dropdown-item:hover {
-		background-color: var(--color-bg-tertiary);
-	}
-
-	:global(.dark) .dropdown-item:hover {
-		color: var(--color-accent) !important;
 	}
 
 	.prompt-content {

@@ -1,0 +1,114 @@
+import { describe, expect, it } from 'vitest';
+import {
+	DEFAULT_PROVIDERS,
+	buildProviderUrl,
+	getEnabledProviders,
+	hasPromptPlaceholder,
+	isUrlTooLong,
+	mergeProviderSettings,
+	normalizeProviderOrder,
+	validateProviderTemplate
+} from './ai-providers';
+import type { AiProviderConfig } from './types';
+
+describe('ai providers', () => {
+	it('detects prompt placeholders', () => {
+		expect(hasPromptPlaceholder('https://chat.example.com/?q={{prompt}}')).toBe(true);
+		expect(hasPromptPlaceholder('https://chat.example.com/?q=%q')).toBe(true);
+		expect(hasPromptPlaceholder('https://chat.example.com/')).toBe(false);
+	});
+
+	it('builds provider urls with encoded prompts', () => {
+		expect(buildProviderUrl('https://chat.example.com/?q={{prompt}}', 'hello world')).toBe(
+			'https://chat.example.com/?q=hello%20world'
+		);
+		expect(buildProviderUrl('https://chat.example.com/?q=%q', 'a&b')).toBe(
+			'https://chat.example.com/?q=a%26b'
+		);
+	});
+
+	it('validates templates', () => {
+		expect(validateProviderTemplate('https://chat.example.com/?q={{prompt}}')).toEqual({
+			ok: true
+		});
+		expect(validateProviderTemplate('')).toEqual({
+			ok: false,
+			error: 'URL template is required.'
+		});
+		expect(validateProviderTemplate('https://chat.example.com/')).toMatchObject({
+			ok: false
+		});
+		expect(validateProviderTemplate('javascript:alert(1)?q={{prompt}}')).toMatchObject({
+			ok: false
+		});
+	});
+
+	it('flags long urls', () => {
+		const longPrompt = 'x'.repeat(3000);
+		const url = buildProviderUrl('https://chat.example.com/?q={{prompt}}', longPrompt);
+		expect(isUrlTooLong(url)).toBe(true);
+	});
+
+	it('returns defaults when nothing is stored', () => {
+		expect(mergeProviderSettings(null)).toEqual(DEFAULT_PROVIDERS);
+		expect(mergeProviderSettings([])).toEqual(DEFAULT_PROVIDERS);
+	});
+
+	it('preserves custom providers and hidden built-ins', () => {
+		const stored: AiProviderConfig[] = [
+			{
+				id: 'chatgpt',
+				name: 'ChatGPT',
+				urlTemplate: 'https://chat.openai.com/?q={{prompt}}',
+				isBuiltIn: true,
+				enabled: false,
+				sortOrder: 1
+			},
+			{
+				id: 'custom-1',
+				name: 'My Chat',
+				urlTemplate: 'https://chat.example.com/?q={{prompt}}',
+				isBuiltIn: false,
+				enabled: true,
+				sortOrder: 0
+			}
+		];
+
+		const merged = mergeProviderSettings(stored);
+		expect(merged[0].id).toBe('custom-1');
+		expect(merged.find((p) => p.id === 'chatgpt')?.enabled).toBe(false);
+		expect(merged.some((p) => p.id === 'claude')).toBe(true);
+		expect(merged.some((p) => p.id === 'grok')).toBe(true);
+	});
+
+	it('adds newly introduced built-ins on upgrade', () => {
+		const stored: AiProviderConfig[] = [
+			{
+				id: 'chatgpt',
+				name: 'ChatGPT',
+				urlTemplate: 'https://chat.openai.com/?q={{prompt}}',
+				isBuiltIn: true,
+				enabled: true,
+				sortOrder: 0
+			}
+		];
+
+		const merged = mergeProviderSettings(stored);
+		expect(merged.map((p) => p.id)).toEqual([
+			'chatgpt',
+			'claude',
+			'perplexity',
+			'grok'
+		]);
+	});
+
+	it('normalizes sort order and filters enabled providers', () => {
+		const providers: AiProviderConfig[] = [
+			{ ...DEFAULT_PROVIDERS[1], enabled: false, sortOrder: 5 },
+			{ ...DEFAULT_PROVIDERS[0], sortOrder: 2 }
+		];
+		const normalized = normalizeProviderOrder(providers);
+		expect(normalized.map((p) => p.sortOrder)).toEqual([0, 1]);
+		expect(getEnabledProviders(providers).map((p) => p.id)).toEqual(['chatgpt']);
+	});
+});

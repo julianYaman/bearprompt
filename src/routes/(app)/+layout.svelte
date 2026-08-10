@@ -10,7 +10,7 @@
 	import CopyAnnouncer from '$lib/components/CopyAnnouncer.svelte';
 	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';
 	import { initializeTheme } from '$lib/theme';
-	import { prompts, tags, folders, mobileMenuOpen } from '$lib/stores';
+	import { prompts, tags, folders, mobileMenuOpen, loadAiProviders } from '$lib/stores';
 	import { getAllPrompts, getAllTags, getAllFolders } from '$lib/db';
 
 	let { children } = $props();
@@ -62,7 +62,8 @@
 			const [loadedPrompts, loadedTags, loadedFolders] = await Promise.all([
 				getAllPrompts(),
 				getAllTags(),
-				getAllFolders()
+				getAllFolders(),
+				loadAiProviders()
 			]);
 			prompts.set(loadedPrompts);
 			tags.set(loadedTags);

@@ -30,6 +30,10 @@
 				{
 					question: 'How do I use prompt variables?',
 					answer: 'Wrap any changeable part of your prompt in double curly braces, like {{topic}} or {{product}}. When you copy the prompt, Bearprompt turns it into a small form so you can fill in the values. You can also use {{tone:select(formal|friendly|casual)}} for dropdowns and {{feedback:textarea}} for longer context. If the same variable appears more than once, you only fill it in once. See the full guide in our <a href="/blog/prompt-variables">How to Use Prompt Variables</a> blog post.'
+				},
+				{
+					question: 'Can I add my own AI chat tools?',
+					answer: 'Yes. Open Settings → AI Tools and add a custom provider with a URL template that includes {{prompt}} where the prompt should go. You can also hide or reorder the built-in tools. See <a href="/blog/custom-ai-providers">How to Add Custom AI Providers</a> for examples.'
 				}
 			]
 		},
