@@ -2,7 +2,7 @@ import type { Settings } from './types';
 import { updateSettings } from './db';
 
 /** Stable id for the single active What's New Highlight. Change this when shipping the next highlight. */
-export const CURRENT_WHATS_NEW_ID = 'custom-ai-providers';
+export const CURRENT_WHATS_NEW_ID = 'desktop-agent-providers';
 
 export interface WhatsNewHighlight {
 	id: string;
@@ -16,9 +16,9 @@ export interface WhatsNewHighlight {
 
 export const CURRENT_WHATS_NEW: WhatsNewHighlight = {
 	id: CURRENT_WHATS_NEW_ID,
-	title: 'Open prompts in any chat tool',
-	body: 'Add your own AI chat apps under Settings → AI Tools. If a tool accepts a prompt in a URL, Bearprompt can open it with one click — same as ChatGPT, Claude, and the other built-ins. Everything stays on this device.',
-	ctaLabel: 'Set up in Settings',
+	title: 'Open prompts in Cursor, Claude Code, and Codex',
+	body: 'Desktop coding agents are now built into Open in…. Cursor, Claude Code, and Codex open locally with your prompt pre-filled — you confirm before anything runs. Hide any tool you do not use under Settings → AI Tools.',
+	ctaLabel: 'Open AI Tools settings',
 	ctaHref: '/settings#ai-tools',
 	secondaryLabel: 'Read the guide',
 	secondaryHref: '/blog/custom-ai-providers'

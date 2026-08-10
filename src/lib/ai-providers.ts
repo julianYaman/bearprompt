@@ -1,11 +1,25 @@
-import { sanitizeExternalUrl } from './security';
+import { sanitizeProviderUrl } from './security';
 import type { AiProviderConfig } from './types';
 
 export const PROMPT_PLACEHOLDER = '{{prompt}}';
 export const PROMPT_PLACEHOLDER_ALIAS = '%q';
-export const SAFE_URL_LENGTH = 2000;
 
-export const BUILTIN_PROVIDER_IDS = ['chatgpt', 'claude', 'perplexity', 'grok'] as const;
+/** Soft limit for http(s) chat URLs (browser address-bar / redirect limits). */
+export const SAFE_URL_LENGTH = 2000;
+/** Soft limit for desktop deep links (Cursor documents ~8k; Claude Code ~5k). */
+export const DESKTOP_SAFE_URL_LENGTH = 8000;
+
+const DESKTOP_SCHEMES = new Set(['cursor:', 'claude-cli:', 'codex:']);
+
+export const BUILTIN_PROVIDER_IDS = [
+	'chatgpt',
+	'claude',
+	'perplexity',
+	'grok',
+	'cursor',
+	'claude-code',
+	'codex'
+] as const;
 export type BuiltinProviderId = (typeof BUILTIN_PROVIDER_IDS)[number];
 
 export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
@@ -40,6 +54,30 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 		isBuiltIn: true,
 		enabled: true,
 		sortOrder: 3
+	},
+	{
+		id: 'cursor',
+		name: 'Cursor',
+		urlTemplate: `cursor://anysphere.cursor-deeplink/prompt?text=${PROMPT_PLACEHOLDER}`,
+		isBuiltIn: true,
+		enabled: true,
+		sortOrder: 4
+	},
+	{
+		id: 'claude-code',
+		name: 'Claude Code',
+		urlTemplate: `claude-cli://open?q=${PROMPT_PLACEHOLDER}`,
+		isBuiltIn: true,
+		enabled: true,
+		sortOrder: 5
+	},
+	{
+		id: 'codex',
+		name: 'Codex',
+		urlTemplate: `codex://new?prompt=${PROMPT_PLACEHOLDER}`,
+		isBuiltIn: true,
+		enabled: true,
+		sortOrder: 6
 	}
 ];
 
@@ -58,8 +96,30 @@ export function buildProviderUrl(template: string, promptText: string): string {
 		.join(encoded);
 }
 
+export function getUrlLengthLimit(url: string): number {
+	try {
+		const protocol = new URL(url).protocol;
+		if (DESKTOP_SCHEMES.has(protocol)) return DESKTOP_SAFE_URL_LENGTH;
+	} catch {
+		// Fall through to web limit
+	}
+	return SAFE_URL_LENGTH;
+}
+
 export function isUrlTooLong(url: string): boolean {
-	return url.length > SAFE_URL_LENGTH;
+	return url.length > getUrlLengthLimit(url);
+}
+
+export function isDesktopAgentProvider(provider: Pick<AiProviderConfig, 'id' | 'urlTemplate'>): boolean {
+	if (provider.id === 'cursor' || provider.id === 'claude-code' || provider.id === 'codex') {
+		return true;
+	}
+	try {
+		const sample = buildProviderUrl(provider.urlTemplate, 'x');
+		return DESKTOP_SCHEMES.has(new URL(sample).protocol);
+	} catch {
+		return false;
+	}
 }
 
 export type ProviderTemplateValidation =
@@ -80,11 +140,12 @@ export function validateProviderTemplate(template: string): ProviderTemplateVali
 	}
 
 	const sampleUrl = buildProviderUrl(trimmed, 'sample prompt');
-	const sanitized = sanitizeExternalUrl(sampleUrl);
+	const sanitized = sanitizeProviderUrl(sampleUrl);
 	if (!sanitized) {
 		return {
 			ok: false,
-			error: 'URL template must be a valid http or https URL.'
+			error:
+				'URL template must use http, https, cursor, claude-cli, or codex, and include a valid host/path.'
 		};
 	}
 
@@ -162,10 +223,11 @@ export function getEnabledProviders(providers: AiProviderConfig[]): AiProviderCo
 
 export function getProviderIconName(
 	provider: AiProviderConfig
-): 'chatgpt' | 'claude' | 'perplexity' | 'grok' | 'bot' {
+): 'chatgpt' | 'claude' | 'perplexity' | 'grok' | 'cursor' | 'claude-code' | 'bot' {
 	if (!provider.isBuiltIn) return 'bot';
 	switch (provider.id) {
 		case 'chatgpt':
+		case 'codex':
 			return 'chatgpt';
 		case 'claude':
 			return 'claude';
@@ -173,6 +235,10 @@ export function getProviderIconName(
 			return 'perplexity';
 		case 'grok':
 			return 'grok';
+		case 'cursor':
+			return 'cursor';
+		case 'claude-code':
+			return 'claude-code';
 		default:
 			return 'bot';
 	}
