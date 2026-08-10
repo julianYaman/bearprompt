@@ -21,6 +21,10 @@ vite.config.ts.timestamp-*
 
 .agentdocs
 
+# Local agent / editor tooling
+.agents/
+.cursor/
+
 # Standalone Remotion video project
 video-remotion/node_modules
 video-remotion/out
