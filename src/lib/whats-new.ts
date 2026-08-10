@@ -28,7 +28,7 @@ export const CURRENT_WHATS_NEW: WhatsNewRelease = {
 	items: [
 		{
 			title: 'Open prompts in Cursor, Claude Code, and ChatGPT Desktop',
-			body: 'Three desktop agents are built into Open in… and enabled by default. They open locally with your prompt pre-filled — you confirm before anything runs. Hide any you do not use under Settings → AI Tools.'
+			body: 'Three desktop agents are built into Open in… and enabled by default. They open locally with your prompt pre-filled. Hide any you do not use under Settings → AI Tools.'
 		},
 		{
 			title: 'Open prompts in any chat tool',
