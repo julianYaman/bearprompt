@@ -1,27 +1,44 @@
 import type { Settings } from './types';
 import { updateSettings } from './db';
 
-/** Stable id for the single active What's New Highlight. Change this when shipping the next highlight. */
+/**
+ * Stable id for the current What's New release (all points in the modal).
+ * Bump this when shipping a new batch of highlights.
+ */
 export const CURRENT_WHATS_NEW_ID = 'desktop-agent-providers';
 
-export interface WhatsNewHighlight {
-	id: string;
+export interface WhatsNewItem {
 	title: string;
 	body: string;
-	ctaLabel: string;
-	ctaHref: string;
-	secondaryLabel: string;
-	secondaryHref: string;
+	/** Optional guide link under this point. */
+	guideLabel?: string;
+	guideHref?: string;
 }
 
-export const CURRENT_WHATS_NEW: WhatsNewHighlight = {
+export interface WhatsNewRelease {
+	id: string;
+	/** Newest first — rendered top to bottom in the modal. */
+	items: WhatsNewItem[];
+	ctaLabel: string;
+	ctaHref: string;
+}
+
+export const CURRENT_WHATS_NEW: WhatsNewRelease = {
 	id: CURRENT_WHATS_NEW_ID,
-	title: 'Open prompts in Cursor, Claude Code, and ChatGPT Desktop',
-	body: 'Desktop coding agents are now built into Open in…. Cursor, Claude Code, and ChatGPT (Desktop) open locally with your prompt pre-filled — you confirm before anything runs. Hide any tool you do not use under Settings → AI Tools.',
+	items: [
+		{
+			title: 'Open prompts in Cursor, Claude Code, and ChatGPT Desktop',
+			body: 'Three desktop agents are built into Open in… and enabled by default. They open locally with your prompt pre-filled — you confirm before anything runs. Hide any you do not use under Settings → AI Tools.'
+		},
+		{
+			title: 'Open prompts in any chat tool',
+			body: 'Add your own AI apps under Settings → AI Tools. If a tool accepts a prompt in a URL, Bearprompt can open it with one click — same as ChatGPT, Claude, and the other built-ins. Everything stays on this device.',
+			guideLabel: 'Read the guide',
+			guideHref: '/blog/custom-ai-providers'
+		}
+	],
 	ctaLabel: 'Open AI Tools settings',
-	ctaHref: '/settings#ai-tools',
-	secondaryLabel: 'Read the guide',
-	secondaryHref: '/blog/custom-ai-providers'
+	ctaHref: '/settings#ai-tools'
 };
 
 export function shouldAutoShowWhatsNew(settings: Settings): boolean {
