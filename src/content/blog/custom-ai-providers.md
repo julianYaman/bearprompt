@@ -1,7 +1,7 @@
 ---
 title: "How to Add Custom AI Providers"
 slug: "custom-ai-providers"
-description: "Connect web chat tools and desktop agents like Cursor, Claude Code, and Codex, then open prompts from Bearprompt with one click."
+description: "Connect web chat tools and desktop agents like Cursor, Claude Code, and ChatGPT Desktop, then open prompts from Bearprompt with one click."
 publishedAt: "2026-08-08"
 updatedAt: "2026-08-10"
 author: "Bearprompt"
@@ -22,11 +22,11 @@ If a tool accepts a prompt through a URL query parameter (HTTPS or a supported d
 
 New chat UIs and coding agents appear often. Hardcoding each one does not scale, and your preferred tools may not match the defaults.
 
-Bearprompt opens prompts in ChatGPT, Claude, Perplexity, Grok, **Cursor**, **Claude Code**, and **Codex**. Custom providers use the same idea: build a URL, put your prompt in a query parameter, and open it.
+Bearprompt opens prompts in ChatGPT (web), Claude, Perplexity, Grok, **Cursor**, **Claude Code**, and **ChatGPT (Desktop)**. Custom providers use the same idea: build a URL, put your prompt in a query parameter, and open it.
 
 Everything stays local. Provider settings are stored in your browser with the rest of your private library.
 
-## Desktop agents (Cursor, Claude Code, Codex)
+## Desktop agents (Cursor, Claude Code, ChatGPT Desktop)
 
 These built-ins use **custom URL schemes** (deep links) so the OS can open a locally installed app with your prompt pre-filled. Nothing is sent to the model until you confirm in the app.
 
@@ -34,7 +34,9 @@ These built-ins use **custom URL schemes** (deep links) so the OS can open a loc
 | --- | --- |
 | Cursor | `cursor://anysphere.cursor-deeplink/prompt?text={{prompt}}` |
 | Claude Code | `claude-cli://open?q={{prompt}}` |
-| Codex | `codex://new?prompt={{prompt}}` |
+| ChatGPT (Desktop) | `codex://new?prompt={{prompt}}` |
+
+**ChatGPT** (web) and **ChatGPT (Desktop)** are different entries: one opens chat.openai.com in the browser; the other opens the ChatGPT desktop app via the `codex://` deep link OpenAI still uses for compatibility.
 
 They are **enabled by default**. Hide any you do not use under **Settings → AI Tools**.
 
@@ -44,7 +46,7 @@ Notes:
 - If the app is missing, the link may do nothing or show an OS error — that is expected.
 - Desktop deep links allow longer prompts than typical HTTPS chat URLs before Bearprompt warns you.
 
-Official docs: [Cursor deeplinks](https://cursor.com/docs/reference/deeplinks), [Claude Code deep links](https://code.claude.com/docs/en/deep-links), [Codex deep links](https://developers.openai.com/codex/app/commands#deep-links).
+Official docs: [Cursor deeplinks](https://cursor.com/docs/reference/deeplinks), [Claude Code deep links](https://code.claude.com/docs/en/deep-links), [ChatGPT / Codex deep links](https://developers.openai.com/codex/app/commands#deep-links).
 
 ## Add a provider in Settings
 

@@ -37,8 +37,8 @@
 					answer: 'Yes. Open Settings → AI Tools and add a custom provider with a URL template that includes {{prompt}} where the prompt should go. You can also hide or reorder the built-in tools. See <a href="/blog/custom-ai-providers">How to Add Custom AI Providers</a> for examples.'
 				},
 				{
-					question: 'How do I open prompts in Cursor, Claude Code, or Codex?',
-					answer: 'These desktop agents are built into Settings → AI Tools and enabled by default. Use Open in… on any prompt to launch the app with your prompt pre-filled — you still confirm before it runs. Hide any tool you do not use. Details and URL templates are in <a href="/blog/custom-ai-providers">How to Add Custom AI Providers</a>.'
+					question: 'How do I open prompts in Cursor, Claude Code, or ChatGPT Desktop?',
+					answer: 'These desktop agents are built into Settings → AI Tools and enabled by default. Use Open in… on any prompt to launch the app with your prompt pre-filled — you still confirm before it runs. ChatGPT (Desktop) opens the ChatGPT desktop app via a local deep link (separate from the web ChatGPT entry). Hide any tool you do not use. Details and URL templates are in <a href="/blog/custom-ai-providers">How to Add Custom AI Providers</a>.'
 				}
 			]
 		},

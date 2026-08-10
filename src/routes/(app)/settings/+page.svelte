@@ -234,7 +234,7 @@
 				<p class="section-help">
 					Choose which tools appear in “Open in…”. Use
 					<code>{PROMPT_PLACEHOLDER}</code>
-					in the URL where the prompt should go. Desktop agents (Cursor, Claude Code, Codex)
+					in the URL where the prompt should go. Desktop agents (Cursor, Claude Code, ChatGPT Desktop)
 					open locally when the app is installed — nothing is sent until you confirm in the app.
 					Custom providers stay on this device.
 					<a href="/blog/custom-ai-providers">Learn more</a>

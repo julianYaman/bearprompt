@@ -123,6 +123,22 @@ describe('ai providers', () => {
 		expect(merged.find((p) => p.id === 'cursor')?.enabled).toBe(true);
 		expect(merged.find((p) => p.id === 'claude-code')?.enabled).toBe(true);
 		expect(merged.find((p) => p.id === 'codex')?.enabled).toBe(true);
+		expect(merged.find((p) => p.id === 'codex')?.name).toBe('ChatGPT (Desktop)');
+	});
+
+	it('renames legacy Codex label to ChatGPT (Desktop)', () => {
+		const stored: AiProviderConfig[] = [
+			{
+				id: 'codex',
+				name: 'Codex',
+				urlTemplate: 'codex://new?prompt={{prompt}}',
+				isBuiltIn: true,
+				enabled: true,
+				sortOrder: 0
+			}
+		];
+		const merged = mergeProviderSettings(stored);
+		expect(merged.find((p) => p.id === 'codex')?.name).toBe('ChatGPT (Desktop)');
 	});
 
 	it('maps provider icons including desktop agents', () => {
@@ -130,6 +146,7 @@ describe('ai providers', () => {
 		expect(getProviderIconName(DEFAULT_PROVIDERS.find((p) => p.id === 'claude-code')!)).toBe(
 			'claude-code'
 		);
+		expect(DEFAULT_PROVIDERS.find((p) => p.id === 'codex')?.name).toBe('ChatGPT (Desktop)');
 		expect(getProviderIconName(DEFAULT_PROVIDERS.find((p) => p.id === 'codex')!)).toBe('chatgpt');
 		expect(isDesktopAgentProvider(DEFAULT_PROVIDERS.find((p) => p.id === 'cursor')!)).toBe(true);
 		expect(isDesktopAgentProvider(DEFAULT_PROVIDERS.find((p) => p.id === 'chatgpt')!)).toBe(false);

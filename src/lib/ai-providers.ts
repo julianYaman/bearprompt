@@ -73,7 +73,7 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 	},
 	{
 		id: 'codex',
-		name: 'Codex',
+		name: 'ChatGPT (Desktop)',
 		urlTemplate: `codex://new?prompt=${PROMPT_PLACEHOLDER}`,
 		isBuiltIn: true,
 		enabled: true,
@@ -179,9 +179,12 @@ export function mergeProviderSettings(
 			const builtin = defaultById.get(provider.id);
 			if (!builtin) continue;
 			seenBuiltInIds.add(provider.id);
+			const storedName = provider.name.trim();
+			const renamedFromCodex =
+				provider.id === 'codex' && (!storedName || storedName === 'Codex');
 			merged.push({
 				...builtin,
-				name: provider.name.trim() || builtin.name,
+				name: renamedFromCodex ? builtin.name : storedName || builtin.name,
 				urlTemplate: provider.urlTemplate.trim() || builtin.urlTemplate,
 				enabled: provider.enabled !== false,
 				sortOrder: typeof provider.sortOrder === 'number' ? provider.sortOrder : index

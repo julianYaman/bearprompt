@@ -36,7 +36,7 @@ const ALLOWED_PROVIDER_SCHEME_SET = new Set<string>(ALLOWED_PROVIDER_SCHEMES);
 
 /**
  * Validates a provider open URL. Unlike sanitizeExternalUrl, this allows
- * desktop deep-link schemes used by Cursor, Claude Code, and Codex.
+ * desktop deep-link schemes used by Cursor, Claude Code, and ChatGPT Desktop.
  */
 export function sanitizeProviderUrl(input: unknown): string | null {
 	if (typeof input !== 'string') return null;
