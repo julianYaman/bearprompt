@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { v4 as uuidv4 } from 'uuid';
 	import Icon from '$lib/components/Icon.svelte';
 	import {
@@ -12,6 +13,13 @@
 	} from '$lib/ai-providers';
 	import { aiProviders, persistAiProviders, theme } from '$lib/stores';
 	import type { AiProviderConfig, ThemeMode } from '$lib/types';
+
+	onMount(() => {
+		if (window.location.hash !== '#ai-tools') return;
+		requestAnimationFrame(() => {
+			document.getElementById('ai-tools')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		});
+	});
 
 	function setTheme(mode: ThemeMode) {
 		theme.set(mode);
@@ -215,7 +223,7 @@
 			</div>
 		</section>
 
-		<section class="settings-section">
+		<section id="ai-tools" class="settings-section">
 			<div class="section-title-row">
 				<h2 class="section-title">AI Tools</h2>
 				{#if saveFeedback}
@@ -414,6 +422,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		scroll-margin-top: 1.5rem;
 	}
 
 	.section-title-row {

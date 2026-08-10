@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { whatsNewOpen } from '$lib/stores';
 
 	const CHATGPT_PROMPT = `Based on my previous chats, give me my 10 most used prompts that I can copy & paste into a prompt library. Format them in a way that I know where I have to enter custom instructions or text for this prompt. For each prompt, give me a title and a few tags. Format the result so each prompt can be directly copied into a prompt library.`;
 
@@ -96,6 +97,10 @@
 			copyState = 'idle';
 		}, 1500);
 	}
+
+	function openWhatsNew() {
+		whatsNewOpen.set(true);
+	}
 </script>
 
 <svelte:head>
@@ -104,8 +109,16 @@
 
 <div class="help-page">
 	<div class="help-container">
-		<h1 class="page-title">Help</h1>
-		<p class="page-description">Find answers to common questions about Bearprompt.</p>
+		<div class="help-header">
+			<div>
+				<h1 class="page-title">Help</h1>
+				<p class="page-description">Find answers to common questions about Bearprompt.</p>
+			</div>
+			<button type="button" class="whats-new-button" onclick={openWhatsNew}>
+				<Icon name="sparkles" size={16} />
+				What's new
+			</button>
+		</div>
 
 		<div class="categories">
 			<!-- Getting Started Section -->
@@ -188,6 +201,14 @@
 		margin: 0 auto;
 	}
 
+	.help-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
 	.page-title {
 		font-size: 1.75rem;
 		font-weight: 700;
@@ -198,7 +219,43 @@
 	.page-description {
 		font-size: 0.9375rem;
 		color: var(--color-text-secondary);
-		margin-bottom: 2rem;
+		margin-bottom: 0;
+	}
+
+	.whats-new-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		flex-shrink: 0;
+		border: 1px solid var(--color-border);
+		border-radius: 0.75rem;
+		padding: 0.55rem 0.85rem;
+		background-color: var(--color-bg-primary);
+		color: var(--color-text-primary);
+		font-size: 0.875rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: opacity 0.15s ease;
+	}
+
+	.whats-new-button:hover {
+		opacity: 0.9;
+	}
+
+	.whats-new-button:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	@media (max-width: 640px) {
+		.help-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.whats-new-button {
+			justify-content: center;
+		}
 	}
 
 	.categories {

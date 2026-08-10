@@ -37,6 +37,8 @@ export interface Settings {
 	version: number;
 	theme: 'system' | 'light' | 'dark';
 	hasCompletedOnboarding: boolean;
+	/** Id of the What's New Highlight the user last acknowledged, or null if none. */
+	lastSeenWhatsNewId: string | null;
 	ui: {
 		cardSize: 'm' | 'l';
 	};
