@@ -25,6 +25,13 @@ vite.config.ts.timestamp-*
 .agents/
 .cursor/
 
+# Local planning docs (not shipped)
+docs/
+CONTEXT.md
+
 # Standalone Remotion video project
 video-remotion/node_modules
 video-remotion/out
+
+# Local VPS deploy helpers (not part of this app)
+local-deploy/
