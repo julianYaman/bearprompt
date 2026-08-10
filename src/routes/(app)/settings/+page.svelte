@@ -607,14 +607,19 @@
 		border: 1px solid var(--color-border);
 		border-radius: 0.5rem;
 		padding: 0.6rem 0.75rem;
-		background-color: var(--color-bg-secondary);
+		background-color: var(--color-bg-primary);
 		color: var(--color-text-primary);
 		margin-bottom: 0.65rem;
+	}
+
+	.field-input::placeholder {
+		color: var(--color-text-muted);
 	}
 
 	.field-input:focus {
 		outline: 2px solid color-mix(in oklab, var(--color-accent) 40%, transparent);
 		border-color: var(--color-accent);
+		background-color: var(--color-bg-primary);
 	}
 
 	.field-hint {
