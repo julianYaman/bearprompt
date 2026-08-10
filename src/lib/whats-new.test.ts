@@ -30,7 +30,7 @@ describe('shouldAutoShowWhatsNew', () => {
 	});
 
 	it('shows again when a different highlight id is current', () => {
-		expect(shouldAutoShowWhatsNew(settings({ lastSeenWhatsNewId: 'prompt-variables' }))).toBe(
+		expect(shouldAutoShowWhatsNew(settings({ lastSeenWhatsNewId: 'custom-ai-providers' }))).toBe(
 			true
 		);
 	});

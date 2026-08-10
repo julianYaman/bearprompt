@@ -39,7 +39,7 @@
 		const url = buildProviderUrl(provider.urlTemplate, promptText);
 		if (isUrlTooLong(url)) {
 			const proceed = window.confirm(
-				'This prompt is very long and may not fit in the provider URL. Open anyway?'
+				`This prompt may be too long for ${provider.name}. Open anyway?`
 			);
 			if (!proceed) return;
 		}

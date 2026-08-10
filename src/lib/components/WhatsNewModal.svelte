@@ -83,37 +83,41 @@
 				</button>
 			</div>
 
-			<div class="p-5">
-				<div class="flex items-start gap-3">
-					<span
-						class="whats-new-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-						aria-hidden="true"
-					>
-						<Icon name="sparkles" size={20} />
-					</span>
-					<div>
-						<h3 class="text-base font-semibold" style="color: var(--color-text-primary);">
-							{CURRENT_WHATS_NEW.title}
-						</h3>
-						<p
-							class="whats-new-body text-sm leading-relaxed"
-							style="color: var(--color-text-secondary);"
+			<div class="whats-new-items p-5">
+				{#each CURRENT_WHATS_NEW.items as item, index (item.title)}
+					<div class="whats-new-item flex items-start gap-3">
+						<span
+							class="whats-new-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+							aria-hidden="true"
 						>
-							{CURRENT_WHATS_NEW.body}
-						</p>
-						<a
-							href={CURRENT_WHATS_NEW.secondaryHref}
-							class="whats-new-guide text-sm font-medium transition-colors"
-							onclick={() => {
-								void markWhatsNewSeen();
-								whatsNewOpen.set(false);
-							}}
-						>
-							{CURRENT_WHATS_NEW.secondaryLabel}
-							<Icon name="external-link" size={14} />
-						</a>
+							<Icon name={index === 0 ? 'sparkles' : 'bot'} size={20} />
+						</span>
+						<div>
+							<h3 class="text-base font-semibold" style="color: var(--color-text-primary);">
+								{item.title}
+							</h3>
+							<p
+								class="whats-new-body text-sm leading-relaxed"
+								style="color: var(--color-text-secondary);"
+							>
+								{item.body}
+							</p>
+							{#if item.guideHref && item.guideLabel}
+								<a
+									href={item.guideHref}
+									class="whats-new-guide text-sm font-medium transition-colors"
+									onclick={() => {
+										void markWhatsNewSeen();
+										whatsNewOpen.set(false);
+									}}
+								>
+									{item.guideLabel}
+									<Icon name="external-link" size={14} />
+								</a>
+							{/if}
+						</div>
 					</div>
-				</div>
+				{/each}
 			</div>
 
 			<div class="border-t p-4" style="border-color: var(--color-border);">
@@ -131,6 +135,12 @@
 {/if}
 
 <style>
+	.whats-new-items {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
 	.whats-new-icon {
 		background-color: var(--color-bg-tertiary);
 		color: var(--color-accent);
