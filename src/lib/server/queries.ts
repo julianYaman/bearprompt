@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { buildPromptSearchOrFilter, normalizeSearchQuery } from '$lib/search';
 import type {
 	PublicAuthor,
 	PublicCategory,
@@ -749,10 +750,8 @@ export async function searchPrompts(
 	promptType?: PromptType
 ): Promise<SearchResults> {
 	const offset = (page - 1) * SEARCH_RESULTS_PER_PAGE;
-	const searchPattern = `%${query}%`;
-
-	// Build base query
-	const baseFilter = `title.ilike.${searchPattern},description.ilike.${searchPattern},prompt.ilike.${searchPattern}`;
+	const normalizedQuery = normalizeSearchQuery(query);
+	const baseFilter = buildPromptSearchOrFilter(normalizedQuery);
 
 	// Run count and data queries in parallel
 	let countQuery = supabase
@@ -788,7 +787,7 @@ export async function searchPrompts(
 		totalResults: totalCount,
 		currentPage: page,
 		totalPages,
-		query
+		query: normalizedQuery
 	};
 }
 

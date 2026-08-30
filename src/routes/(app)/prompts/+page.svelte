@@ -14,9 +14,8 @@
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
 	import { loadPrompts, loadTags, theme } from '$lib/stores';
 	import { resolveThemeIsDark } from '$lib/utils';
+	import { MAX_SEARCH_LENGTH } from '$lib/search';
 	import type { PublicCategory, PublicPrompt } from '$lib/types/public';
-
-	const MAX_SEARCH_LENGTH = 200;
 
 	let { data } = $props();
 	let systemPrefersDark = $state(false);
