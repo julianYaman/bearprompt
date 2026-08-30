@@ -49,6 +49,10 @@ const CATEGORY_COLUMNS =
 	'id, slug, name, description, color, color_light, color_dark, icon_key, image_url, source_url';
 const PROMPT_WITH_AUTHOR_COLUMNS = `${PROMPT_COLUMNS}, author:author_id (${AUTHOR_COLUMNS})`;
 
+function asPrompts(data: unknown): PublicPrompt[] {
+	return (Array.isArray(data) ? data : []) as PublicPrompt[];
+}
+
 function normalizeJoinedRow<T>(value: T | T[] | null | undefined): T | null {
 	return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 }
@@ -149,7 +153,7 @@ async function getFallbackRelatedPrompts(
 
 	if (error) throw error;
 
-	const fallbackPrompts = (data || []).filter((candidate) => !excludedPromptIds.has(candidate.id));
+	const fallbackPrompts = asPrompts(data).filter((candidate) => !excludedPromptIds.has(candidate.id));
 	return attachTagsToPrompts(supabase, fallbackPrompts.slice(0, limit));
 }
 
@@ -220,7 +224,7 @@ async function getPromptsForAuthors(
 	// Group prompts by author and limit to first N
 	const promptsByAuthor = new Map<string, PublicPrompt[]>();
 	
-	for (const prompt of data || []) {
+	for (const prompt of asPrompts(data)) {
 		const authorPrompts = promptsByAuthor.get(prompt.author_id) || [];
 		if (authorPrompts.length < limit) {
 			authorPrompts.push(prompt);
@@ -546,7 +550,7 @@ export async function getCategoryPageData(
 	const promptsById = new Map<string, PublicPrompt>();
 	for (const row of tagPromptRows || []) {
 		const prompt = normalizeJoinedRow(
-			row.prompt as PublicPrompt | PublicPrompt[] | null
+			row.prompt as unknown as PublicPrompt | PublicPrompt[] | null
 		);
 		if (!prompt || prompt.type !== 'prompt' || promptsById.has(prompt.id)) continue;
 		promptsById.set(prompt.id, prompt);
@@ -603,7 +607,7 @@ export async function getRelatedPrompts(
 		}
 	>();
 
-	for (const row of (sharedTagRows || []) as PromptCandidateRow[]) {
+	for (const row of (sharedTagRows || []) as unknown as PromptCandidateRow[]) {
 		const candidatePrompt = normalizeJoinedRow(row.prompt);
 		if (!candidatePrompt || candidatePrompt.id === prompt.id || candidatePrompt.type !== prompt.type) {
 			continue;
@@ -701,7 +705,7 @@ export async function getRelatedPrompts(
 
 		if (categoryCandidateError) throw categoryCandidateError;
 
-		for (const row of (categoryCandidateRows || []) as PromptCandidateRow[]) {
+		for (const row of (categoryCandidateRows || []) as unknown as PromptCandidateRow[]) {
 			const candidatePrompt = normalizeJoinedRow(row.prompt);
 			if (!candidatePrompt || candidatePrompt.id === prompt.id || candidatePrompt.type !== prompt.type) {
 				continue;
@@ -780,7 +784,7 @@ export async function searchPrompts(
 	if (dataResult.error) throw dataResult.error;
 
 	const totalCount = countResult.count || 0;
-	const promptsWithTags = await attachTagsToPrompts(supabase, dataResult.data || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(dataResult.data));
 	const totalPages = Math.ceil(totalCount / SEARCH_RESULTS_PER_PAGE);
 
 	return {
@@ -850,7 +854,7 @@ export async function getAuthorPageData(
 	if (dataResult.error) throw dataResult.error;
 
 	const totalCount = countResult.count || 0;
-	const promptsWithTags = await attachTagsToPrompts(supabase, dataResult.data || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(dataResult.data));
 	const totalPages = Math.ceil(totalCount / PROMPTS_PER_PAGE);
 
 	return {
@@ -882,7 +886,7 @@ export async function getPromptById(
 		throw error;
 	}
 
-	const promptsWithTags = await attachTagsToPrompts(supabase, [prompt]);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts([prompt]));
 	return promptsWithTags[0] || null;
 }
 
@@ -937,7 +941,7 @@ export async function getAuthorPageDataBySlug(
 	if (dataResult.error) throw dataResult.error;
 
 	const totalCount = countResult.count || 0;
-	const promptsWithTags = await attachTagsToPrompts(supabase, dataResult.data || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(dataResult.data));
 	const totalPages = Math.ceil(totalCount / PROMPTS_PER_PAGE);
 
 	return {
@@ -976,7 +980,7 @@ export async function getPromptBySlug(
 		throw error;
 	}
 
-	const promptsWithTags = await attachTagsToPrompts(supabase, [prompt]);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts([prompt]));
 	const result = promptsWithTags[0] || null;
 
 	// If it's an agent prompt, also fetch the tools
@@ -1038,7 +1042,7 @@ export async function getAuthorPageDataGroupedBySlug(
 
 	if (error) throw error;
 
-	const promptsWithTags = await attachTagsToPrompts(supabase, allPrompts || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(allPrompts));
 
 	// Split by type
 	const regularPrompts = promptsWithTags.filter((p) => p.type === 'prompt');
