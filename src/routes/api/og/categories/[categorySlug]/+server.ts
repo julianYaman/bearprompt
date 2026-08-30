@@ -2,12 +2,14 @@ import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { getSupabase } from '$lib/supabase';
 import { getCachedPromptCategories } from '$lib/server/cache';
+import { enforceOgRateLimit } from '$lib/server/og-rate-limit';
 import { renderCategoryOgImage } from '$lib/server/og';
 import { getPromptCategories } from '$lib/server/queries';
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async (event) => {
+	enforceOgRateLimit(event);
 	const supabase = getSupabase();
-	const { categorySlug } = params;
+	const { categorySlug } = event.params;
 
 	const categories = await getCachedPromptCategories(() => getPromptCategories(supabase));
 	const category = categories.find((entry) => entry.slug === categorySlug);

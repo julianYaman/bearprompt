@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import {
-		buildProviderUrl,
 		getProviderIconName,
-		isUrlTooLong
+		isUrlTooLong,
+		resolveProviderOpenUrl
 	} from '$lib/ai-providers';
 	import { enabledAiProviders } from '$lib/stores';
 	import type { AiProviderConfig } from '$lib/types';
@@ -36,7 +36,8 @@
 	);
 
 	function openProvider(provider: AiProviderConfig) {
-		const url = buildProviderUrl(provider.urlTemplate, promptText);
+		const url = resolveProviderOpenUrl(provider.urlTemplate, promptText);
+		if (!url) return;
 		if (isUrlTooLong(url)) {
 			const proceed = window.confirm(
 				`This prompt may be too long for ${provider.name}. Open anyway?`

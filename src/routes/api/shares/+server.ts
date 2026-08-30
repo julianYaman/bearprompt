@@ -5,7 +5,6 @@ import {
 	SHARE_TTL_DAYS,
 	decodeCiphertextSize,
 	evaluateRateLimit,
-	extractClientIp,
 	generateRevokeToken,
 	generateShareId,
 	hashToken,
@@ -20,9 +19,9 @@ function noStoreHeaders() {
 	};
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	try {
-		const ip = extractClientIp(request.headers);
+		const ip = getClientAddress() || 'unknown';
 		const rateStatus = evaluateRateLimit(ip);
 		if (!rateStatus.allowed) {
 			return json({ error: 'Too many requests' }, { status: 429, headers: noStoreHeaders() });

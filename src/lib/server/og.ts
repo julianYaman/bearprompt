@@ -9,17 +9,20 @@ import {
 	SITE_URL,
 	type OgAuthorSection
 } from '$lib/seo';
+import { assertUrlResolvesPublic, parsePublicHttpUrl } from '$lib/server/ssrf';
 import type { PublicAuthor, PublicCategory, PublicPrompt, PromptType } from '$lib/types/public';
 
 const h = React.createElement;
-const STATIC_ROOT = path.join(process.cwd(), 'static');
+const STATIC_ROOT = path.resolve(process.cwd(), 'static');
 const BEARPROMPT_LOGO_URL =
 	'https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNyI8gg2GZzIKqMNfxHOB43pYgdQ9yTJFVACo8';
-const OG_FONT_PATH = path.join(STATIC_ROOT, 'og-font.ttf');
-const OG_FONT_BOLD_PATH = path.join(STATIC_ROOT, 'og-font-bold.ttf');
 const SITE_ORIGIN = new URL(SITE_URL).origin;
 const OG_FONT_FAMILY = 'OG Font';
 const OG_REMOTE_ASSET_REFERER = 'https://bearprompt.com';
+const MAX_AVATAR_BYTES = 512 * 1024;
+const MAX_FONT_BYTES = 5 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = 5000;
+const MAX_REDIRECTS = 3;
 
 let ogFontsPromise: Promise<
 	{ name: string; data: ArrayBuffer; style: 'normal'; weight: 400 | 700 }[]
@@ -54,29 +57,146 @@ async function readStaticAssetDataUrl(filePath: string): Promise<string> {
 	);
 }
 
-async function getOgFonts() {
-		
-	const [fontBoldRes, fontRegularRes] = await Promise.all([
-		fetch(`https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNs4eY3aSBFNeIVfPizd7gGcA8RohrL1UkMbu6`),
-		fetch(`https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNmGwtD1ToEuaSktVMFgfzjXIx1mT6rcGQqyWe`)
-	])
+async function readBodyWithLimit(res: Response, maxBytes: number): Promise<ArrayBuffer | null> {
+	const declaredLength = Number(res.headers.get('Content-Length') || '0');
+	if (declaredLength > maxBytes) return null;
 
-	ogFontsPromise = Promise.resolve([
+	if (!res.body) {
+		const buffer = await res.arrayBuffer();
+		return buffer.byteLength > maxBytes ? null : buffer;
+	}
+
+	const reader = res.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		total += value.byteLength;
+		if (total > maxBytes) {
+			await reader.cancel();
+			return null;
+		}
+		chunks.push(value);
+	}
+
+	const output = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		output.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return output.buffer;
+}
+
+async function fetchPublicUrl(
+	url: URL,
+	options: { maxBytes: number; acceptPrefix?: string }
+): Promise<{ buffer: ArrayBuffer; contentType: string } | null> {
+	let current = url;
+
+	for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+		try {
+			await assertUrlResolvesPublic(current);
+			const res = await fetch(current, {
+				method: 'GET',
+				redirect: 'manual',
+				signal: controller.signal,
+				headers: {
+					Referer: OG_REMOTE_ASSET_REFERER
+				}
+			});
+
+			if (res.status >= 300 && res.status < 400) {
+				const location = res.headers.get('location');
+				if (!location) return null;
+				const next = parsePublicHttpUrl(location, current);
+				if (!next) return null;
+				current = next;
+				continue;
+			}
+
+			if (!res.ok) return null;
+
+			const contentType = (res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+			if (options.acceptPrefix && !contentType.startsWith(options.acceptPrefix)) {
+				return null;
+			}
+
+			const buffer = await readBodyWithLimit(res, options.maxBytes);
+			if (!buffer) return null;
+			return { buffer, contentType };
+		} catch {
+			return null;
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	return null;
+}
+
+async function loadOgFonts() {
+	const fontRegularUrl = parsePublicHttpUrl(
+		'https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNs4eY3aSBFNeIVfPizd7gGcA8RohrL1UkMbu6'
+	);
+	const fontBoldUrl = parsePublicHttpUrl(
+		'https://wrirnpjj3p.ufs.sh/f/10v7IlGJcYPNmGwtD1ToEuaSktVMFgfzjXIx1mT6rcGQqyWe'
+	);
+	if (!fontRegularUrl || !fontBoldUrl) {
+		throw new Error('OG font URLs are invalid');
+	}
+
+	const [fontRegular, fontBold] = await Promise.all([
+		fetchPublicUrl(fontRegularUrl, { maxBytes: MAX_FONT_BYTES }),
+		fetchPublicUrl(fontBoldUrl, { maxBytes: MAX_FONT_BYTES })
+	]);
+
+	if (!fontRegular || !fontBold) {
+		throw new Error('Failed to load OG fonts');
+	}
+
+	return [
 		{
 			name: OG_FONT_FAMILY,
-			data: await fontRegularRes.arrayBuffer(),
+			data: fontRegular.buffer,
 			style: 'normal' as const,
 			weight: 400 as const
 		},
 		{
 			name: OG_FONT_FAMILY,
-			data: await fontBoldRes.arrayBuffer(),
+			data: fontBold.buffer,
 			style: 'normal' as const,
 			weight: 700 as const
 		}
-	]);
+	];
+}
+
+async function getOgFonts() {
+	if (!ogFontsPromise) {
+		ogFontsPromise = loadOgFonts().catch((error) => {
+			ogFontsPromise = null;
+			throw error;
+		});
+	}
 
 	return ogFontsPromise;
+}
+
+function resolveLocalStaticPath(url: URL): string | null {
+	const relativePath = decodeURIComponent(url.pathname).replace(/^\/+/, '');
+	if (!relativePath || relativePath.includes('\0')) return null;
+
+	const localPath = path.resolve(STATIC_ROOT, relativePath);
+	if (localPath !== STATIC_ROOT && !localPath.startsWith(STATIC_ROOT + path.sep)) {
+		return null;
+	}
+
+	return localPath;
 }
 
 function getInitials(name: string): string {
@@ -110,47 +230,26 @@ async function resolveAvatarSrc(avatarUrl: string | null): Promise<string | null
 		return null;
 	}
 
-	let resolvedUrl: URL;
-	try {
-		resolvedUrl = new URL(avatarUrl, SITE_URL);
-	} catch (error) {
+	const resolvedUrl = parsePublicHttpUrl(avatarUrl, SITE_URL);
+	if (!resolvedUrl) {
 		return null;
 	}
 
 	if (resolvedUrl.origin !== SITE_ORIGIN) {
-		try {
-			const res = await fetch(resolvedUrl, {
-				headers: {
-					Referer: OG_REMOTE_ASSET_REFERER
-				}
-			});
-			if (!res.ok) {
-				return null;
-			}
-
-			const contentType = res.headers.get('Content-Type') || getMimeType(resolvedUrl.pathname);
-			if (!contentType.startsWith('image/')) {
-				return null;
-			}
-
-			const arrayBuffer = await res.arrayBuffer();
-			return toDataUrl(arrayBuffer, contentType);
-		} catch (error) {
-			return null;
-		}
+		const fetched = await fetchPublicUrl(resolvedUrl, {
+			maxBytes: MAX_AVATAR_BYTES,
+			acceptPrefix: 'image/'
+		});
+		if (!fetched) return null;
+		return toDataUrl(fetched.buffer, fetched.contentType || getMimeType(resolvedUrl.pathname));
 	}
 
-	const relativePath = decodeURIComponent(resolvedUrl.pathname).replace(/^\/+/, '');
-	if (!relativePath || relativePath.includes('..')) {
-		return null;
-	}
-
-	const localPath = path.join(STATIC_ROOT, relativePath);
+	const localPath = resolveLocalStaticPath(resolvedUrl);
+	if (!localPath) return null;
 
 	try {
-		const dataUrl = await readStaticAssetDataUrl(localPath);
-		return dataUrl;
-	} catch (error) {
+		return await readStaticAssetDataUrl(localPath);
+	} catch {
 		return null;
 	}
 }

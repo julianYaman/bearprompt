@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { getSupabase } from '$lib/supabase';
+import { enforceOgRateLimit } from '$lib/server/og-rate-limit';
 import { renderAuthorOgImage } from '$lib/server/og';
 import { getAuthorBySlug } from '$lib/server/queries';
 import type { OgAuthorSection } from '$lib/seo';
@@ -9,9 +10,10 @@ function isOgAuthorSection(value: string): value is OgAuthorSection {
 	return value === 'prompts' || value === 'agents';
 }
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async (event) => {
+	enforceOgRateLimit(event);
 	const supabase = getSupabase();
-	const { authorSlug, section } = params;
+	const { authorSlug, section } = event.params;
 
 	if (!isOgAuthorSection(section)) {
 		throw error(404, 'Author page not found');

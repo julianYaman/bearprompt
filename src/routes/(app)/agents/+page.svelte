@@ -11,9 +11,9 @@
 	import { page } from '$app/stores';
 	import { createPrompt, getAllTags, createTag } from '$lib/db';
 	import { loadPrompts, loadTags } from '$lib/stores';
+	import { MAX_SEARCH_LENGTH } from '$lib/search';
 	import type { PublicPrompt } from '$lib/types/public';
 
-	const MAX_SEARCH_LENGTH = 200;
 	const BASE_PATH = '/agents';
 
 	let { data } = $props();

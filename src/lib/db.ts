@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { v4 as uuidv4 } from 'uuid';
-import { DEFAULT_PROVIDERS, mergeProviderSettings, normalizeProviderOrder } from './ai-providers';
+import { DEFAULT_PROVIDERS, mergeProviderSettings, normalizeProviderOrder, validateProviderTemplate } from './ai-providers';
 import type { AiProviderConfig, Prompt, Tag, Folder, Settings, ExportData } from './types';
 
 const DB_NAME = 'promptlib';
@@ -362,7 +362,7 @@ export async function updateSettings(updates: Partial<Omit<Settings, 'version'>>
 			...updates.ui
 		},
 		aiProviders: updates.aiProviders
-			? normalizeProviderOrder(updates.aiProviders)
+			? mergeProviderSettings(updates.aiProviders)
 			: current.aiProviders,
 		version: 1
 	};
@@ -530,6 +530,7 @@ export async function importLibrary(data: ExportData): Promise<ImportResult> {
 			if (typeof incoming.id !== 'string' || !incoming.id.trim()) continue;
 			if (typeof incoming.name !== 'string' || !incoming.name.trim()) continue;
 			if (typeof incoming.urlTemplate !== 'string' || !incoming.urlTemplate.trim()) continue;
+			if (!validateProviderTemplate(incoming.urlTemplate.trim()).ok) continue;
 
 			const existing = byId.get(incoming.id);
 			if (existing?.isBuiltIn || incoming.isBuiltIn) {

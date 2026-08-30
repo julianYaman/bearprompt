@@ -110,6 +110,11 @@ export function isUrlTooLong(url: string): boolean {
 	return url.length > getUrlLengthLimit(url);
 }
 
+export function resolveProviderOpenUrl(template: string, promptText: string): string | null {
+	if (!validateProviderTemplate(template).ok) return null;
+	return sanitizeProviderUrl(buildProviderUrl(template, promptText));
+}
+
 export function isDesktopAgentProvider(provider: Pick<AiProviderConfig, 'id' | 'urlTemplate'>): boolean {
 	if (provider.id === 'cursor' || provider.id === 'claude-code' || provider.id === 'codex') {
 		return true;
@@ -182,20 +187,26 @@ export function mergeProviderSettings(
 			const storedName = provider.name.trim();
 			const renamedFromCodex =
 				provider.id === 'codex' && (!storedName || storedName === 'Codex');
+			const storedTemplate = provider.urlTemplate.trim() || builtin.urlTemplate;
 			merged.push({
 				...builtin,
 				name: renamedFromCodex ? builtin.name : storedName || builtin.name,
-				urlTemplate: provider.urlTemplate.trim() || builtin.urlTemplate,
+				urlTemplate: validateProviderTemplate(storedTemplate).ok
+					? storedTemplate
+					: builtin.urlTemplate,
 				enabled: provider.enabled !== false,
 				sortOrder: typeof provider.sortOrder === 'number' ? provider.sortOrder : index
 			});
 			continue;
 		}
 
+		const customTemplate = provider.urlTemplate.trim();
+		if (!validateProviderTemplate(customTemplate).ok) continue;
+
 		merged.push({
 			id: provider.id,
 			name: provider.name.trim(),
-			urlTemplate: provider.urlTemplate.trim(),
+			urlTemplate: customTemplate,
 			isBuiltIn: false,
 			enabled: provider.enabled !== false,
 			sortOrder: typeof provider.sortOrder === 'number' ? provider.sortOrder : index

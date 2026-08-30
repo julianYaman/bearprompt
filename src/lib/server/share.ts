@@ -1,12 +1,17 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { customAlphabet } from 'nanoid';
 import { env } from '$env/dynamic/private';
+import { createFixedWindowLimiter } from './rate-limit';
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_SOFT_LIMIT = 5;
 const RATE_LIMIT_HARD_LIMIT = 20;
 
-const requestBuckets = new Map<string, number[]>();
+const shareRateLimiter = createFixedWindowLimiter({
+	windowMs: RATE_LIMIT_WINDOW_MS,
+	max: RATE_LIMIT_HARD_LIMIT,
+	maxKeys: 20_000
+});
 
 export const SHARE_MAX_BYTES = 64 * 1024;
 export const SHARE_TTL_DAYS = 14;
@@ -23,31 +28,6 @@ function base64urlToBuffer(value: string): Buffer {
 	const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
 	const padding = (4 - (normalized.length % 4)) % 4;
 	return Buffer.from(normalized + '='.repeat(padding), 'base64');
-}
-
-export function extractClientIp(headers: Headers): string {
-	const normalizeIp = (value: string | null): string | null => {
-		if (!value) return null;
-		const trimmed = value.trim();
-		if (!trimmed) return null;
-		if (!/^[0-9a-fA-F:.]+$/.test(trimmed)) return null;
-		return trimmed;
-	};
-
-	const cfConnectingIp = normalizeIp(headers.get('cf-connecting-ip'));
-	if (cfConnectingIp) {
-		return cfConnectingIp;
-	}
-
-	const forwardedFor = headers.get('x-forwarded-for');
-	if (forwardedFor) {
-		const firstForwarded = normalizeIp(forwardedFor.split(',')[0] ?? null);
-		if (firstForwarded) {
-			return firstForwarded;
-		}
-	}
-	const realIp = normalizeIp(headers.get('x-real-ip'));
-	return realIp || 'unknown';
 }
 
 export function hashToken(token: string): string {
@@ -110,23 +90,17 @@ export function normalizeCiphertextFromDb(value: unknown): string | null {
 	return bytes.toString('base64url');
 }
 
-function cleanupOldEntries(timestamps: number[], now: number): number[] {
-	return timestamps.filter((ts) => now - ts <= RATE_LIMIT_WINDOW_MS);
-}
-
 export function evaluateRateLimit(ip: string): {
 	allowed: boolean;
 	requiresCaptcha: boolean;
 } {
-	const now = Date.now();
-	const timestamps = cleanupOldEntries(requestBuckets.get(ip) || [], now);
-	requestBuckets.set(ip, timestamps);
+	const { count } = shareRateLimiter.inspect(ip);
 
-	if (timestamps.length >= RATE_LIMIT_HARD_LIMIT) {
+	if (count >= RATE_LIMIT_HARD_LIMIT) {
 		return { allowed: false, requiresCaptcha: true };
 	}
 
-	if (timestamps.length >= RATE_LIMIT_SOFT_LIMIT) {
+	if (count >= RATE_LIMIT_SOFT_LIMIT) {
 		return { allowed: true, requiresCaptcha: true };
 	}
 
@@ -134,10 +108,7 @@ export function evaluateRateLimit(ip: string): {
 }
 
 export function registerRateLimitedRequest(ip: string): void {
-	const now = Date.now();
-	const current = cleanupOldEntries(requestBuckets.get(ip) || [], now);
-	current.push(now);
-	requestBuckets.set(ip, current);
+	shareRateLimiter.hit(ip);
 }
 
 export async function verifyCaptchaToken(token: string, ip: string): Promise<boolean> {

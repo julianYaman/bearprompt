@@ -1,7 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env } from '$env/dynamic/private';
 
+const SERVER_AUTH_OPTIONS = {
+	auth: {
+		persistSession: false,
+		autoRefreshToken: false,
+		detectSessionInUrl: false
+	}
+} as const;
+
+let anonClient: SupabaseClient | null = null;
+let serviceClient: SupabaseClient | null = null;
+
 export function getSupabase() {
+	if (anonClient) return anonClient;
+
 	if (!env.SUPABASE_URL) {
 		throw new Error('SUPABASE_URL is missing');
 	}
@@ -9,10 +22,13 @@ export function getSupabase() {
 		throw new Error('SUPABASE_ANON_KEY is missing');
 	}
 
-	return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+	anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, SERVER_AUTH_OPTIONS);
+	return anonClient;
 }
 
 export function getSupabaseService() {
+	if (serviceClient) return serviceClient;
+
 	if (!env.SUPABASE_URL) {
 		throw new Error('SUPABASE_URL is missing');
 	}
@@ -23,10 +39,6 @@ export function getSupabaseService() {
 		throw new Error('SUPABASE_SERVICE_ROLE_KEY is invalid (publishable key provided)');
 	}
 
-	return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-		auth: {
-			persistSession: false,
-			autoRefreshToken: false
-		}
-	});
+	serviceClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, SERVER_AUTH_OPTIONS);
+	return serviceClient;
 }

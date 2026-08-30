@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { buildPromptSearchOrFilter, normalizeSearchQuery } from '$lib/search';
 import type {
 	PublicAuthor,
 	PublicCategory,
@@ -38,6 +39,18 @@ type PromptCandidateRow = {
 
 function sortPromptsAlphabetically<T extends Pick<PublicPrompt, 'title'>>(prompts: T[]): T[] {
 	return [...prompts].sort((a, b) => a.title.localeCompare(b.title));
+}
+
+const AUTHOR_COLUMNS =
+	'id, created_at, name, slug, public_description, link, verified, avatar_url, highlighted, featured_color_light, featured_color_dark';
+const PROMPT_COLUMNS =
+	'id, created_at, title, slug, prompt, description, additional_information, author_id, type';
+const CATEGORY_COLUMNS =
+	'id, slug, name, description, color, color_light, color_dark, icon_key, image_url, source_url';
+const PROMPT_WITH_AUTHOR_COLUMNS = `${PROMPT_COLUMNS}, author:author_id (${AUTHOR_COLUMNS})`;
+
+function asPrompts(data: unknown): PublicPrompt[] {
+	return (Array.isArray(data) ? data : []) as PublicPrompt[];
 }
 
 function normalizeJoinedRow<T>(value: T | T[] | null | undefined): T | null {
@@ -130,8 +143,7 @@ async function getFallbackRelatedPrompts(
 		.from('prompts')
 		.select(
 			`
-			*,
-			author:author_id (*)
+			${PROMPT_WITH_AUTHOR_COLUMNS}
 		`
 		)
 		.eq('type', prompt.type)
@@ -141,7 +153,7 @@ async function getFallbackRelatedPrompts(
 
 	if (error) throw error;
 
-	const fallbackPrompts = (data || []).filter((candidate) => !excludedPromptIds.has(candidate.id));
+	const fallbackPrompts = asPrompts(data).filter((candidate) => !excludedPromptIds.has(candidate.id));
 	return attachTagsToPrompts(supabase, fallbackPrompts.slice(0, limit));
 }
 
@@ -197,7 +209,7 @@ async function getPromptsForAuthors(
 	// Fetch all prompts for these authors alphabetically by title
 	let query = supabase
 		.from('prompts')
-		.select('*')
+		.select(PROMPT_COLUMNS)
 		.in('author_id', authorIds)
 		.order('title', { ascending: true });
 	
@@ -212,7 +224,7 @@ async function getPromptsForAuthors(
 	// Group prompts by author and limit to first N
 	const promptsByAuthor = new Map<string, PublicPrompt[]>();
 	
-	for (const prompt of data || []) {
+	for (const prompt of asPrompts(data)) {
 		const authorPrompts = promptsByAuthor.get(prompt.author_id) || [];
 		if (authorPrompts.length < limit) {
 			authorPrompts.push(prompt);
@@ -277,7 +289,7 @@ export async function getHighlightedAuthors(
 	// Query 1: Get highlighted authors
 	const { data: authors, error: authorsError } = await supabase
 		.from('authors')
-		.select('*')
+		.select(AUTHOR_COLUMNS)
 		.eq('highlighted', true)
 		.order('name');
 
@@ -312,11 +324,11 @@ export async function getAuthors(
 	const [countResult, authorsResult] = await Promise.all([
 		supabase
 			.from('authors')
-			.select('*', { count: 'exact', head: true })
+			.select('id', { count: 'exact', head: true })
 			.eq('highlighted', false),
 		supabase
 			.from('authors')
-			.select('*')
+			.select(AUTHOR_COLUMNS)
 			.eq('highlighted', false)
 			.order('name')
 			.range(offset, offset + AUTHORS_PER_PAGE - 1)
@@ -354,7 +366,7 @@ export async function getPromptCategories(
 ): Promise<PublicCategory[]> {
 	const { data: categories, error: categoriesError } = await supabase
 		.from('categories')
-		.select('*')
+		.select(CATEGORY_COLUMNS)
 		.order('sort_order', { ascending: true })
 		.order('name', { ascending: true });
 
@@ -527,8 +539,7 @@ export async function getCategoryPageData(
 			tag_id,
 			prompt_id,
 			prompt:prompt_id (
-				*,
-				author:author_id (*)
+				${PROMPT_WITH_AUTHOR_COLUMNS}
 			)
 		`
 		)
@@ -539,7 +550,7 @@ export async function getCategoryPageData(
 	const promptsById = new Map<string, PublicPrompt>();
 	for (const row of tagPromptRows || []) {
 		const prompt = normalizeJoinedRow(
-			row.prompt as PublicPrompt | PublicPrompt[] | null
+			row.prompt as unknown as PublicPrompt | PublicPrompt[] | null
 		);
 		if (!prompt || prompt.type !== 'prompt' || promptsById.has(prompt.id)) continue;
 		promptsById.set(prompt.id, prompt);
@@ -579,8 +590,7 @@ export async function getRelatedPrompts(
 			`
 			tag_id,
 			prompt:prompt_id (
-				*,
-				author:author_id (*)
+				${PROMPT_WITH_AUTHOR_COLUMNS}
 			)
 		`
 		)
@@ -597,7 +607,7 @@ export async function getRelatedPrompts(
 		}
 	>();
 
-	for (const row of (sharedTagRows || []) as PromptCandidateRow[]) {
+	for (const row of (sharedTagRows || []) as unknown as PromptCandidateRow[]) {
 		const candidatePrompt = normalizeJoinedRow(row.prompt);
 		if (!candidatePrompt || candidatePrompt.id === prompt.id || candidatePrompt.type !== prompt.type) {
 			continue;
@@ -687,8 +697,7 @@ export async function getRelatedPrompts(
 				`
 				tag_id,
 				prompt:prompt_id (
-					*,
-					author:author_id (*)
+					${PROMPT_WITH_AUTHOR_COLUMNS}
 				)
 			`
 			)
@@ -696,7 +705,7 @@ export async function getRelatedPrompts(
 
 		if (categoryCandidateError) throw categoryCandidateError;
 
-		for (const row of (categoryCandidateRows || []) as PromptCandidateRow[]) {
+		for (const row of (categoryCandidateRows || []) as unknown as PromptCandidateRow[]) {
 			const candidatePrompt = normalizeJoinedRow(row.prompt);
 			if (!candidatePrompt || candidatePrompt.id === prompt.id || candidatePrompt.type !== prompt.type) {
 				continue;
@@ -749,23 +758,18 @@ export async function searchPrompts(
 	promptType?: PromptType
 ): Promise<SearchResults> {
 	const offset = (page - 1) * SEARCH_RESULTS_PER_PAGE;
-	const searchPattern = `%${query}%`;
-
-	// Build base query
-	const baseFilter = `title.ilike.${searchPattern},description.ilike.${searchPattern},prompt.ilike.${searchPattern}`;
+	const normalizedQuery = normalizeSearchQuery(query);
+	const baseFilter = buildPromptSearchOrFilter(normalizedQuery);
 
 	// Run count and data queries in parallel
 	let countQuery = supabase
 		.from('prompts')
-		.select('*', { count: 'exact', head: true })
+		.select('id', { count: 'exact', head: true })
 		.or(baseFilter);
 	
 	let dataQuery = supabase
 		.from('prompts')
-		.select(`
-			*,
-			author:author_id (*)
-		`)
+		.select(PROMPT_WITH_AUTHOR_COLUMNS)
 		.or(baseFilter)
 		.order('title', { ascending: true })
 		.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1);
@@ -780,7 +784,7 @@ export async function searchPrompts(
 	if (dataResult.error) throw dataResult.error;
 
 	const totalCount = countResult.count || 0;
-	const promptsWithTags = await attachTagsToPrompts(supabase, dataResult.data || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(dataResult.data));
 	const totalPages = Math.ceil(totalCount / SEARCH_RESULTS_PER_PAGE);
 
 	return {
@@ -788,7 +792,7 @@ export async function searchPrompts(
 		totalResults: totalCount,
 		currentPage: page,
 		totalPages,
-		query
+		query: normalizedQuery
 	};
 }
 
@@ -810,7 +814,7 @@ export async function getAuthorById(
 	supabase: SupabaseClient,
 	authorId: string
 ): Promise<PublicAuthor | null> {
-	const { data, error } = await supabase.from('authors').select('*').eq('id', authorId).single();
+	const { data, error } = await supabase.from('authors').select(AUTHOR_COLUMNS).eq('id', authorId).single();
 
 	if (error) {
 		if (error.code === 'PGRST116') return null; // Not found
@@ -837,11 +841,11 @@ export async function getAuthorPageData(
 	const [countResult, dataResult] = await Promise.all([
 		supabase
 			.from('prompts')
-			.select('*', { count: 'exact', head: true })
+			.select('id', { count: 'exact', head: true })
 			.eq('author_id', authorId),
 		supabase
 			.from('prompts')
-			.select('*')
+			.select(PROMPT_COLUMNS)
 			.eq('author_id', authorId)
 			.order('title', { ascending: true })
 			.range(offset, offset + PROMPTS_PER_PAGE - 1)
@@ -850,7 +854,7 @@ export async function getAuthorPageData(
 	if (dataResult.error) throw dataResult.error;
 
 	const totalCount = countResult.count || 0;
-	const promptsWithTags = await attachTagsToPrompts(supabase, dataResult.data || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(dataResult.data));
 	const totalPages = Math.ceil(totalCount / PROMPTS_PER_PAGE);
 
 	return {
@@ -872,8 +876,7 @@ export async function getPromptById(
 	const { data: prompt, error } = await supabase
 		.from('prompts')
 		.select(`
-			*,
-			author:author_id (*)
+			${PROMPT_WITH_AUTHOR_COLUMNS}
 		`)
 		.eq('id', promptId)
 		.single();
@@ -883,7 +886,7 @@ export async function getPromptById(
 		throw error;
 	}
 
-	const promptsWithTags = await attachTagsToPrompts(supabase, [prompt]);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts([prompt]));
 	return promptsWithTags[0] || null;
 }
 
@@ -896,7 +899,7 @@ export async function getAuthorBySlug(
 ): Promise<PublicAuthor | null> {
 	const { data, error } = await supabase
 		.from('authors')
-		.select('*')
+		.select(AUTHOR_COLUMNS)
 		.eq('slug', slug)
 		.single();
 
@@ -925,11 +928,11 @@ export async function getAuthorPageDataBySlug(
 	const [countResult, dataResult] = await Promise.all([
 		supabase
 			.from('prompts')
-			.select('*', { count: 'exact', head: true })
+			.select('id', { count: 'exact', head: true })
 			.eq('author_id', author.id),
 		supabase
 			.from('prompts')
-			.select('*')
+			.select(PROMPT_COLUMNS)
 			.eq('author_id', author.id)
 			.order('title', { ascending: true })
 			.range(offset, offset + PROMPTS_PER_PAGE - 1)
@@ -938,7 +941,7 @@ export async function getAuthorPageDataBySlug(
 	if (dataResult.error) throw dataResult.error;
 
 	const totalCount = countResult.count || 0;
-	const promptsWithTags = await attachTagsToPrompts(supabase, dataResult.data || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(dataResult.data));
 	const totalPages = Math.ceil(totalCount / PROMPTS_PER_PAGE);
 
 	return {
@@ -966,8 +969,7 @@ export async function getPromptBySlug(
 	const { data: prompt, error } = await supabase
 		.from('prompts')
 		.select(`
-			*,
-			author:author_id (*)
+			${PROMPT_WITH_AUTHOR_COLUMNS}
 		`)
 		.eq('author_id', author.id)
 		.eq('slug', promptSlug)
@@ -978,7 +980,7 @@ export async function getPromptBySlug(
 		throw error;
 	}
 
-	const promptsWithTags = await attachTagsToPrompts(supabase, [prompt]);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts([prompt]));
 	const result = promptsWithTags[0] || null;
 
 	// If it's an agent prompt, also fetch the tools
@@ -1034,13 +1036,13 @@ export async function getAuthorPageDataGroupedBySlug(
 	// Fetch all prompts for this author (no pagination, we need to group by type)
 	const { data: allPrompts, error } = await supabase
 		.from('prompts')
-		.select('*')
+		.select(PROMPT_COLUMNS)
 		.eq('author_id', author.id)
 		.order('title', { ascending: true });
 
 	if (error) throw error;
 
-	const promptsWithTags = await attachTagsToPrompts(supabase, allPrompts || []);
+	const promptsWithTags = await attachTagsToPrompts(supabase, asPrompts(allPrompts));
 
 	// Split by type
 	const regularPrompts = promptsWithTags.filter((p) => p.type === 'prompt');
