@@ -124,10 +124,18 @@ The container runs the SvelteKit Node build with `node build` and will be availa
 ## Privacy Model
 
 - **Private library data** is stored locally in the browser.
-- **Public library content** is fetched from Supabase.
+- **Public library content** is fetched from Supabase with an explicit public column list.
 - **Shared links** are end-to-end encrypted and use Cloudflare Turnstile for abuse prevention.
 
 If you self-host, review your Supabase and verification configuration carefully before exposing public flows.
+
+### Supabase row-level security
+
+Public page loads use `SUPABASE_ANON_KEY`. Confirm these policies in the Supabase dashboard before going live:
+
+- `prompts`, `authors`, `tags`, `categories`, and related join tables: anon `SELECT` only for rows that should be public. Anon must not insert, update, or delete.
+- `shared_prompts`: no anon access. Create/get/revoke go through `/api/shares` with `SUPABASE_SERVICE_ROLE_KEY`.
+- Do not add secret columns to those public tables; application queries select a fixed public column list rather than `*`.
 
 ## Contributing
 

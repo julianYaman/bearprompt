@@ -41,6 +41,14 @@ function sortPromptsAlphabetically<T extends Pick<PublicPrompt, 'title'>>(prompt
 	return [...prompts].sort((a, b) => a.title.localeCompare(b.title));
 }
 
+const AUTHOR_COLUMNS =
+	'id, created_at, name, slug, public_description, link, verified, avatar_url, highlighted, featured_color_light, featured_color_dark';
+const PROMPT_COLUMNS =
+	'id, created_at, title, slug, prompt, description, additional_information, author_id, type';
+const CATEGORY_COLUMNS =
+	'id, slug, name, description, color, color_light, color_dark, icon_key, image_url, source_url';
+const PROMPT_WITH_AUTHOR_COLUMNS = `${PROMPT_COLUMNS}, author:author_id (${AUTHOR_COLUMNS})`;
+
 function normalizeJoinedRow<T>(value: T | T[] | null | undefined): T | null {
 	return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 }
@@ -131,8 +139,7 @@ async function getFallbackRelatedPrompts(
 		.from('prompts')
 		.select(
 			`
-			*,
-			author:author_id (*)
+			${PROMPT_WITH_AUTHOR_COLUMNS}
 		`
 		)
 		.eq('type', prompt.type)
@@ -198,7 +205,7 @@ async function getPromptsForAuthors(
 	// Fetch all prompts for these authors alphabetically by title
 	let query = supabase
 		.from('prompts')
-		.select('*')
+		.select(PROMPT_COLUMNS)
 		.in('author_id', authorIds)
 		.order('title', { ascending: true });
 	
@@ -278,7 +285,7 @@ export async function getHighlightedAuthors(
 	// Query 1: Get highlighted authors
 	const { data: authors, error: authorsError } = await supabase
 		.from('authors')
-		.select('*')
+		.select(AUTHOR_COLUMNS)
 		.eq('highlighted', true)
 		.order('name');
 
@@ -313,11 +320,11 @@ export async function getAuthors(
 	const [countResult, authorsResult] = await Promise.all([
 		supabase
 			.from('authors')
-			.select('*', { count: 'exact', head: true })
+			.select('id', { count: 'exact', head: true })
 			.eq('highlighted', false),
 		supabase
 			.from('authors')
-			.select('*')
+			.select(AUTHOR_COLUMNS)
 			.eq('highlighted', false)
 			.order('name')
 			.range(offset, offset + AUTHORS_PER_PAGE - 1)
@@ -355,7 +362,7 @@ export async function getPromptCategories(
 ): Promise<PublicCategory[]> {
 	const { data: categories, error: categoriesError } = await supabase
 		.from('categories')
-		.select('*')
+		.select(CATEGORY_COLUMNS)
 		.order('sort_order', { ascending: true })
 		.order('name', { ascending: true });
 
@@ -528,8 +535,7 @@ export async function getCategoryPageData(
 			tag_id,
 			prompt_id,
 			prompt:prompt_id (
-				*,
-				author:author_id (*)
+				${PROMPT_WITH_AUTHOR_COLUMNS}
 			)
 		`
 		)
@@ -580,8 +586,7 @@ export async function getRelatedPrompts(
 			`
 			tag_id,
 			prompt:prompt_id (
-				*,
-				author:author_id (*)
+				${PROMPT_WITH_AUTHOR_COLUMNS}
 			)
 		`
 		)
@@ -688,8 +693,7 @@ export async function getRelatedPrompts(
 				`
 				tag_id,
 				prompt:prompt_id (
-					*,
-					author:author_id (*)
+					${PROMPT_WITH_AUTHOR_COLUMNS}
 				)
 			`
 			)
@@ -756,15 +760,12 @@ export async function searchPrompts(
 	// Run count and data queries in parallel
 	let countQuery = supabase
 		.from('prompts')
-		.select('*', { count: 'exact', head: true })
+		.select('id', { count: 'exact', head: true })
 		.or(baseFilter);
 	
 	let dataQuery = supabase
 		.from('prompts')
-		.select(`
-			*,
-			author:author_id (*)
-		`)
+		.select(PROMPT_WITH_AUTHOR_COLUMNS)
 		.or(baseFilter)
 		.order('title', { ascending: true })
 		.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1);
@@ -809,7 +810,7 @@ export async function getAuthorById(
 	supabase: SupabaseClient,
 	authorId: string
 ): Promise<PublicAuthor | null> {
-	const { data, error } = await supabase.from('authors').select('*').eq('id', authorId).single();
+	const { data, error } = await supabase.from('authors').select(AUTHOR_COLUMNS).eq('id', authorId).single();
 
 	if (error) {
 		if (error.code === 'PGRST116') return null; // Not found
@@ -836,11 +837,11 @@ export async function getAuthorPageData(
 	const [countResult, dataResult] = await Promise.all([
 		supabase
 			.from('prompts')
-			.select('*', { count: 'exact', head: true })
+			.select('id', { count: 'exact', head: true })
 			.eq('author_id', authorId),
 		supabase
 			.from('prompts')
-			.select('*')
+			.select(PROMPT_COLUMNS)
 			.eq('author_id', authorId)
 			.order('title', { ascending: true })
 			.range(offset, offset + PROMPTS_PER_PAGE - 1)
@@ -871,8 +872,7 @@ export async function getPromptById(
 	const { data: prompt, error } = await supabase
 		.from('prompts')
 		.select(`
-			*,
-			author:author_id (*)
+			${PROMPT_WITH_AUTHOR_COLUMNS}
 		`)
 		.eq('id', promptId)
 		.single();
@@ -895,7 +895,7 @@ export async function getAuthorBySlug(
 ): Promise<PublicAuthor | null> {
 	const { data, error } = await supabase
 		.from('authors')
-		.select('*')
+		.select(AUTHOR_COLUMNS)
 		.eq('slug', slug)
 		.single();
 
@@ -924,11 +924,11 @@ export async function getAuthorPageDataBySlug(
 	const [countResult, dataResult] = await Promise.all([
 		supabase
 			.from('prompts')
-			.select('*', { count: 'exact', head: true })
+			.select('id', { count: 'exact', head: true })
 			.eq('author_id', author.id),
 		supabase
 			.from('prompts')
-			.select('*')
+			.select(PROMPT_COLUMNS)
 			.eq('author_id', author.id)
 			.order('title', { ascending: true })
 			.range(offset, offset + PROMPTS_PER_PAGE - 1)
@@ -965,8 +965,7 @@ export async function getPromptBySlug(
 	const { data: prompt, error } = await supabase
 		.from('prompts')
 		.select(`
-			*,
-			author:author_id (*)
+			${PROMPT_WITH_AUTHOR_COLUMNS}
 		`)
 		.eq('author_id', author.id)
 		.eq('slug', promptSlug)
@@ -1033,7 +1032,7 @@ export async function getAuthorPageDataGroupedBySlug(
 	// Fetch all prompts for this author (no pagination, we need to group by type)
 	const { data: allPrompts, error } = await supabase
 		.from('prompts')
-		.select('*')
+		.select(PROMPT_COLUMNS)
 		.eq('author_id', author.id)
 		.order('title', { ascending: true });
 
