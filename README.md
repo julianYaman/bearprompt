@@ -88,6 +88,7 @@ Current environment variables:
 - `SUPABASE_SERVICE_ROLE_KEY`: server-side key for privileged operations
 - `TURNSTILE_SECRET_KEY`: optional Cloudflare Turnstile secret for risk-based verification
 - `PUBLIC_TURNSTILE_SITE_KEY`: optional public Turnstile site key
+- `ADDRESS_HEADER` / `XFF_DEPTH`: adapter-node client IP headers for share and OG rate limits. Behind Cloudflare set `ADDRESS_HEADER=CF-Connecting-IP`. Behind a reverse proxy that appends `X-Forwarded-For`, set `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1`. If unset, SvelteKit uses the TCP peer address (the proxy), which is safer than trusting spoofable forwarded headers.
 
 For purely local UI work, you can often develop without the optional Turnstile keys. Public library and publishing-related features depend on Supabase.
 
