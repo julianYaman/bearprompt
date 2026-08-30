@@ -12,6 +12,7 @@ import {
 	isUrlTooLong,
 	mergeProviderSettings,
 	normalizeProviderOrder,
+	resolveProviderOpenUrl,
 	validateProviderTemplate
 } from './ai-providers';
 import type { AiProviderConfig } from './types';
@@ -150,6 +151,40 @@ describe('ai providers', () => {
 		expect(getProviderIconName(DEFAULT_PROVIDERS.find((p) => p.id === 'codex')!)).toBe('chatgpt');
 		expect(isDesktopAgentProvider(DEFAULT_PROVIDERS.find((p) => p.id === 'cursor')!)).toBe(true);
 		expect(isDesktopAgentProvider(DEFAULT_PROVIDERS.find((p) => p.id === 'chatgpt')!)).toBe(false);
+	});
+
+	it('drops unsafe custom templates and resets unsafe built-in templates', () => {
+		const stored: AiProviderConfig[] = [
+			{
+				id: 'chatgpt',
+				name: 'ChatGPT',
+				urlTemplate: 'javascript:alert(1)?q={{prompt}}',
+				isBuiltIn: true,
+				enabled: true,
+				sortOrder: 0
+			},
+			{
+				id: 'evil',
+				name: 'Evil',
+				urlTemplate: 'javascript:alert(1)?q={{prompt}}',
+				isBuiltIn: false,
+				enabled: true,
+				sortOrder: 1
+			}
+		];
+
+		const merged = mergeProviderSettings(stored);
+		expect(merged.find((p) => p.id === 'chatgpt')?.urlTemplate).toBe(
+			DEFAULT_PROVIDERS.find((p) => p.id === 'chatgpt')?.urlTemplate
+		);
+		expect(merged.some((p) => p.id === 'evil')).toBe(false);
+	});
+
+	it('refuses to open unsafe provider urls', () => {
+		expect(resolveProviderOpenUrl('javascript:alert(1)?q={{prompt}}', 'hi')).toBeNull();
+		expect(resolveProviderOpenUrl('https://chat.example.com/?q={{prompt}}', 'hi')).toBe(
+			'https://chat.example.com/?q=hi'
+		);
 	});
 
 	it('normalizes sort order and filters enabled providers', () => {

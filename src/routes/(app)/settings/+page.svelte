@@ -5,10 +5,10 @@
 	import {
 		DEFAULT_PROVIDERS,
 		PROMPT_PLACEHOLDER,
-		buildProviderUrl,
 		getBuiltinDefault,
 		getProviderIconName,
 		normalizeProviderOrder,
+		resolveProviderOpenUrl,
 		validateProviderTemplate
 	} from '$lib/ai-providers';
 	import { aiProviders, persistAiProviders, theme } from '$lib/stores';
@@ -172,7 +172,11 @@
 			window.alert(validation.error);
 			return;
 		}
-		const url = buildProviderUrl(template.trim(), SAMPLE_PROMPT);
+		const url = resolveProviderOpenUrl(template.trim(), SAMPLE_PROMPT);
+		if (!url) {
+			window.alert('This URL template is not safe to open.');
+			return;
+		}
 		window.open(url, '_blank', 'noopener,noreferrer');
 	}
 

@@ -362,7 +362,7 @@ export async function updateSettings(updates: Partial<Omit<Settings, 'version'>>
 			...updates.ui
 		},
 		aiProviders: updates.aiProviders
-			? normalizeProviderOrder(updates.aiProviders)
+			? mergeProviderSettings(updates.aiProviders)
 			: current.aiProviders,
 		version: 1
 	};
