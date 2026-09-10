@@ -52,8 +52,8 @@ export async function markWhatsNewSeen(): Promise<void> {
 }
 
 export function trackWhatsNewEvent(event: 'Whats New View' | 'Whats New CTA' | 'Whats New Dismiss') {
-	const umami = (
-		window as Window & { umami?: { track?: (name: string) => void } }
-	).umami;
-	umami?.track?.(event);
+	const track = (
+		window as Window & { vmtrc?: (command: string, name: string) => void }
+	).vmtrc;
+	void track?.('trackEvent', event);
 }

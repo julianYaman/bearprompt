@@ -86,7 +86,7 @@
 					<Icon name="github" size={16} />
 					GitHub
 				</a>
-				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta" data-umami-event="Create Library Navbar">
+				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta" data-vmtrc="Create Library Navbar">
 					{navbarCtaLabel}
 					<Icon name="arrow-right" size={16} />
 				</a>
@@ -115,7 +115,7 @@
 					<Icon name="github" size={16} />
 					GitHub
 				</a>
-				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta" data-umami-event="Create Library Navbar">
+				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta" data-vmtrc="Create Library Navbar">
 					{navbarCtaLabel}
 					<Icon name="arrow-right" size={16} />
 				</a>

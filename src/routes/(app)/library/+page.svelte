@@ -39,11 +39,13 @@
 	import { shouldAutoShowWhatsNew } from '$lib/whats-new';
 	import {
 		buildShareUrl,
+		clearNewPromptFromSession,
 		clearShareFromSession,
 		decryptSharedPrompt,
 		encryptSharedPrompt,
 		parseNewPromptHash,
 		parseShareHash,
+		readNewPromptHashFromSession,
 		readShareFromSession,
 		type SharedPromptPayload
 	} from '$lib/share';
@@ -648,6 +650,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 		const payload = parseNewPromptHash(hash);
 		clearUrlHash();
+		clearNewPromptFromSession();
 
 		if (!payload) {
 			showLibraryFeedback('This prefilled prompt link is invalid.', 'info');
@@ -671,6 +674,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 
 	async function loadShareFromUrl() {
 		if (loadNewPromptFromHash(window.location.hash)) return;
+		if (loadNewPromptFromHash(readNewPromptHashFromSession() ?? '')) return;
 
 		const sessionRef = readShareFromSession();
 		const hashRef = parseShareHash(window.location.hash);
@@ -964,8 +968,8 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						type="button"
 						onclick={handleAddStarterPrompts}
 						disabled={!selectedStarterCategory || isAddingStarterPrompts}
-						data-umami-event="Add Starter Prompts"
-						data-umami-event-category={selectedStarterCategory?.title ?? ''}
+						data-vmtrc="Add Starter Prompts"
+						data-vmtrc-category={selectedStarterCategory?.title ?? ''}
 						class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
 						style="background-color: var(--color-accent);"
 					>
@@ -1302,7 +1306,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								<button
 									type="button"
 									onclick={openStarterPromptsModal}
-									data-umami-event="Choose Category"
+									data-vmtrc="Choose Category"
 									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
 									style="background-color: var(--color-accent);"
 								>
@@ -1332,7 +1336,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								<button
 									type="button"
 									onclick={handleCopyPrompt}
-									data-umami-event="Copy Import Prompt"
+									data-vmtrc="Copy Import Prompt"
 									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
 									style="background-color: var(--color-accent);"
 								>
@@ -1362,7 +1366,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 								<button
 									type="button"
 									onclick={handleCreateNew}
-									data-umami-event="Add Prompt"
+									data-vmtrc="Add Prompt"
 									class="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
 									style="background-color: var(--color-accent);"
 								>
@@ -1407,7 +1411,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					<button
 						type="button"
 						onclick={handleCreateNew}
-						data-umami-event="Add Prompt"
+						data-vmtrc="Add Prompt"
 						class="rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors"
 						style="background-color: var(--color-accent);"
 					>
@@ -1415,7 +1419,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 					</button>
 					<a
 						href="/prompts"
-						data-umami-event="Browse Prompts"
+						data-vmtrc="Browse Prompts"
 						class="inline-flex items-center gap-2 rounded-lg border px-6 py-2.5 text-sm font-medium transition-colors"
 						style="border-color: var(--color-border); color: var(--color-text-primary);"
 					>

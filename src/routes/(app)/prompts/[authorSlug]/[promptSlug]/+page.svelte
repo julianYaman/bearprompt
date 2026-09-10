@@ -230,8 +230,8 @@
 			<!-- Add to library button -->
 			<button
 				onclick={handleAddToLibrary}
-				data-umami-event="Add Prompt Detail To Library"
-				data-umami-event-prompt={prompt.slug || prompt.id}
+				data-vmtrc="Add Prompt Detail To Library"
+				data-vmtrc-prompt={prompt.slug || prompt.id}
 				class="flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all"
 				style="background-color: {addState === 'added'
 					? 'var(--color-success)'
@@ -273,8 +273,8 @@
 				</h2>
 				<button
 					onclick={handleCopy}
-					data-umami-event="Copy Prompt Detail"
-					data-umami-event-prompt={prompt.slug || prompt.id}
+					data-vmtrc="Copy Prompt Detail"
+					data-vmtrc-prompt={prompt.slug || prompt.id}
 					class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
 					style="background-color: {copyState === 'copied'
 						? 'var(--color-success)'

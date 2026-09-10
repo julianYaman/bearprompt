@@ -12,8 +12,9 @@ export interface ShareReference {
 }
 
 export const SHARE_SESSION_STORAGE_KEY = '__bearprompt_share_ref_v1';
-const SHARE_HASH_PREFIX = '#share=';
-const NEW_PROMPT_HASH_PREFIX = '#new=';
+export const NEW_PROMPT_SESSION_STORAGE_KEY = '__bearprompt_new_prompt_ref_v1';
+export const SHARE_HASH_PREFIX = '#share=';
+export const NEW_PROMPT_HASH_PREFIX = '#new=';
 const SHARE_ENVELOPE_VERSION = 1;
 export const IV_LENGTH_BYTES = 12;
 const META_LENGTH_BYTES = 4;
@@ -225,6 +226,23 @@ export function readShareFromSession(): ShareReference | null {
 export function clearShareFromSession(): void {
 	try {
 		sessionStorage.removeItem(SHARE_SESSION_STORAGE_KEY);
+	} catch {
+		// Ignore storage clear failures.
+	}
+}
+
+export function readNewPromptHashFromSession(): string | null {
+	try {
+		const raw = sessionStorage.getItem(NEW_PROMPT_SESSION_STORAGE_KEY) || '';
+		return raw.startsWith(NEW_PROMPT_HASH_PREFIX) ? raw : null;
+	} catch {
+		return null;
+	}
+}
+
+export function clearNewPromptFromSession(): void {
+	try {
+		sessionStorage.removeItem(NEW_PROMPT_SESSION_STORAGE_KEY);
 	} catch {
 		// Ignore storage clear failures.
 	}

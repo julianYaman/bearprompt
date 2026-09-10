@@ -5,7 +5,7 @@
 
 <article>
 	<h1>Privacy Policy</h1>
-	<p class="last-updated">Last updated: April 5, 2026</p>
+	<p class="last-updated">Last updated: September 10, 2026</p>
 
 	<p>
 		Welcome to Bearprompt ("we", "us", or "our"). We are committed to protecting your privacy. 
@@ -66,7 +66,7 @@
 	</p>
 	<ul>
 		<li>
-			<a href="https://umami.is" target="_blank" rel="noopener noreferrer">Umami Analytics</a>
+			<a href="https://vemetric.com" target="_blank" rel="noopener noreferrer">Vemetric</a>
 			for privacy-focused aggregate usage analytics
 		</li>
 		<li>Supabase for encrypted share storage and backend database operations</li>
@@ -83,7 +83,8 @@
 		navigation choices and so forth. We do not use analytics to collect the
 		contents of your private prompts nor is any personally identifiable information associated with these events.
 		We use this data to understand general usage patterns and improve the product, but it is not used for advertising or tracking purposes.
-		No prompt content is collected.
+		No prompt content is collected. URL fragments that contain share decryption keys or prefilled prompt payloads
+		are stripped before analytics runs and are not sent to Vemetric.
 	</p>
 	<p>
 		Bunny Fonts is a privacy-focused font CDN operated by BunnyWay d.o.o. that does not track users
@@ -98,7 +99,7 @@
 
 	<h2>5. Cookies and Similar Technologies</h2>
 	<p>
-		Bearprompt does not use advertising cookies. Umami is configured to be privacy-focused and does not rely on
+		Bearprompt does not use advertising cookies. Vemetric is configured to be privacy-focused and does not rely on
 		cross-site ad tracking cookies. Security tooling (such as Turnstile/Cloudflare) may use strictly necessary
 		technical storage or cookies for abuse protection and request integrity.
 	</p>

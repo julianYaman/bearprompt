@@ -226,7 +226,7 @@
 					<Icon name="github" size={16} />
 					GitHub
 				</a>
-				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta" data-umami-event="Create Library Navbar">
+				<a href="/library" class="neo-btn neo-btn-primary neo-navbar-cta" data-vmtrc="Create Library Navbar">
 					{navbarCtaLabel}
 					<Icon name="arrow-right" size={16} />
 				</a>
@@ -255,7 +255,7 @@
 					<Icon name="github" size={16} />
 					GitHub
 				</a>
-				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta" data-umami-event="Create Library Navbar">
+				<a href="/library" class="neo-btn neo-btn-primary neo-mobile-cta" data-vmtrc="Create Library Navbar">
 					{navbarCtaLabel}
 					<Icon name="arrow-right" size={16} />
 				</a>
@@ -275,7 +275,7 @@
 				<div class="neo-hero-cta-wrapper">
 					<div class="neo-hero-cta-group">
 						<div class="neo-primary-cta-wrap">
-							<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Hero">
+							<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-vmtrc="Create Library Hero">
 								{libraryCtaLabel}
 								<Icon name="arrow-right" size={20} />
 							</a>
@@ -283,7 +283,7 @@
 								<span class="neo-sticker neo-sticker-secondary neo-sticker-rotate-right neo-hero-cta-sticker">No signup</span>
 							{/if}
 						</div>
-						<a href="/prompts" class="neo-btn neo-btn-secondary neo-btn-md" data-umami-event="Browse Prompts Hero">
+						<a href="/prompts" class="neo-btn neo-btn-secondary neo-btn-md" data-vmtrc="Browse Prompts Hero">
 							Explore prompts
 							<Icon name="globe" size={18} />
 						</a>
@@ -431,7 +431,7 @@
 				<p class="neo-cta-subtitle">
 					Start in 10 seconds. No account. No email. Just prompts.
 				</p>
-				<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-umami-event="Create Library Bottom CTA">
+				<a href="/library" class="neo-btn neo-btn-primary neo-btn-lg" data-vmtrc="Create Library Bottom CTA">
 					{libraryCtaLabel}
 					<Icon name="arrow-right" size={20} />
 				</a>
