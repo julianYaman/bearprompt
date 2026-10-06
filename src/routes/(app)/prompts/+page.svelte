@@ -17,7 +17,6 @@
 	import { MAX_SEARCH_LENGTH } from '$lib/search';
 	import {
 		featuredCategoriesWithStarterFallback,
-		splitLibraryCategories,
 		STARTER_CATEGORY_SLUG
 	} from '$lib/featured-categories';
 	import type { PublicCategory, PublicPrompt } from '$lib/types/public';
@@ -245,20 +244,16 @@
 			{#if !libraryData}
 				<PublicLibraryError />
 			{:else}
-				{@const libraryCategories = splitLibraryCategories([
-					...(libraryData.featuredCategories ?? []),
-					...(libraryData.guideCategories ?? [])
-				])}
 				<FeaturedCategoryGrid
 					categories={featuredCategoriesWithStarterFallback(
-						libraryCategories.featured,
+						libraryData.featuredCategories ?? [],
 						starterPromptCategory
 					)}
 				/>
 				<FeaturedCategoryGrid
 					eyebrow="Prompt Guides"
 					title="Prompts for new models"
-					categories={libraryCategories.guides}
+					categories={libraryData.guideCategories ?? []}
 				/>
 
 				<!-- Highlighted authors -->

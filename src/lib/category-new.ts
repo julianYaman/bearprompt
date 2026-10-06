@@ -7,5 +7,3 @@ export function isCategoryNew(
 	if (Number.isNaN(until.getTime())) return false;
 	return until.getTime() > now.getTime();
 }
-
-export const DEFAULT_CATEGORY_NEW_DAYS = 14;

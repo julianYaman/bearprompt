@@ -1,9 +1,9 @@
+import { isCategoryNew } from './category-new';
 import type { PublicCategory } from './types/public';
 
 export const STARTER_CATEGORY_SLUG = 'starter-prompts-chatgpt';
 export const PROMPT_GUIDE_SORT_ORDER_MIN = 1000;
 export const PROMPT_GUIDE_BLOG_CATEGORY = 'Prompt Guides';
-export const FEATURED_GUIDE_SLUGS = new Set(['mistral-large-4']);
 
 export function featuredCategoriesWithStarterFallback(
 	categories: PublicCategory[],
@@ -26,7 +26,10 @@ export function uniqueCategoriesBySlug(categories: PublicCategory[]): PublicCate
 	return unique;
 }
 
-export function splitLibraryCategories(categories: PublicCategory[]): {
+export function splitLibraryCategories(
+	categories: PublicCategory[],
+	now: Date = new Date()
+): {
 	featured: PublicCategory[];
 	guides: PublicCategory[];
 } {
@@ -41,7 +44,7 @@ export function splitLibraryCategories(categories: PublicCategory[]): {
 		}
 	}
 
-	const pinnedGuides = guides.filter((category) => FEATURED_GUIDE_SLUGS.has(category.slug));
+	const pinnedGuides = guides.filter((category) => isCategoryNew(category, now));
 	return {
 		featured: [...pinnedGuides, ...featured],
 		guides
