@@ -1,7 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_PROVIDERS, mergeProviderSettings, normalizeProviderOrder, validateProviderTemplate } from './ai-providers';
-import type { AiProviderConfig, Prompt, Tag, Folder, Settings, ExportData } from './types';
+import type { AiProviderConfig, Prompt, Tag, Folder, Settings, ExportData, FolderExportData } from './types';
+import { buildFolderExport, isFolderExportData, planFolderImport } from './folder-export';
 
 const DB_NAME = 'promptlib';
 const DB_VERSION = 2;
@@ -391,6 +392,7 @@ export async function exportLibrary(): Promise<ExportData> {
 	]);
 
 	return {
+		kind: 'library',
 		exportVersion: 1,
 		exportedAt: new Date().toISOString(),
 		data: {
@@ -399,6 +401,54 @@ export async function exportLibrary(): Promise<ExportData> {
 			folders,
 			aiProviders: settings.aiProviders
 		}
+	};
+}
+
+export async function exportFolder(folderId: string): Promise<FolderExportData> {
+	const folder = await getFolderById(folderId);
+	if (!folder) {
+		throw new Error('Folder not found');
+	}
+
+	const [prompts, tags] = await Promise.all([getAllPrompts(), getAllTags()]);
+	return buildFolderExport(folder, prompts, tags);
+}
+
+export interface FolderImportResult {
+	folderId: string;
+	folderName: string;
+	promptsImported: number;
+	tagsImported: number;
+	tagsSkipped: number;
+}
+
+export async function importFolder(data: FolderExportData): Promise<FolderImportResult> {
+	if (!isFolderExportData(data)) {
+		throw new Error('Invalid folder export');
+	}
+
+	const db = await getDB();
+	const [existingFolders, existingTags] = await Promise.all([getAllFolders(), getAllTags()]);
+	const plan = planFolderImport(
+		data,
+		existingFolders,
+		existingTags,
+		new Date().toISOString(),
+		uuidv4
+	);
+
+	const tx = db.transaction(['folders', 'tags', 'prompts'], 'readwrite');
+	await tx.objectStore('folders').put(plan.folder);
+	await Promise.all(plan.tagsToCreate.map((tag) => tx.objectStore('tags').put(tag)));
+	await Promise.all(plan.prompts.map((prompt) => tx.objectStore('prompts').put(prompt)));
+	await tx.done;
+
+	return {
+		folderId: plan.folder.id,
+		folderName: plan.folder.name,
+		promptsImported: plan.prompts.length,
+		tagsImported: plan.tagsToCreate.length,
+		tagsSkipped: plan.tagsSkipped
 	};
 }
 
@@ -569,6 +619,8 @@ export function validateImportData(data: unknown): data is ExportData {
 	if (!data || typeof data !== 'object') return false;
 
 	const d = data as Record<string, unknown>;
+	if (d.kind === 'folder') return false;
+	if (d.kind !== undefined && d.kind !== 'library') return false;
 	if (d.exportVersion !== 1) return false;
 	if (typeof d.exportedAt !== 'string') return false;
 	if (!d.data || typeof d.data !== 'object') return false;

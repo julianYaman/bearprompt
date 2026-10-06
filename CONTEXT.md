@@ -15,3 +15,15 @@ _Avoid_: Feed item, release, version notes
 **Seen Highlight**:
 A What's New Highlight the user has already acknowledged, recorded as `lastSeenWhatsNewId` in local settings.
 _Avoid_: Dismissed banner, read receipt, notification state
+
+**My Library**:
+The private library root that holds unfiled prompts. It is not a Folder.
+_Avoid_: main folder, uncategorized folder, root folder
+
+**Folder**:
+A named collection of prompts in the private library.
+_Avoid_: directory, category, pack
+
+**Folder Export**:
+A JSON file containing one Folder, its prompts, and the tags those prompts use.
+_Avoid_: collection file, backup, library export

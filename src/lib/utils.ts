@@ -70,6 +70,22 @@ export function buildExportFilename(): string {
 	return `promptlib-export-v1-${date}.json`;
 }
 
+/**
+ * Build a folder export filename: `promptlib-folder-<slug>-v1-YYYYMMDD.json`.
+ */
+export function buildFolderExportFilename(folderName: string): string {
+	const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+	const slug =
+		folderName
+			.toLowerCase()
+			.trim()
+			.replace(/[^\w\s-]/g, '')
+			.replace(/[\s_-]+/g, '-')
+			.replace(/^-+|-+$/g, '')
+			.slice(0, 40) || 'folder';
+	return `promptlib-folder-${slug}-v1-${date}.json`;
+}
+
 // ─── Color Utilities ──────────────────────────────────────────────────────────
 
 export function hexToRgba(hex: string, alpha: number): string {

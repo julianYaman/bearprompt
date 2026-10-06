@@ -2,9 +2,10 @@
 	import Icon from './Icon.svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { theme, mobileMenuOpen, sidebarOpen, prompts, tags } from '$lib/stores';
-	import { exportLibrary, importLibrary, validateImportData, getAllPrompts, getAllTags } from '$lib/db';
+	import { theme, mobileMenuOpen, sidebarOpen, loadPrompts, loadTags, loadFolders } from '$lib/stores';
+	import { exportLibrary, importLibrary, validateImportData } from '$lib/db';
 	import { downloadJson, buildExportFilename } from '$lib/utils';
+	import { isFolderExportData } from '$lib/folder-export';
 	import type { ThemeMode } from '$lib/types';
 
 	interface Props {
@@ -84,15 +85,18 @@
 			const text = await file.text();
 			const data = JSON.parse(text);
 
+			if (isFolderExportData(data)) {
+				alert('This file is a folder export. Use Import Folder in the sidebar to add it to your library.');
+				return;
+			}
+
 			if (!validateImportData(data)) {
 				alert('Invalid file format. Please select a valid Prompt Library export file.');
 				return;
 			}
 
 			await importLibrary(data);
-			const [newPrompts, newTags] = await Promise.all([getAllPrompts(), getAllTags()]);
-			prompts.set(newPrompts);
-			tags.set(newTags);
+			await Promise.all([loadPrompts(), loadTags(), loadFolders()]);
 			alert('Library loaded successfully!');
 		} catch (error) {
 			console.error('Import failed:', error);
