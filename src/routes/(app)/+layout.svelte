@@ -10,6 +10,7 @@
 	import WhatsNewModal from '$lib/components/WhatsNewModal.svelte';
 	import CopyAnnouncer from '$lib/components/CopyAnnouncer.svelte';
 	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';
+	import AnnouncementBar from '$lib/components/AnnouncementBar.svelte';
 	import { initializeTheme } from '$lib/theme';
 	import { prompts, tags, folders, mobileMenuOpen, loadAiProviders } from '$lib/stores';
 	import { getAllPrompts, getAllTags, getAllFolders } from '$lib/db';
@@ -101,6 +102,8 @@
 
 	<!-- Main Content Area -->
 	<div class="flex flex-1 flex-col overflow-hidden">
+		<AnnouncementBar />
+
 		<!-- Mobile Navbar -->
 		<Navbar isMobile={true} />
 

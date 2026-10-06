@@ -9,6 +9,7 @@ import type {
 	PublicCategory,
 	CategoryPageData
 } from '$lib/types/public';
+import type { Announcement } from '$lib/announcement';
 
 // Cache TTLs in milliseconds
 const TTL = {
@@ -17,7 +18,8 @@ const TTL = {
 	PROMPT_PAGE: 12 * 60 * 60 * 1000,   // 12 hours
 	RELATED_PROMPTS: 72 * 60 * 60 * 1000, // 72 hours
 	SEARCH: 1 * 60 * 60 * 1000,         // 1 hour
-	SITEMAP: 24 * 60 * 60 * 1000        // 24 hours
+	SITEMAP: 24 * 60 * 60 * 1000,       // 24 hours
+	ANNOUNCEMENT: 60 * 1000             // 1 minute
 };
 
 // HTTP Cache-Control header values (in seconds)
@@ -28,7 +30,8 @@ export const CACHE_CONTROL = {
 	AUTHOR_PAGE: 'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800',   // no browser cache, 1h CDN
 	PROMPT_PAGE: 'public, max-age=0, s-maxage=43200, stale-while-revalidate=7200',   // no browser cache, 12h CDN
 	SEARCH:      'public, max-age=0, s-maxage=3600,  stale-while-revalidate=1800',   // no browser cache, 1h CDN
-	SITEMAP:     'public, max-age=0, s-maxage=86400, stale-while-revalidate=3600'    // no browser cache, 24h CDN
+	SITEMAP:      'public, max-age=0, s-maxage=86400, stale-while-revalidate=3600',   // no browser cache, 24h CDN
+	ANNOUNCEMENT: 'public, max-age=0, s-maxage=60, stale-while-revalidate=30'         // no browser cache, 1m CDN
 };
 
 // Cache for main library page data
@@ -93,6 +96,27 @@ const sitemapCache = new LRUCache<string, string>({
 	max: 1,
 	ttl: TTL.SITEMAP
 });
+
+type CachedAnnouncement = { value: Announcement | null };
+
+const announcementCache = new LRUCache<string, CachedAnnouncement>({
+	max: 1,
+	ttl: TTL.ANNOUNCEMENT
+});
+
+export async function getCachedAnnouncement(
+	fetcher: () => Promise<Announcement | null>
+): Promise<Announcement | null> {
+	const key = 'current';
+	const cached = announcementCache.get(key);
+	if (cached) {
+		return cached.value;
+	}
+
+	const data = await fetcher();
+	announcementCache.set(key, { value: data });
+	return data;
+}
 
 /**
  * Get cached library data or fetch fresh
@@ -404,6 +428,7 @@ export function getCacheStats() {
 		agentLibrary: { size: agentLibraryCache.size, max: 50 },
 		agentSearch: { size: agentSearchCache.size, max: 100 },
 		authorGrouped: { size: authorGroupedCache.size, max: 100 },
-		sitemap: { size: sitemapCache.size, max: 1 }
+		sitemap: { size: sitemapCache.size, max: 1 },
+		announcement: { size: announcementCache.size, max: 1 }
 	};
 }

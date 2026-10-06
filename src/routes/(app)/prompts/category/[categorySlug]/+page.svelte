@@ -13,6 +13,7 @@
 		resolveThemeIsDark
 	} from '$lib/utils';
 	import type { PublicPrompt } from '$lib/types/public';
+	import { isCategoryNew } from '$lib/category-new';
 
 	let { data } = $props();
 	let systemPrefersDark = $state(false);
@@ -24,7 +25,15 @@
 	const headerBorder = $derived(buildFeatureBorder(categoryColor, 0.6));
 	const categoryIcon = $derived(data.category.icon_key ?? 'sparkles');
 	const ogImageUrl = $derived(buildCategoryOgImageUrl(data.category.slug));
-	const isNewCategory = $derived(data.category.slug === 'chatgpt-images-2-0');
+	const isNewCategory = $derived(isCategoryNew(data.category));
+	const sourceHost = $derived.by(() => {
+		if (!data.category.source_url) return null;
+		try {
+			return new URL(data.category.source_url).hostname.replace(/^www\./, '');
+		} catch {
+			return null;
+		}
+	});
 
 	onMount(() => {
 		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -146,7 +155,7 @@
 							class="inline-flex items-center gap-1"
 							style="color: var(--color-accent);"
 						>
-							Source: OpenAI launch page
+							Source: {sourceHost ?? 'vendor page'}
 							<Icon name="external-link" size={14} />
 						</a>
 					</p>

@@ -1,4 +1,5 @@
 import { dev } from '$app/environment';
+import { PROMPT_GUIDE_BLOG_CATEGORY } from '$lib/featured-categories';
 import { renderMarkdown } from '$lib/server/markdown';
 import type { BlogPost, BlogPostMeta } from '$lib/types/blog';
 
@@ -124,7 +125,16 @@ export async function getBlogPosts(): Promise<BlogPostMeta[]> {
 
 export async function getFeaturedBlogPosts(limit = 3): Promise<BlogPostMeta[]> {
 	const posts = await getBlogPosts();
-	return posts.filter((post) => post.featured).slice(0, limit);
+	return posts.filter((post) => post.featured && post.category !== PROMPT_GUIDE_BLOG_CATEGORY).slice(0, limit);
+}
+
+export function partitionBlogListing(posts: BlogPostMeta[]): {
+	promptGuides: BlogPostMeta[];
+	latest: BlogPostMeta[];
+} {
+	const promptGuides = posts.filter((post) => post.category === PROMPT_GUIDE_BLOG_CATEGORY);
+	const latest = posts.filter((post) => post.category !== PROMPT_GUIDE_BLOG_CATEGORY);
+	return { promptGuides, latest };
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
