@@ -34,8 +34,10 @@
 		getSettings,
 		movePrompts,
 		updateFolder,
-		updateSettings
+		updateSettings,
+		exportFolder
 	} from '$lib/db';
+	import { downloadJson, buildFolderExportFilename } from '$lib/utils';
 	import { shouldAutoShowWhatsNew } from '$lib/whats-new';
 	import {
 		buildShareUrl,
@@ -773,6 +775,22 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		}
 	}
 
+	let isExportingFolder = $state(false);
+
+	async function handleExportActiveFolder() {
+		if (!activeFolder) return;
+		isExportingFolder = true;
+		try {
+			const data = await exportFolder(activeFolder.id);
+			downloadJson(data, buildFolderExportFilename(activeFolder.name));
+		} catch (error) {
+			console.error('Export folder failed:', error);
+			alert('Failed to export folder. Please try again.');
+		} finally {
+			isExportingFolder = false;
+		}
+	}
+
 	onMount(() => {
 		let whatsNewTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -1194,7 +1212,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 {:else}
 	<div class="h-full p-4 md:p-6">
 		<!-- Headline / Breadcrumb -->
-		<div class="mb-4 flex items-center gap-2">
+		<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
 			{#if $activeFolderId === 'all'}
 				<h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">My Library</h1>
 			{:else}
@@ -1223,6 +1241,17 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 						</button>
 					{/if}
 				</h1>
+				<button
+					type="button"
+					onclick={handleExportActiveFolder}
+					disabled={isExportingFolder}
+					data-vmtrc="Export Folder"
+					class="export-folder-btn ml-auto flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
+					style="color: var(--color-text-secondary);"
+				>
+					<Icon name="download" size={16} />
+					{isExportingFolder ? 'Exporting…' : 'Export folder'}
+				</button>
 			{/if}
 		</div>
 
@@ -1595,6 +1624,11 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 		background-color: var(--color-bg-tertiary);
 		color: var(--color-text-primary);
 		opacity: 1;
+	}
+
+	.export-folder-btn:hover {
+		background-color: var(--color-bg-tertiary);
+		color: var(--color-text-primary) !important;
 	}
 
 	.folder-name-input {

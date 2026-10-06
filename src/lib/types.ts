@@ -46,6 +46,7 @@ export interface Settings {
 }
 
 export interface ExportData {
+	kind?: 'library';
 	exportVersion: number;
 	exportedAt: string;
 	data: {
@@ -53,6 +54,17 @@ export interface ExportData {
 		tags: Tag[];
 		folders: Folder[];
 		aiProviders?: AiProviderConfig[];
+	};
+}
+
+export interface FolderExportData {
+	kind: 'folder';
+	exportVersion: number;
+	exportedAt: string;
+	data: {
+		folder: Folder;
+		prompts: Prompt[];
+		tags: Tag[];
 	};
 }
 

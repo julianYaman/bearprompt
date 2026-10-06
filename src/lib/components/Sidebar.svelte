@@ -1,8 +1,10 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 	import ConfirmPopover from './ConfirmPopover.svelte';
-	import { sidebarOpen, aboutOpen, folders, activeFolderId, loadFolders } from '$lib/stores';
-	import { createFolder, deleteFolder, updateFolder } from '$lib/db';
+	import { sidebarOpen, aboutOpen, folders, activeFolderId, loadFolders, loadPrompts, loadTags } from '$lib/stores';
+	import { createFolder, deleteFolder, updateFolder, exportFolder, importFolder, validateImportData } from '$lib/db';
+	import { isFolderExportData } from '$lib/folder-export';
+	import { downloadJson, buildFolderExportFilename } from '$lib/utils';
 	import { goto } from '$app/navigation';
 	import type { Folder } from '$lib/types';
 
@@ -20,6 +22,9 @@
 	let popoverY = $state(0);
 	let editingFolderId = $state<string | null>(null);
 	let editingFolderName = $state('');
+	let folderFileInput: HTMLInputElement;
+	let isImportingFolder = $state(false);
+	let exportingFolderId = $state<string | null>(null);
 
 	function handleLinkClick() {
 		// Close sidebar on mobile after navigation
@@ -94,7 +99,71 @@
 		popoverY = rect.bottom + 4;
 		deletingFolderId = folderId;
 	}
+
+	async function handleExportFolder(e: Event, folder: Folder) {
+		e.stopPropagation();
+		e.preventDefault();
+		exportingFolderId = folder.id;
+		try {
+			const data = await exportFolder(folder.id);
+			downloadJson(data, buildFolderExportFilename(folder.name));
+		} catch (err) {
+			console.error('Failed to export folder:', err);
+			alert('Failed to export folder. Please try again.');
+		} finally {
+			exportingFolderId = null;
+		}
+	}
+
+	function handleImportFolderClick() {
+		folderFileInput?.click();
+	}
+
+	async function handleFolderFileChange(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		isImportingFolder = true;
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+
+			if (isFolderExportData(data)) {
+				const result = await importFolder(data);
+				await Promise.all([loadFolders(), loadPrompts(), loadTags()]);
+				activeFolderId.set(result.folderId);
+				goto('/library');
+				handleLinkClick();
+				alert(
+					`Imported “${result.folderName}” with ${result.promptsImported} prompt${result.promptsImported === 1 ? '' : 's'}.`
+				);
+				return;
+			}
+
+			if (validateImportData(data)) {
+				alert('This is a full library backup. Use Load in the header to restore it.');
+				return;
+			}
+
+			alert('Invalid file format. Please select a folder export file.');
+		} catch (err) {
+			console.error('Failed to import folder:', err);
+			alert('Failed to import folder. Please try again.');
+		} finally {
+			isImportingFolder = false;
+			if (input) input.value = '';
+		}
+	}
 </script>
+
+<input
+	bind:this={folderFileInput}
+	type="file"
+	accept=".json"
+	onchange={handleFolderFileChange}
+	class="hidden"
+/>
 
 <aside
 	class="flex h-full w-64 flex-col border-r"
@@ -161,7 +230,17 @@
 							>
 								<Icon name={$activeFolderId === folder.id ? 'folder-open' : 'folder'} size={14} />
 								<span class="flex-1 truncate text-left">{folder.name}</span>
-								<!-- Delete button inside folder button -->
+								<span
+									role="button"
+									tabindex="0"
+									onclick={(e) => handleExportFolder(e, folder)}
+									onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleExportFolder(e, folder); }}
+									class="folder-action-btn opacity-0 group-hover:opacity-100 rounded p-0.5 transition-opacity"
+									class:opacity-100={exportingFolderId === folder.id}
+									aria-label="Export {folder.name}"
+								>
+									<Icon name="download" size={12} />
+								</span>
 								<span
 									role="button"
 									tabindex="0"
@@ -204,6 +283,19 @@
 								<span>New Folder</span>
 							</button>
 						{/if}
+					</li>
+					<li>
+								<button
+									type="button"
+									onclick={handleImportFolderClick}
+									disabled={isImportingFolder}
+									data-vmtrc="Sidebar Import Folder"
+									class="new-folder-btn flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors disabled:opacity-50"
+									style="color: var(--color-text-tertiary);"
+								>
+							<Icon name="upload" size={14} />
+							<span>{isImportingFolder ? 'Importing…' : 'Import Folder'}</span>
+						</button>
 					</li>
 				</ul>
 			{/if}
@@ -328,7 +420,9 @@
 	.nav-item:focus-visible,
 	.folder-item:focus-visible,
 	.chevron-btn:focus-visible,
-	.new-folder-btn:focus-visible {
+	.new-folder-btn:focus-visible,
+	.folder-action-btn:focus-visible,
+	.delete-btn:focus-visible {
 		outline: 2px solid var(--color-accent);
 		outline-offset: -2px;
 	}
@@ -346,7 +440,8 @@
 		transform: rotate(90deg);
 	}
 
-	.delete-btn {
+	.delete-btn,
+	.folder-action-btn {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -356,6 +451,11 @@
 
 	.delete-btn:hover {
 		color: var(--color-danger);
+		background-color: var(--color-bg-tertiary);
+	}
+
+	.folder-action-btn:hover {
+		color: var(--color-text-primary);
 		background-color: var(--color-bg-tertiary);
 	}
 

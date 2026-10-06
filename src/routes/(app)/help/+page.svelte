@@ -29,6 +29,10 @@
 					answer: 'Yes! You can export all your prompts at any time. This makes it easy to back up your library or transfer it to another browser or device.'
 				},
 				{
+					question: 'Can I share a folder with someone else?',
+					answer: 'Yes. Open a folder and choose Export folder, or use the download icon on the folder in the sidebar. Send the JSON file to someone else; they can add it with Import Folder under My Library. Import always creates a new folder, so it will not mix with their existing folders. Save and Load in the header still back up the whole library.'
+				},
+				{
 					question: 'How do I use prompt variables?',
 					answer: 'Wrap any changeable part of your prompt in double curly braces, like {{topic}} or {{product}}. When you copy the prompt, Bearprompt turns it into a small form so you can fill in the values. You can also use {{tone:select(formal|friendly|casual)}} for dropdowns and {{feedback:textarea}} for longer context. If the same variable appears more than once, you only fill it in once. See the full guide in our <a href="/blog/prompt-variables">How to Use Prompt Variables</a> blog post.'
 				},
