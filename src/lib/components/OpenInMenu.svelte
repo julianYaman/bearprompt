@@ -6,12 +6,17 @@
 		resolveProviderOpenUrl
 	} from '$lib/ai-providers';
 	import { enabledAiProviders } from '$lib/stores';
+	import {
+		primaryProviderCount,
+		providersForPublicPrompt
+	} from '$lib/recommended-providers';
 	import type { AiProviderConfig } from '$lib/types';
 
 	interface Props {
 		promptText: string;
 		variant?: 'buttons' | 'dropdown' | 'modal-footer';
 		primaryCount?: number;
+		recommendedIds?: string[];
 		opened?: boolean;
 		onOpened?: () => void;
 	}
@@ -20,6 +25,7 @@
 		promptText,
 		variant = 'dropdown',
 		primaryCount = 2,
+		recommendedIds = [],
 		opened = false,
 		onOpened
 	}: Props = $props();
@@ -27,12 +33,17 @@
 	let openMenu = $state(false);
 	let menuContainer: HTMLDivElement | undefined = $state();
 
-	const providers = $derived($enabledAiProviders);
+	const providers = $derived(
+		recommendedIds.length > 0
+			? providersForPublicPrompt($enabledAiProviders, recommendedIds)
+			: $enabledAiProviders
+	);
+	const resolvedPrimaryCount = $derived(primaryProviderCount(recommendedIds, primaryCount));
 	const primaryProviders = $derived(
-		variant === 'buttons' ? providers.slice(0, primaryCount) : []
+		variant === 'buttons' ? providers.slice(0, resolvedPrimaryCount) : []
 	);
 	const overflowProviders = $derived(
-		variant === 'buttons' ? providers.slice(primaryCount) : providers
+		variant === 'buttons' ? providers.slice(resolvedPrimaryCount) : providers
 	);
 
 	function openProvider(provider: AiProviderConfig) {

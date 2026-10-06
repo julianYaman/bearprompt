@@ -14,6 +14,7 @@ const DESKTOP_SCHEMES = new Set(['cursor:', 'claude-cli:', 'codex:']);
 export const BUILTIN_PROVIDER_IDS = [
 	'chatgpt',
 	'claude',
+	'mistral',
 	'perplexity',
 	'grok',
 	'cursor',
@@ -40,12 +41,20 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 		sortOrder: 1
 	},
 	{
+		id: 'mistral',
+		name: 'Mistral Work',
+		urlTemplate: `https://chat.mistral.ai/work?q=${PROMPT_PLACEHOLDER}`,
+		isBuiltIn: true,
+		enabled: true,
+		sortOrder: 2
+	},
+	{
 		id: 'perplexity',
 		name: 'Perplexity',
 		urlTemplate: `https://www.perplexity.ai/search?q=${PROMPT_PLACEHOLDER}`,
 		isBuiltIn: true,
 		enabled: true,
-		sortOrder: 2
+		sortOrder: 3
 	},
 	{
 		id: 'grok',
@@ -53,7 +62,7 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 		urlTemplate: `https://grok.com/?q=${PROMPT_PLACEHOLDER}`,
 		isBuiltIn: true,
 		enabled: true,
-		sortOrder: 3
+		sortOrder: 4
 	},
 	{
 		id: 'cursor',
@@ -61,7 +70,7 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 		urlTemplate: `cursor://anysphere.cursor-deeplink/prompt?text=${PROMPT_PLACEHOLDER}`,
 		isBuiltIn: true,
 		enabled: true,
-		sortOrder: 4
+		sortOrder: 5
 	},
 	{
 		id: 'claude-code',
@@ -69,7 +78,7 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 		urlTemplate: `claude-cli://open?q=${PROMPT_PLACEHOLDER}`,
 		isBuiltIn: true,
 		enabled: true,
-		sortOrder: 5
+		sortOrder: 6
 	},
 	{
 		id: 'codex',
@@ -77,7 +86,7 @@ export const DEFAULT_PROVIDERS: AiProviderConfig[] = [
 		urlTemplate: `codex://new?prompt=${PROMPT_PLACEHOLDER}`,
 		isBuiltIn: true,
 		enabled: true,
-		sortOrder: 6
+		sortOrder: 7
 	}
 ];
 
@@ -237,7 +246,7 @@ export function getEnabledProviders(providers: AiProviderConfig[]): AiProviderCo
 
 export function getProviderIconName(
 	provider: AiProviderConfig
-): 'chatgpt' | 'claude' | 'perplexity' | 'grok' | 'cursor' | 'claude-code' | 'bot' {
+): 'chatgpt' | 'claude' | 'mistral' | 'perplexity' | 'grok' | 'cursor' | 'claude-code' | 'bot' {
 	if (!provider.isBuiltIn) return 'bot';
 	switch (provider.id) {
 		case 'chatgpt':
@@ -245,6 +254,8 @@ export function getProviderIconName(
 			return 'chatgpt';
 		case 'claude':
 			return 'claude';
+		case 'mistral':
+			return 'mistral';
 		case 'perplexity':
 			return 'perplexity';
 		case 'grok':

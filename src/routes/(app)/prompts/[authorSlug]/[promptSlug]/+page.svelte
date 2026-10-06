@@ -9,6 +9,7 @@
 	import { serializeJsonLd } from '$lib/security';
 	import { loadPrompts, loadTags } from '$lib/stores';
 	import type { PublicPrompt } from '$lib/types/public';
+	import { recommendedProviderIdsForPublicPrompt } from '$lib/recommended-providers';
 
 	let { data } = $props();
 
@@ -19,6 +20,12 @@
 	let addTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	let prompt = $derived(data.prompt);
+	const recommendedIds = $derived(
+		recommendedProviderIdsForPublicPrompt({
+			recommendedProviders: prompt.recommended_providers,
+			authorSlug: prompt.author?.slug
+		})
+	);
 
 	const PROMPT_LINE_THRESHOLD = 30;
 	const isLongPrompt = $derived(
@@ -348,7 +355,7 @@
 			>
 				Use it now
 			</h2>
-			<OpenInMenu promptText={prompt.prompt} variant="buttons" />
+			<OpenInMenu promptText={prompt.prompt} variant="buttons" {recommendedIds} />
 		</section>
 	</article>
 

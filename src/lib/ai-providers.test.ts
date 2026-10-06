@@ -115,6 +115,7 @@ describe('ai providers', () => {
 		expect(merged.map((p) => p.id)).toEqual([
 			'chatgpt',
 			'claude',
+			'mistral',
 			'perplexity',
 			'grok',
 			'cursor',
@@ -149,6 +150,17 @@ describe('ai providers', () => {
 		);
 		expect(DEFAULT_PROVIDERS.find((p) => p.id === 'codex')?.name).toBe('ChatGPT (Desktop)');
 		expect(getProviderIconName(DEFAULT_PROVIDERS.find((p) => p.id === 'codex')!)).toBe('chatgpt');
+		expect(DEFAULT_PROVIDERS.find((p) => p.id === 'mistral')?.name).toBe('Mistral Work');
+		expect(DEFAULT_PROVIDERS.find((p) => p.id === 'mistral')?.urlTemplate).toBe(
+			'https://chat.mistral.ai/work?q={{prompt}}'
+		);
+		expect(getProviderIconName(DEFAULT_PROVIDERS.find((p) => p.id === 'mistral')!)).toBe('mistral');
+		expect(
+			buildProviderUrl(
+				DEFAULT_PROVIDERS.find((p) => p.id === 'mistral')!.urlTemplate,
+				'Test prompt'
+			)
+		).toBe('https://chat.mistral.ai/work?q=Test%20prompt');
 		expect(isDesktopAgentProvider(DEFAULT_PROVIDERS.find((p) => p.id === 'cursor')!)).toBe(true);
 		expect(isDesktopAgentProvider(DEFAULT_PROVIDERS.find((p) => p.id === 'chatgpt')!)).toBe(false);
 	});

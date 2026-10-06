@@ -73,18 +73,22 @@
 		role="status"
 	>
 		<p class="announcement-copy min-w-0 flex-1 text-center text-sm font-medium">
-			{announcement.message}
+			{#if announcement.href}
+				<a
+					href={announcement.href}
+					class="announcement-link underline-offset-2 hover:underline"
+					target={isHttpAnnouncementHref(announcement.href) ? '_blank' : undefined}
+					rel={isHttpAnnouncementHref(announcement.href) ? 'noopener noreferrer' : undefined}
+				>
+					{announcement.message}
+					{#if announcement.cta_label}
+						<span class="whitespace-nowrap"> · {announcement.cta_label}</span>
+					{/if}
+				</a>
+			{:else}
+				{announcement.message}
+			{/if}
 		</p>
-		{#if announcement.href}
-			<a
-				href={announcement.href}
-				class="announcement-cta shrink-0"
-				target={isHttpAnnouncementHref(announcement.href) ? '_blank' : undefined}
-				rel={isHttpAnnouncementHref(announcement.href) ? 'noopener noreferrer' : undefined}
-			>
-				{announcement.cta_label || 'Browse'}
-			</a>
-		{/if}
 		<button
 			type="button"
 			class="announcement-dismiss flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
@@ -109,23 +113,8 @@
 		font-weight: 500;
 	}
 
-	.announcement-cta {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.35rem 0.8rem;
-		border-radius: 0.5rem;
-		background-color: #1a1a1a;
-		color: #ffc530;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		line-height: 1.2;
-		text-decoration: none;
-		text-transform: uppercase;
-	}
-
-	.announcement-cta:hover {
-		background-color: #271105;
+	.announcement-link {
+		color: inherit;
 	}
 
 	.announcement-dismiss {
@@ -137,7 +126,7 @@
 	}
 
 	.announcement-dismiss:focus-visible,
-	.announcement-cta:focus-visible {
+	.announcement-link:focus-visible {
 		outline: 2px solid currentColor;
 		outline-offset: 2px;
 	}

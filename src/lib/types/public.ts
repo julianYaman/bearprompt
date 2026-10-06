@@ -39,6 +39,7 @@ export interface PublicPrompt {
 	additional_information: string | null;
 	author_id: string;
 	type: PromptType;
+	recommended_providers?: string[] | null;
 	author?: PublicAuthor;
 	tags: PublicTag[];
 	tools?: AgentToolWithSetupUrl[];
