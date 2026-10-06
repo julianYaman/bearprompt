@@ -334,6 +334,55 @@
 		letter-spacing: 0.025em;
 	}
 
+	.post-content-frame :global(.prose p:has(> a[href^="/prompts"]:only-child)),
+	.post-content-frame :global(.prose p:has(> a[href^="/library"]:only-child)) {
+		margin-top: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.post-content-frame :global(.prose a[href^="/prompts"]),
+	.post-content-frame :global(.prose a[href^="/library"]) {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		border: var(--neo-border-width) solid var(--neo-border);
+		box-shadow: var(--neo-shadow-offset) var(--neo-shadow-offset) 0 var(--neo-shadow);
+		background-color: var(--neo-accent);
+		color: var(--neo-text);
+		font-size: 0.875rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		line-height: 1.2;
+		text-decoration: none;
+		text-transform: uppercase;
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease,
+			background-color 0.15s ease;
+	}
+
+	.post-content-frame :global(.prose a[href^="/prompts"]:hover),
+	.post-content-frame :global(.prose a[href^="/library"]:hover) {
+		transform: translate(2px, 2px) scale(1.02);
+		box-shadow: 2px 2px 0 var(--neo-shadow);
+		background-color: var(--neo-accent-hover);
+		color: var(--neo-text);
+	}
+
+	.post-content-frame :global(.blog-ai-callout) {
+		border: var(--neo-border-width) solid var(--neo-border);
+		box-shadow: 3px 3px 0 var(--neo-shadow);
+		background-color: #ffc530;
+		color: var(--neo-text);
+		padding: 0.75rem 1rem;
+		margin: 0 0 2rem;
+		font-size: 0.875rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
 	.hero-tags {
 		justify-content: center;
 	}

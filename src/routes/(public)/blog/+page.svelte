@@ -6,6 +6,7 @@
 
 	interface PageData {
 		posts: BlogPostMeta[];
+		promptGuides: BlogPostMeta[];
 		featuredPosts: BlogPostMeta[];
 	}
 
@@ -141,6 +142,32 @@
 					<h2 id="featured-heading" class="neo-section-title">Featured</h2>
 					<div class="blog-grid">
 						{#each data.featuredPosts as post}
+							<a href={`/blog/${post.slug}`} class="neo-card blog-card">
+								<div class="blog-card-meta">
+									<span class="neo-sticker neo-sticker-primary">{post.category}</span>
+									<span>{formatDate(post.publishedAt)}</span>
+									<span>{post.readingTimeMinutes} min read</span>
+								</div>
+								<h3>{post.title}</h3>
+								<p>{post.description}</p>
+								<div class="blog-tags" aria-label="Tags">
+									{#each post.tags as tag}
+										<span>{tag}</span>
+									{/each}
+								</div>
+							</a>
+						{/each}
+					</div>
+				</div>
+			</section>
+		{/if}
+
+		{#if (data.promptGuides ?? []).length > 0}
+			<section class="blog-section blog-section-guides" aria-labelledby="prompt-guides-heading">
+				<div class="neo-container">
+					<h2 id="prompt-guides-heading" class="neo-section-title">Prompt Guides</h2>
+					<div class="blog-grid">
+						{#each data.promptGuides as post}
 							<a href={`/blog/${post.slug}`} class="neo-card blog-card">
 								<div class="blog-card-meta">
 									<span class="neo-sticker neo-sticker-primary">{post.category}</span>
@@ -588,6 +615,11 @@
 
 	.blog-section-alt {
 		background-color: var(--neo-bg-alt);
+		border-top: var(--neo-border-width) solid var(--neo-border);
+	}
+
+	.blog-section-guides {
+		background-color: var(--neo-bg);
 		border-top: var(--neo-border-width) solid var(--neo-border);
 	}
 

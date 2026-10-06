@@ -1,4 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+	isAnnouncementActive,
+	sanitizeAnnouncementHref,
+	type Announcement
+} from '$lib/announcement';
+import { splitLibraryCategories } from '$lib/featured-categories';
 import { buildPromptSearchOrFilter, normalizeSearchQuery } from '$lib/search';
 import type {
 	PublicAuthor,
@@ -45,9 +51,58 @@ const AUTHOR_COLUMNS =
 	'id, created_at, name, slug, public_description, link, verified, avatar_url, highlighted, featured_color_light, featured_color_dark';
 const PROMPT_COLUMNS =
 	'id, created_at, title, slug, prompt, description, additional_information, author_id, type';
-const CATEGORY_COLUMNS =
-	'id, slug, name, description, color, color_light, color_dark, icon_key, image_url, source_url';
+const CATEGORY_COLUMNS_BASE =
+	'id, slug, name, description, color, color_light, color_dark, icon_key, image_url, source_url, sort_order';
+const CATEGORY_COLUMNS = `${CATEGORY_COLUMNS_BASE}, new_until`;
 const PROMPT_WITH_AUTHOR_COLUMNS = `${PROMPT_COLUMNS}, author:author_id (${AUTHOR_COLUMNS})`;
+
+function isMissingRelationOrColumn(error: { code?: string }): boolean {
+	const code = error.code ?? '';
+	return code === '42P01' || code === '42703' || code === 'PGRST204' || code === 'PGRST205';
+}
+
+type CategoryRow = {
+	id: string;
+	slug: string;
+	name: string;
+	description: string;
+	color: string;
+	color_light?: string | null;
+	color_dark?: string | null;
+	icon_key: PublicCategory['icon_key'];
+	image_url?: string | null;
+	source_url?: string | null;
+	new_until?: string | null;
+	sort_order?: number | null;
+};
+
+async function loadCategoryRows(supabase: SupabaseClient): Promise<CategoryRow[]> {
+	const selectCategories = (columns: string) =>
+		supabase
+			.from('categories')
+			.select(columns)
+			.order('sort_order', { ascending: true })
+			.order('name', { ascending: true });
+
+	const withNewUntil = await selectCategories(CATEGORY_COLUMNS);
+	if (!withNewUntil.error) {
+		return (withNewUntil.data ?? []) as unknown as CategoryRow[];
+	}
+	if (withNewUntil.error.code === '42P01' || withNewUntil.error.code === 'PGRST205') {
+		return [];
+	}
+	if (isMissingRelationOrColumn(withNewUntil.error)) {
+		const withoutNewUntil = await selectCategories(CATEGORY_COLUMNS_BASE);
+		if (withoutNewUntil.error) {
+			if (withoutNewUntil.error.code === '42P01' || withoutNewUntil.error.code === 'PGRST205') {
+				return [];
+			}
+			throw withoutNewUntil.error;
+		}
+		return (withoutNewUntil.data ?? []) as unknown as CategoryRow[];
+	}
+	throw withNewUntil.error;
+}
 
 function asPrompts(data: unknown): PublicPrompt[] {
 	return (Array.isArray(data) ? data : []) as PublicPrompt[];
@@ -364,19 +419,8 @@ export async function getAuthors(
 export async function getPromptCategories(
 	supabase: SupabaseClient
 ): Promise<PublicCategory[]> {
-	const { data: categories, error: categoriesError } = await supabase
-		.from('categories')
-		.select(CATEGORY_COLUMNS)
-		.order('sort_order', { ascending: true })
-		.order('name', { ascending: true });
-
-	if (categoriesError) {
-		if (categoriesError.code === '42P01' || categoriesError.code === 'PGRST205') {
-			return [];
-		}
-		throw categoriesError;
-	}
-	if (!categories || categories.length === 0) return [];
+	const categories = await loadCategoryRows(supabase);
+	if (categories.length === 0) return [];
 
 	const categoryIds = categories.map((category) => category.id);
 	const { data: categoryTagRows, error: categoryTagError } = await supabase
@@ -451,6 +495,8 @@ export async function getPromptCategories(
 			icon_key: category.icon_key,
 			image_url: category.image_url,
 			source_url: category.source_url,
+			new_until: category.new_until ?? null,
+			sort_order: category.sort_order ?? 0,
 			promptCount: promptIds.size,
 			tags: rows
 				.map((row) => normalizeJoinedRow(row.tag))
@@ -469,16 +515,20 @@ export async function getPublicLibraryData(
 	page: number = 1
 ): Promise<PublicLibraryData> {
 	// Run both queries in parallel for better performance
-	const [highlightedAuthors, { authors, total }, featuredCategories] = await Promise.all([
+	const [highlightedAuthors, { authors, total }, categories] = await Promise.all([
 		getHighlightedAuthors(supabase, 'prompt'),
 		getAuthors(supabase, page, 'prompt'),
 		getPromptCategories(supabase)
 	]);
 
+	const { featured: featuredCategories, guides: guideCategories } =
+		splitLibraryCategories(categories);
+
 	const totalPages = Math.ceil(total / AUTHORS_PER_PAGE);
 
 	return {
 		featuredCategories,
+		guideCategories,
 		highlightedAuthors,
 		authors,
 		totalAuthors: total,
@@ -1059,4 +1109,36 @@ export async function getAuthorPageDataGroupedBySlug(
 		currentPage: page,
 		totalPages: 1 // No pagination for now
 	};
+}
+
+export async function getCurrentAnnouncement(
+	supabase: SupabaseClient
+): Promise<Announcement | null> {
+	const { data, error } = await supabase
+		.from('announcements')
+		.select('id, enabled, message, href, cta_label, ends_at')
+		.eq('enabled', true)
+		.order('updated_at', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+
+	if (error) {
+		if (isMissingRelationOrColumn(error)) return null;
+		throw error;
+	}
+	if (!data) return null;
+
+	const announcement: Announcement = {
+		id: data.id,
+		enabled: Boolean(data.enabled),
+		message: typeof data.message === 'string' ? data.message.trim().slice(0, 280) : '',
+		href: sanitizeAnnouncementHref(data.href),
+		cta_label:
+			typeof data.cta_label === 'string' && data.cta_label.trim()
+				? data.cta_label.trim().slice(0, 40)
+				: null,
+		ends_at: typeof data.ends_at === 'string' ? data.ends_at : null
+	};
+
+	return isAnnouncementActive(announcement) ? announcement : null;
 }

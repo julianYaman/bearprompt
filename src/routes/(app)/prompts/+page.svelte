@@ -15,6 +15,10 @@
 	import { loadPrompts, loadTags, theme } from '$lib/stores';
 	import { resolveThemeIsDark } from '$lib/utils';
 	import { MAX_SEARCH_LENGTH } from '$lib/search';
+	import {
+		featuredCategoriesWithStarterFallback,
+		STARTER_CATEGORY_SLUG
+	} from '$lib/featured-categories';
 	import type { PublicCategory, PublicPrompt } from '$lib/types/public';
 
 	let { data } = $props();
@@ -103,8 +107,8 @@
 	});
 
 	const starterPromptCategory = $derived<PublicCategory>({
-		id: 'starter-prompts-chatgpt',
-		slug: 'starter-prompts-chatgpt',
+		id: STARTER_CATEGORY_SLUG,
+		slug: STARTER_CATEGORY_SLUG,
 		name: 'Starter Prompts for ChatGPT',
 		description: 'Start faster with official ChatGPT prompts from OpenAI.',
 		color: resolveThemeIsDark($theme, systemPrefersDark) ? '#f5f5f5' : '#080808',
@@ -241,7 +245,15 @@
 				<PublicLibraryError />
 			{:else}
 				<FeaturedCategoryGrid
-					categories={[...(libraryData.featuredCategories ?? []), starterPromptCategory]}
+					categories={featuredCategoriesWithStarterFallback(
+						libraryData.featuredCategories ?? [],
+						starterPromptCategory
+					)}
+				/>
+				<FeaturedCategoryGrid
+					eyebrow="Prompt Guides"
+					title="Prompts for new models"
+					categories={libraryData.guideCategories ?? []}
 				/>
 
 				<!-- Highlighted authors -->

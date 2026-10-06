@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBlogPost, parseFrontmatter } from './blog';
+import { buildBlogPost, parseFrontmatter, partitionBlogListing } from './blog';
 
 const validPost = `---
 title: "Example Post"
@@ -48,5 +48,35 @@ describe('blog content helpers', () => {
 		const invalidPost = validPost.replace('publishedAt: "2026-05-14"', 'publishedAt: "not-a-date"');
 
 		expect(() => buildBlogPost(invalidPost)).toThrow(/publishedAt/);
+	});
+
+	it('keeps Prompt Guides out of Latest Posts', () => {
+		const { promptGuides, latest } = partitionBlogListing([
+			{
+				title: 'Featured product note',
+				slug: 'product',
+				description: 'Product',
+				publishedAt: '2026-05-14',
+				author: 'Bearprompt',
+				tags: ['product'],
+				category: 'Product Updates',
+				featured: true,
+				readingTimeMinutes: 3
+			},
+			{
+				title: 'Prompts to use with Mistral Large 4',
+				slug: 'prompts-to-use-mistral-large-4',
+				description: 'Mistral',
+				publishedAt: '2026-10-06',
+				author: 'Bearprompt',
+				tags: ['mistral'],
+				category: 'Prompt Guides',
+				featured: false,
+				readingTimeMinutes: 6
+			}
+		]);
+
+		expect(promptGuides.map((post) => post.slug)).toEqual(['prompts-to-use-mistral-large-4']);
+		expect(latest.map((post) => post.slug)).toEqual(['product']);
 	});
 });

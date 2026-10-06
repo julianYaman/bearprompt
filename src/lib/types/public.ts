@@ -39,6 +39,7 @@ export interface PublicPrompt {
 	additional_information: string | null;
 	author_id: string;
 	type: PromptType;
+	recommended_providers?: string[] | null;
 	author?: PublicAuthor;
 	tags: PublicTag[];
 	tools?: AgentToolWithSetupUrl[];
@@ -58,6 +59,8 @@ export interface PublicCategory {
 	tags: PublicTag[];
 	externalUrl?: string;
 	source_url?: string | null;
+	new_until?: string | null;
+	sort_order?: number | null;
 }
 
 export interface AgentTool {
@@ -78,6 +81,7 @@ export interface AuthorWithPrompts extends PublicAuthor {
 
 export interface PublicLibraryData {
 	featuredCategories?: PublicCategory[];
+	guideCategories?: PublicCategory[];
 	highlightedAuthors: AuthorWithPrompts[];
 	authors: AuthorWithPrompts[];
 	totalAuthors: number;

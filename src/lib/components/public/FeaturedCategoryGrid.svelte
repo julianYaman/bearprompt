@@ -10,12 +10,19 @@
 		resolveThemeIsDark
 	} from '$lib/utils';
 	import type { PublicCategory } from '$lib/types/public';
+	import { isCategoryNew } from '$lib/category-new';
 
 	interface Props {
 		categories: PublicCategory[];
+		eyebrow?: string;
+		title?: string;
 	}
 
-	let { categories }: Props = $props();
+	let {
+		categories,
+		eyebrow = 'Featured Prompts',
+		title = 'Browse by category'
+	}: Props = $props();
 	let systemPrefersDark = $state(false);
 	const isDark = $derived(resolveThemeIsDark($theme, systemPrefersDark));
 
@@ -39,10 +46,6 @@
 		return resolveFeaturedCategoryColor(category, isDark);
 	}
 
-	function isNewCategory(category: PublicCategory): boolean {
-		return category.slug === 'chatgpt-images-2-0';
-	}
-
 	onMount(() => {
 		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		const updatePreference = () => {
@@ -63,10 +66,10 @@
 		<div class="mb-4 flex items-end justify-between gap-3">
 			<div>
 				<p class="text-xs font-semibold uppercase tracking-[0.18em]" style="color: var(--color-text-muted);">
-					Featured Prompts
+					{eyebrow}
 				</p>
 				<h2 class="text-2xl font-semibold" style="color: var(--color-text-primary);">
-					Browse by category
+					{title}
 				</h2>
 			</div>
 		</div>
@@ -104,7 +107,7 @@
 											<h3 class="min-w-0 text-xl font-semibold leading-tight" style={`color: ${categoryColor};`}>
 												{category.name}
 											</h3>
-											{#if isNewCategory(category)}
+											{#if isCategoryNew(category)}
 												<span
 													class="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
 													style={`background-color: ${categoryColor}; color: var(--color-bg-primary);`}
