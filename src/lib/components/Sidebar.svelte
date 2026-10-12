@@ -419,6 +419,10 @@
 		cursor: not-allowed;
 	}
 
+	.folder-item {
+		cursor: pointer;
+	}
+
 	.nav-item:hover,
 	.folder-item:hover,
 	.new-folder-btn:hover {
