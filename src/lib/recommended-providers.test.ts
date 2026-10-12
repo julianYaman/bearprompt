@@ -37,6 +37,14 @@ describe('recommendedProviderIdsForPublicPrompt', () => {
 		]);
 	});
 
+	it('puts Claude first for the Anthropic vendor author', () => {
+		expect(recommendedProviderIdsForPublicPrompt({ authorSlug: 'anthropic' })).toEqual([
+			'claude',
+			'chatgpt',
+			'mistral'
+		]);
+	});
+
 	it('returns no recommendations for other authors', () => {
 		expect(recommendedProviderIdsForPublicPrompt({ authorSlug: 'openai' })).toEqual([]);
 	});

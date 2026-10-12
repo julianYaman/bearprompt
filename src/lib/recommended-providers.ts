@@ -4,7 +4,8 @@ import type { AiProviderConfig } from './types';
 export const DEFAULT_PRIMARY_PROVIDER_COUNT = 2;
 
 export const AUTHOR_RECOMMENDED_PROVIDERS: Record<string, readonly string[]> = {
-	mistral: ['mistral', 'chatgpt', 'claude']
+	mistral: ['mistral', 'chatgpt', 'claude'],
+	anthropic: ['claude', 'chatgpt', 'mistral']
 };
 
 export function recommendedProviderIdsForPublicPrompt(input: {
