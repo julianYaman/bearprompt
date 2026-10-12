@@ -411,6 +411,14 @@
 </aside>
 
 <style>
+	.new-folder-btn {
+		cursor: pointer;
+	}
+
+	.new-folder-btn:disabled {
+		cursor: not-allowed;
+	}
+
 	.nav-item:hover,
 	.folder-item:hover,
 	.new-folder-btn:hover {
