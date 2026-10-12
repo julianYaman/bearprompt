@@ -30,7 +30,7 @@
 				},
 				{
 					question: 'Can I share a folder with someone else?',
-					answer: 'Yes. Open a folder and choose Export folder, or use the download icon on the folder in the sidebar. Send the JSON file to someone else; they can add it with Import Folder under My Library. Import always creates a new folder, so it will not mix with their existing folders. Save and Load in the header still back up the whole library.'
+					answer: 'Yes. Open a folder and choose Export folder, or use the download icon on the folder in the sidebar. Send the JSON file to someone else; they can add it with Import Folder under My Library. Import always creates a new folder, so it will not mix with their existing folders. Save and Load in the header still back up the whole library. See <a href="/blog/import-export-folders">How to Import and Export Folders</a> for the full walkthrough.'
 				},
 				{
 					question: 'How do I use prompt variables?',

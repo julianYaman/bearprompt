@@ -5,7 +5,7 @@ import { updateSettings } from './db';
  * Stable id for the current What's New release (all points in the modal).
  * Bump this when shipping a new batch of highlights.
  */
-export const CURRENT_WHATS_NEW_ID = 'desktop-agent-providers';
+export const CURRENT_WHATS_NEW_ID = 'folder-import-export';
 
 export interface WhatsNewItem {
 	title: string;
@@ -27,18 +27,18 @@ export const CURRENT_WHATS_NEW: WhatsNewRelease = {
 	id: CURRENT_WHATS_NEW_ID,
 	items: [
 		{
-			title: 'Open prompts in Cursor, Claude Code, and ChatGPT Desktop',
-			body: 'Three desktop agents are built into Open in… and enabled by default. They open locally with your prompt pre-filled. Hide any you do not use under Settings → AI Tools.'
+			title: 'Export a folder as a JSON file',
+			body: 'Open a folder and choose Export folder, or use the download icon in the sidebar. The file includes that folder, its prompts, and the tags they use — ready to send to someone else.'
 		},
 		{
-			title: 'Open prompts in any chat tool',
-			body: 'Add your own AI apps under Settings → AI Tools. If a tool accepts a prompt in a URL, Bearprompt can open it with one click — same as ChatGPT, Claude, and the other built-ins. Everything stays on this device.',
+			title: 'Import a folder without mixing libraries',
+			body: 'Under My Library, choose Import Folder and pick a folder export. Bearprompt always creates a new folder, so nothing merges into what you already have.',
 			guideLabel: 'Read the guide',
-			guideHref: '/blog/custom-ai-providers'
+			guideHref: '/blog/import-export-folders'
 		}
 	],
-	ctaLabel: 'Open AI Tools settings',
-	ctaHref: '/settings#ai-tools'
+	ctaLabel: 'Open My Library',
+	ctaHref: '/library'
 };
 
 export function shouldAutoShowWhatsNew(settings: Settings): boolean {
