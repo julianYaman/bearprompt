@@ -14,6 +14,8 @@ category: "Product Updates"
 featured: true
 ---
 
+<div class="blog-ai-callout">This post was generated with AI.</div>
+
 Custom AI providers let you open prompts in the chat tools and coding agents you actually use—not only the built-in web options.
 
 If a tool accepts a prompt through a URL query parameter (HTTPS or a supported desktop deep link), you can add it in Settings and it will show up in every **Open in…** menu.

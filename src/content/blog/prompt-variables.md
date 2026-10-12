@@ -12,6 +12,8 @@ category: "Product Updates"
 featured: true
 ---
 
+<div class="blog-ai-callout">This post was generated with AI.</div>
+
 Prompt Variables make reusable prompts easier to run. Instead of editing the same words every time you copy a prompt, you can mark the parts that change and fill them in when you use it.
 
 Use variables for anything you regularly swap out: a topic, audience, tone, product name, customer message, code snippet, or longer context block.
