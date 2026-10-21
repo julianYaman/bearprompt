@@ -3,6 +3,7 @@ import { D1_ULTRA_SPECS } from './specs-d1-ultra';
 import { JEV_SPECS } from './specs-jev';
 import { parseDecisionPrompt, serializeDecisionPrompt } from './serialize';
 import { specFromPrompt } from './from-db';
+import { buildDecisionLibrarySql, DECISION_PACK_SORT_ORDER_MIN } from './sql';
 import type { PublicPrompt } from '$lib/types/public';
 
 describe('decision spec serialize', () => {
@@ -57,5 +58,25 @@ describe('decision spec serialize', () => {
 			...spec,
 			tags: ['noul', 'safety']
 		});
+	});
+});
+
+describe('decision library SQL', () => {
+	it('seeds authors, packs, and every spec as type=decision', () => {
+		const sql = buildDecisionLibrarySql();
+		expect(sql).toContain("type = 'decision'");
+		expect(sql).toContain("'liquid-ai'");
+		expect(sql).toContain("'typesafe'");
+		expect(sql).toContain("'d1-ultra'");
+		expect(sql).toContain("'jev'");
+		expect(sql).toContain("'noul-harmful-message'");
+		expect(sql).toContain("'combine-flight-refund'");
+		expect(sql).toContain("DELETE FROM prompts WHERE type = 'decision'");
+		expect(sql).toContain(`sort_order = ${DECISION_PACK_SORT_ORDER_MIN}`);
+		expect(sql).toContain("icon_key = 'sparkles'");
+		expect(sql).not.toContain("icon_key = 'liquid'");
+		expect(sql).toContain('"tag-to-prompt"');
+		expect(sql).toContain('kind');
+		expect(sql).toContain('decision-spec');
 	});
 });
