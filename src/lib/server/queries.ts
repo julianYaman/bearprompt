@@ -813,7 +813,6 @@ export async function searchPrompts(
 	const normalizedQuery = normalizeSearchQuery(query);
 	const baseFilter = buildPromptSearchOrFilter(normalizedQuery);
 
-	// Run count and data queries in parallel
 	const countQuery = supabase
 		.from('prompts')
 		.select('id', { count: 'exact', head: true })
