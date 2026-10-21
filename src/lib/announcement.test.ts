@@ -23,12 +23,14 @@ function announcement(overrides: Partial<Announcement> = {}): Announcement {
 }
 
 describe('announcementAppliesToPath', () => {
-	it('shows on landing, public prompts, and public agents', () => {
+	it('shows on landing, public prompts, public agents, and decisions', () => {
 		expect(announcementAppliesToPath('/')).toBe(true);
 		expect(announcementAppliesToPath('/prompts')).toBe(true);
 		expect(announcementAppliesToPath('/prompts/openai/rewrite')).toBe(true);
 		expect(announcementAppliesToPath('/agents')).toBe(true);
 		expect(announcementAppliesToPath('/agents/openai')).toBe(true);
+		expect(announcementAppliesToPath('/decisions')).toBe(true);
+		expect(announcementAppliesToPath('/decisions/liquid-ai/noul-harmful-message')).toBe(true);
 	});
 
 	it('hides on private and marketing reading surfaces', () => {

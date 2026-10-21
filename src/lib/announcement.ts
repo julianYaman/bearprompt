@@ -15,6 +15,7 @@ export function announcementAppliesToPath(pathname: string): boolean {
 	if (pathname === '/') return true;
 	if (pathname === '/prompts' || pathname.startsWith('/prompts/')) return true;
 	if (pathname === '/agents' || pathname.startsWith('/agents/')) return true;
+	if (pathname === '/decisions' || pathname.startsWith('/decisions/')) return true;
 	return false;
 }
 

@@ -89,4 +89,19 @@ describe('splitLibraryCategories', () => {
 			guides: [pack]
 		});
 	});
+
+	it('keeps Decision Packs out of Featured and Prompt Guides', () => {
+		const writing = category({ sort_order: 1 });
+		const d1 = category({
+			id: 'd1-ultra',
+			slug: 'd1-ultra',
+			name: 'd1-ultra',
+			sort_order: 2000,
+			new_until: '2026-11-08T00:00:00.000Z'
+		});
+		expect(splitLibraryCategories([writing, d1], now)).toEqual({
+			featured: [writing],
+			guides: []
+		});
+	});
 });

@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 			getPromptBySlug(supabase, authorSlug, promptSlug)
 		);
 
-		if (!prompt) {
+		if (!prompt || prompt.type !== 'prompt') {
 			throw error(404, 'Prompt not found');
 		}
 

@@ -4,7 +4,7 @@ import {
 	sanitizeAnnouncementHref,
 	type Announcement
 } from '$lib/announcement';
-import { splitLibraryCategories } from '$lib/featured-categories';
+import { isPromptLibraryCategory, splitLibraryCategories } from '$lib/featured-categories';
 import { buildPromptSearchOrFilter, normalizeSearchQuery } from '$lib/search';
 import type {
 	PublicAuthor,
@@ -419,7 +419,9 @@ export async function getAuthors(
 export async function getPromptCategories(
 	supabase: SupabaseClient
 ): Promise<PublicCategory[]> {
-	const categories = await loadCategoryRows(supabase);
+	const categories = (await loadCategoryRows(supabase)).filter((category) =>
+		isPromptLibraryCategory(category.sort_order)
+	);
 	if (categories.length === 0) return [];
 
 	const categoryIds = categories.map((category) => category.id);
@@ -798,36 +800,33 @@ export async function getRelatedPrompts(
 }
 
 /**
- * Search prompts across all authors
- * Optionally filter by prompt type
+ * Search prompts across all authors.
+ * Defaults to type=prompt so /prompts search does not return agents, skills, or decisions.
  */
 export async function searchPrompts(
 	supabase: SupabaseClient,
 	query: string,
 	page: number = 1,
-	promptType?: PromptType
+	promptType: PromptType = 'prompt'
 ): Promise<SearchResults> {
 	const offset = (page - 1) * SEARCH_RESULTS_PER_PAGE;
 	const normalizedQuery = normalizeSearchQuery(query);
 	const baseFilter = buildPromptSearchOrFilter(normalizedQuery);
 
 	// Run count and data queries in parallel
-	let countQuery = supabase
+	const countQuery = supabase
 		.from('prompts')
 		.select('id', { count: 'exact', head: true })
-		.or(baseFilter);
-	
-	let dataQuery = supabase
+		.or(baseFilter)
+		.eq('type', promptType);
+
+	const dataQuery = supabase
 		.from('prompts')
 		.select(PROMPT_WITH_AUTHOR_COLUMNS)
 		.or(baseFilter)
+		.eq('type', promptType)
 		.order('title', { ascending: true })
 		.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1);
-
-	if (promptType) {
-		countQuery = countQuery.eq('type', promptType);
-		dataQuery = dataQuery.eq('type', promptType);
-	}
 
 	const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
 
@@ -1141,4 +1140,51 @@ export async function getCurrentAnnouncement(
 	};
 
 	return isAnnouncementActive(announcement) ? announcement : null;
+}
+
+export async function getDecisionPackCategories(
+	supabase: SupabaseClient
+): Promise<PublicCategory[]> {
+	const categories = (await loadCategoryRows(supabase)).filter(
+		(category) => !isPromptLibraryCategory(category.sort_order)
+	);
+
+	return categories.map((category) => ({
+		id: category.id,
+		slug: category.slug,
+		name: category.name,
+		description: category.description,
+		color: category.color,
+		color_light: category.color_light,
+		color_dark: category.color_dark,
+		icon_key: category.icon_key,
+		image_url: category.image_url,
+		source_url: category.source_url,
+		new_until: category.new_until ?? null,
+		sort_order: category.sort_order ?? 0,
+		promptCount: 0,
+		tags: []
+	}));
+}
+
+/**
+ * Decision examples stored as prompts.type = 'decision'.
+ */
+export async function getDecisionPrompts(
+	supabase: SupabaseClient
+): Promise<PublicPrompt[]> {
+	const { data, error } = await supabase
+		.from('prompts')
+		.select(PROMPT_WITH_AUTHOR_COLUMNS)
+		.eq('type', 'decision')
+		.order('title', { ascending: true });
+
+	if (error) {
+		if (isMissingRelationOrColumn(error) || error.code === '22P02') {
+			return [];
+		}
+		throw error;
+	}
+
+	return attachTagsToPrompts(supabase, asPrompts(data));
 }

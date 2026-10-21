@@ -9,7 +9,7 @@
 	import type { Folder } from '$lib/types';
 
 	interface Props {
-		currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' | 'settings';
+		currentView: 'library' | 'prompts' | 'agents' | 'decisions' | 'tags' | 'help' | 'settings';
 	}
 
 	let { currentView }: Props = $props();
@@ -333,6 +333,23 @@
 				>
 					<Icon name="bot" size={18} />
 					Agent Library
+				</a>
+			</li>
+			<li>
+				<a
+					href="/decisions"
+					onclick={handleLinkClick}
+					data-vmtrc="Sidebar Decision Library"
+					class="nav-item flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+					style="color: {currentView === 'decisions'
+						? 'var(--color-text-primary)'
+						: 'var(--color-text-secondary)'}; background-color: {currentView === 'decisions'
+						? 'var(--color-bg-tertiary)'
+						: 'transparent'};"
+					aria-current={currentView === 'decisions' ? 'page' : undefined}
+				>
+					<Icon name="sliders-horizontal" size={18} />
+					Decision Library
 				</a>
 			</li>
 		</ul>
