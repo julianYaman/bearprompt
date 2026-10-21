@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ url, setHeaders }) => {
 			query,
 			page,
 			searchResults: getCachedSearchResults(query, page, () =>
-				searchPrompts(supabase, query, page)
+				searchPrompts(supabase, query, page, 'prompt')
 			).catch((error) => {
 				console.error('Failed to search prompts:', error);
 				return null;

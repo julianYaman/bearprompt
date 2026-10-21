@@ -798,36 +798,32 @@ export async function getRelatedPrompts(
 }
 
 /**
- * Search prompts across all authors
- * Optionally filter by prompt type
+ * Search prompts across all authors.
+ * Defaults to type=prompt so /prompts search does not return agents, skills, or decisions.
  */
 export async function searchPrompts(
 	supabase: SupabaseClient,
 	query: string,
 	page: number = 1,
-	promptType?: PromptType
+	promptType: PromptType = 'prompt'
 ): Promise<SearchResults> {
 	const offset = (page - 1) * SEARCH_RESULTS_PER_PAGE;
 	const normalizedQuery = normalizeSearchQuery(query);
 	const baseFilter = buildPromptSearchOrFilter(normalizedQuery);
 
-	// Run count and data queries in parallel
-	let countQuery = supabase
+	const countQuery = supabase
 		.from('prompts')
 		.select('id', { count: 'exact', head: true })
-		.or(baseFilter);
-	
-	let dataQuery = supabase
+		.or(baseFilter)
+		.eq('type', promptType);
+
+	const dataQuery = supabase
 		.from('prompts')
 		.select(PROMPT_WITH_AUTHOR_COLUMNS)
 		.or(baseFilter)
+		.eq('type', promptType)
 		.order('title', { ascending: true })
 		.range(offset, offset + SEARCH_RESULTS_PER_PAGE - 1);
-
-	if (promptType) {
-		countQuery = countQuery.eq('type', promptType);
-		dataQuery = dataQuery.eq('type', promptType);
-	}
 
 	const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
 
