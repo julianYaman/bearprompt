@@ -10,6 +10,7 @@ import {
 	type OgAuthorSection
 } from '$lib/seo';
 import { assertUrlResolvesPublic, parsePublicHttpUrl } from '$lib/server/ssrf';
+import type { DecisionAuthor, ResolvedDecisionSpec } from '$lib/decision-library/types';
 import type { PublicAuthor, PublicCategory, PublicPrompt, PromptType } from '$lib/types/public';
 
 const h = React.createElement;
@@ -208,11 +209,30 @@ function getInitials(name: string): string {
 function getPromptBadgeText(type: PromptType): string | null {
 	if (type === 'agent') return 'Agent';
 	if (type === 'skill') return 'Skill';
+	if (type === 'decision') return 'Decision';
 	return null;
 }
 
 function getAuthorBadgeText(section: OgAuthorSection): string {
-	return section === 'agents' ? 'Agent Prompts' : 'Prompt Library';
+	if (section === 'agents') return 'Agent Prompts';
+	if (section === 'decisions') return 'Decision Library';
+	return 'Prompt Library';
+}
+
+export function publicAuthorFromDecisionAuthor(author: DecisionAuthor): PublicAuthor {
+	return {
+		id: author.slug,
+		created_at: '',
+		name: author.name,
+		slug: author.slug,
+		public_description: author.publicDescription,
+		link: author.link,
+		verified: true,
+		avatar_url: null,
+		highlighted: false,
+		featured_color_light: null,
+		featured_color_dark: null
+	};
 }
 
 function getTitleFontSize(title: string): number {
@@ -657,7 +677,10 @@ export async function renderAuthorOgImage(
 	);
 }
 
-export async function renderCategoryOgImage(category: PublicCategory): Promise<Response> {
+export async function renderCategoryOgImage(
+	category: PublicCategory,
+	badge = 'Category'
+): Promise<Response> {
 	const fallbackAuthor: PublicAuthor = {
 		id: category.id,
 		created_at: '',
@@ -677,11 +700,31 @@ export async function renderCategoryOgImage(category: PublicCategory): Promise<R
 			BEARPROMPT_LOGO_URL,
 			{
 				title: category.name,
-				badge: 'Category',
+				badge,
 				author: fallbackAuthor,
 				avatarSrc: null
 			},
 			'category'
+		)
+	);
+}
+
+export async function renderDecisionExampleOgImage(
+	spec: ResolvedDecisionSpec
+): Promise<Response> {
+	const author = publicAuthorFromDecisionAuthor(spec.author);
+	const avatarSrc = await resolveAvatarSrc(author.avatar_url);
+
+	return imageResponse(
+		baseImageContent(
+			BEARPROMPT_LOGO_URL,
+			{
+				title: spec.title,
+				badge: 'Decision',
+				author,
+				avatarSrc
+			},
+			'prompt'
 		)
 	);
 }

@@ -6,7 +6,9 @@ export type CategoryIconKey =
 	| 'briefcase'
 	| 'megaphone'
 	| 'code'
-	| 'square-check';
+	| 'square-check'
+	| 'liquid'
+	| 'typesafe';
 
 export interface PublicAuthor {
 	id: string;
@@ -27,7 +29,7 @@ export interface PublicTag {
 	name: string;
 }
 
-export type PromptType = 'prompt' | 'agent' | 'skill';
+export type PromptType = 'prompt' | 'agent' | 'skill' | 'decision';
 
 export interface PublicPrompt {
 	id: string;
