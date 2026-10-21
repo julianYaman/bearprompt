@@ -5,11 +5,12 @@ import { updateSettings } from './db';
  * Stable id for the current What's New release (all points in the modal).
  * Bump this when shipping a new batch of highlights.
  */
-export const CURRENT_WHATS_NEW_ID = 'folder-import-export';
+export const CURRENT_WHATS_NEW_ID = 'decision-library';
 
 export interface WhatsNewItem {
 	title: string;
 	body: string;
+	icon?: 'sparkles' | 'square-check' | 'folder';
 	/** Optional guide link under this point. */
 	guideLabel?: string;
 	guideHref?: string;
@@ -27,18 +28,20 @@ export const CURRENT_WHATS_NEW: WhatsNewRelease = {
 	id: CURRENT_WHATS_NEW_ID,
 	items: [
 		{
-			title: 'Export a folder as a JSON file',
-			body: 'Open a folder and choose Export folder, or use the download icon in the sidebar. The file includes that folder, its prompts, and the tags they use — ready to send to someone else.'
+			title: 'Decision Library',
+			icon: 'sparkles',
+			body: 'Browse vendor usage examples for decision models — Liquid d1-ultra and TypeSafe Jev. Each example is typed questions about some state, not a prompt.',
+			guideLabel: 'Read the d1-ultra guide',
+			guideHref: '/blog/decision-specs-to-use-d1-ultra'
 		},
 		{
-			title: 'Import a folder without mixing libraries',
-			body: 'Under My Library, choose Import Folder and pick a folder export. Bearprompt always creates a new folder, so nothing merges into what you already have.',
-			guideLabel: 'Read the guide',
-			guideHref: '/blog/import-export-folders'
+			title: 'Copy runnable Python, TypeScript, or JSON',
+			icon: 'square-check',
+			body: 'Open an example to copy a call for noul, choice, and score questions, plus a worked example from the vendor docs.'
 		}
 	],
-	ctaLabel: 'Open My Library',
-	ctaHref: '/library'
+	ctaLabel: 'Open Decision Library',
+	ctaHref: '/decisions'
 };
 
 export function shouldAutoShowWhatsNew(settings: Settings): boolean {

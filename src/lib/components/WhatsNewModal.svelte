@@ -90,7 +90,7 @@
 							class="whats-new-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
 							aria-hidden="true"
 						>
-							<Icon name={index === 0 ? 'sparkles' : 'folder'} size={20} />
+							<Icon name={item.icon ?? (index === 0 ? 'sparkles' : 'folder')} size={20} />
 						</span>
 						<div>
 							<h3 class="text-base font-semibold" style="color: var(--color-text-primary);">
