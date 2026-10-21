@@ -2,11 +2,12 @@ import { getBlogPosts, getFeaturedBlogPosts, partitionBlogListing } from '$lib/s
 
 export async function load() {
 	const [posts, featuredPosts] = await Promise.all([getBlogPosts(), getFeaturedBlogPosts(3)]);
-	const { promptGuides, latest } = partitionBlogListing(posts);
+	const { promptGuides, decisionGuides, latest } = partitionBlogListing(posts);
 
 	return {
 		posts: latest,
 		promptGuides,
+		decisionGuides,
 		featuredPosts
 	};
 }

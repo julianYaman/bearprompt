@@ -2,6 +2,12 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { getSupabase } from '$lib/supabase';
 import { getCachedSitemapXml, CACHE_CONTROL } from '$lib/server/cache';
 import { getBlogPosts } from '$lib/server/blog';
+import {
+	listAuthorSpecs,
+	listDecisionAuthors,
+	listDecisionPacks
+} from '$lib/decision-library';
+import { DECISION_PACK_SORT_ORDER_MIN } from '$lib/featured-categories';
 
 const BASE_URL = 'https://bearprompt.com';
 
@@ -29,6 +35,7 @@ type PromptRow = {
 type CategoryRow = {
 	slug: string | null;
 	updated_at: string | null;
+	sort_order?: number | null;
 };
 
 async function generateSitemapXml(): Promise<string> {
@@ -40,7 +47,7 @@ async function generateSitemapXml(): Promise<string> {
 			.order('updated_at', { ascending: false }),
 		supabase
 			.from('categories')
-			.select('slug, updated_at')
+			.select('slug, updated_at, sort_order')
 			.order('sort_order', { ascending: true }),
 		getBlogPosts()
 	]);
@@ -63,6 +70,7 @@ async function generateSitemapXml(): Promise<string> {
 			: row.author?.slug;
 		if (!authorSlug || !row.slug) continue;
 
+		if (row.type === 'decision') continue;
 		const isAgent = row.type === 'agent';
 		const basePath = isAgent ? 'agents' : 'prompts';
 		const lastmod = toIsoDate(row.updated_at);
@@ -85,6 +93,7 @@ async function generateSitemapXml(): Promise<string> {
 	}
 	for (const row of (categoryData || []) as CategoryRow[]) {
 		if (!row.slug) continue;
+		if ((row.sort_order ?? 0) >= DECISION_PACK_SORT_ORDER_MIN) continue;
 		categoryUrls.push(
 			buildUrl(`${BASE_URL}/prompts/category/${row.slug}`, toIsoDate(row.updated_at))
 		);
@@ -94,16 +103,38 @@ async function generateSitemapXml(): Promise<string> {
 		buildUrl(`${BASE_URL}/blog/${post.slug}`, toIsoDate(post.updatedAt || post.publishedAt))
 	);
 
+	const decisionUrls: string[] = [
+		...listDecisionPacks().map((pack) =>
+			buildUrl(`${BASE_URL}/decisions/category/${pack.slug}`)
+		),
+		...listDecisionAuthors().map((author) =>
+			buildUrl(`${BASE_URL}/decisions/${author.slug}`)
+		),
+		...listDecisionAuthors().flatMap((author) =>
+			listAuthorSpecs(author.slug).map((spec) =>
+				buildUrl(`${BASE_URL}/decisions/${author.slug}/${spec.slug}`)
+			)
+		)
+	];
+
 	const staticUrls = [
 		buildUrl(`${BASE_URL}/`),
 		buildUrl(`${BASE_URL}/blog`),
 		buildUrl(`${BASE_URL}/prompts`),
 		buildUrl(`${BASE_URL}/agents`),
+		buildUrl(`${BASE_URL}/decisions`),
 		buildUrl(`${BASE_URL}/library`),
 		buildUrl(`${BASE_URL}/help`)
 	];
 
-	const urls = [...staticUrls, ...blogUrls, ...categoryUrls, ...authorUrls, ...promptUrls].join('\n');
+	const urls = [
+		...staticUrls,
+		...blogUrls,
+		...categoryUrls,
+		...authorUrls,
+		...promptUrls,
+		...decisionUrls
+	].join('\n');
 
 	return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }

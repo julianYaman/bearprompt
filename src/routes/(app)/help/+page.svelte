@@ -69,6 +69,23 @@
 			]
 		},
 		{
+			title: 'Decision Library',
+			questions: [
+				{
+					question: 'What is the Decision Library?',
+					answer: 'The Decision Library collects usage examples for decision models, mainly from the vendors who ship them. Decision models answer typed questions — noul, choice, and score — instead of generating text. Start with Liquid’s d1-ultra pack or TypeSafe’s Jev pack from the sidebar.'
+				},
+				{
+					question: 'What is a Decision Example?',
+					answer: 'A Decision Example is a reusable set of typed questions about some state. It is not a prompt. Open an example to copy Python, TypeScript, or JSON, and to see a worked example with sample answers from the vendor docs.'
+				},
+				{
+					question: 'How do I run an example?',
+					answer: 'Each pack links to that vendor’s setup guide. Copy the snippet from the example page, set the vendor API key, and run it against the recommended model. See <a href="/blog/decision-specs-to-use-d1-ultra">Usage examples for Liquid d1-ultra</a>.'
+				}
+			]
+		},
+		{
 			title: 'Other',
 			questions: [
 				{

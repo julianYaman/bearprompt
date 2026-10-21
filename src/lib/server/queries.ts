@@ -4,7 +4,7 @@ import {
 	sanitizeAnnouncementHref,
 	type Announcement
 } from '$lib/announcement';
-import { splitLibraryCategories } from '$lib/featured-categories';
+import { isPromptLibraryCategory, splitLibraryCategories } from '$lib/featured-categories';
 import { buildPromptSearchOrFilter, normalizeSearchQuery } from '$lib/search';
 import type {
 	PublicAuthor,
@@ -419,7 +419,9 @@ export async function getAuthors(
 export async function getPromptCategories(
 	supabase: SupabaseClient
 ): Promise<PublicCategory[]> {
-	const categories = await loadCategoryRows(supabase);
+	const categories = (await loadCategoryRows(supabase)).filter((category) =>
+		isPromptLibraryCategory(category.sort_order)
+	);
 	if (categories.length === 0) return [];
 
 	const categoryIds = categories.map((category) => category.id);
@@ -1137,4 +1139,51 @@ export async function getCurrentAnnouncement(
 	};
 
 	return isAnnouncementActive(announcement) ? announcement : null;
+}
+
+export async function getDecisionPackCategories(
+	supabase: SupabaseClient
+): Promise<PublicCategory[]> {
+	const categories = (await loadCategoryRows(supabase)).filter(
+		(category) => !isPromptLibraryCategory(category.sort_order)
+	);
+
+	return categories.map((category) => ({
+		id: category.id,
+		slug: category.slug,
+		name: category.name,
+		description: category.description,
+		color: category.color,
+		color_light: category.color_light,
+		color_dark: category.color_dark,
+		icon_key: category.icon_key,
+		image_url: category.image_url,
+		source_url: category.source_url,
+		new_until: category.new_until ?? null,
+		sort_order: category.sort_order ?? 0,
+		promptCount: 0,
+		tags: []
+	}));
+}
+
+/**
+ * Decision examples stored as prompts.type = 'decision'.
+ */
+export async function getDecisionPrompts(
+	supabase: SupabaseClient
+): Promise<PublicPrompt[]> {
+	const { data, error } = await supabase
+		.from('prompts')
+		.select(PROMPT_WITH_AUTHOR_COLUMNS)
+		.eq('type', 'decision')
+		.order('title', { ascending: true });
+
+	if (error) {
+		if (isMissingRelationOrColumn(error) || error.code === '22P02') {
+			return [];
+		}
+		throw error;
+	}
+
+	return attachTagsToPrompts(supabase, asPrompts(data));
 }

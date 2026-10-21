@@ -5,7 +5,7 @@ export const OG_IMAGE_HEIGHT = 630;
 export const OG_IMAGE_CACHE_CONTROL =
 	'public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400';
 
-export type PromptSection = 'prompts' | 'agents';
+export type PromptSection = 'prompts' | 'agents' | 'decisions';
 export type OgAuthorSection = PromptSection;
 
 export function buildCategoryOgImageUrl(categorySlug: string): string {
@@ -22,4 +22,8 @@ export function buildPromptOgImageUrl(
 
 export function buildAuthorOgImageUrl(section: OgAuthorSection, authorSlug: string): string {
 	return `${SITE_URL}/api/og/authors/${section}/${authorSlug}`;
+}
+
+export function buildDecisionPackOgImageUrl(packSlug: string): string {
+	return `${SITE_URL}/api/og/decisions/category/${packSlug}`;
 }

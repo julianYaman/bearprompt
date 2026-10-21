@@ -23,12 +23,17 @@ export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
 			throw error(404, 'Author not found');
 		}
 
+		const prompts = data.prompts.filter((prompt) => prompt.type === 'prompt');
+		if (prompts.length === 0) {
+			throw error(404, 'Author not found');
+		}
+
 		return {
 			author: data.author,
-			prompts: data.prompts,
-			totalPrompts: data.totalPrompts,
+			prompts,
+			totalPrompts: prompts.length,
 			currentPage: data.currentPage,
-			totalPages: data.totalPages
+			totalPages: 1
 		};
 	} catch (err) {
 		// Re-throw SvelteKit errors (like 404)

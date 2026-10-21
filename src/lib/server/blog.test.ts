@@ -50,8 +50,8 @@ describe('blog content helpers', () => {
 		expect(() => buildBlogPost(invalidPost)).toThrow(/publishedAt/);
 	});
 
-	it('keeps Prompt Guides out of Latest Posts', () => {
-		const { promptGuides, latest } = partitionBlogListing([
+	it('keeps Prompt Guides and Decision Guides out of Latest Posts', () => {
+		const { promptGuides, decisionGuides, latest } = partitionBlogListing([
 			{
 				title: 'Featured product note',
 				slug: 'product',
@@ -73,10 +73,22 @@ describe('blog content helpers', () => {
 				category: 'Prompt Guides',
 				featured: false,
 				readingTimeMinutes: 6
+			},
+			{
+				title: 'Usage examples for Liquid d1-ultra',
+				slug: 'decision-specs-to-use-d1-ultra',
+				description: 'd1-ultra',
+				publishedAt: '2026-10-18',
+				author: 'Bearprompt',
+				tags: ['liquid'],
+				category: 'Decision Guides',
+				featured: false,
+				readingTimeMinutes: 5
 			}
 		]);
 
 		expect(promptGuides.map((post) => post.slug)).toEqual(['prompts-to-use-mistral-large-4']);
+		expect(decisionGuides.map((post) => post.slug)).toEqual(['decision-specs-to-use-d1-ultra']);
 		expect(latest.map((post) => post.slug)).toEqual(['product']);
 	});
 });

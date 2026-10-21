@@ -3,7 +3,13 @@ import type { PublicCategory } from './types/public';
 
 export const STARTER_CATEGORY_SLUG = 'starter-prompts-chatgpt';
 export const PROMPT_GUIDE_SORT_ORDER_MIN = 1000;
+export const DECISION_PACK_SORT_ORDER_MIN = 2000;
 export const PROMPT_GUIDE_BLOG_CATEGORY = 'Prompt Guides';
+export const DECISION_GUIDE_BLOG_CATEGORY = 'Decision Guides';
+
+export function isPromptLibraryCategory(sortOrder?: number | null): boolean {
+	return (sortOrder ?? 0) < DECISION_PACK_SORT_ORDER_MIN;
+}
 
 export function featuredCategoriesWithStarterFallback(
 	categories: PublicCategory[],
@@ -37,6 +43,7 @@ export function splitLibraryCategories(
 	const guides: PublicCategory[] = [];
 
 	for (const category of uniqueCategoriesBySlug(categories)) {
+		if (!isPromptLibraryCategory(category.sort_order)) continue;
 		if ((category.sort_order ?? 0) >= PROMPT_GUIDE_SORT_ORDER_MIN) {
 			guides.push(category);
 		} else {

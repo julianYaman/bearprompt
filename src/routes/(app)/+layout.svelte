@@ -20,11 +20,12 @@
 	let isInitialized = $state(false);
 
 	// Derive current view from the URL path
-	let currentView: 'library' | 'prompts' | 'agents' | 'tags' | 'help' | 'settings' = $derived.by(() => {
+	let currentView: 'library' | 'prompts' | 'agents' | 'decisions' | 'tags' | 'help' | 'settings' = $derived.by(() => {
 		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/tags')) return 'tags';
 		if (pathname.startsWith('/settings')) return 'settings';
 		if (pathname.startsWith('/agents')) return 'agents';
+		if (pathname.startsWith('/decisions')) return 'decisions';
 		if (pathname.startsWith('/prompts')) return 'prompts';
 		if (pathname.startsWith('/help')) return 'help';
 		return 'library';
@@ -44,6 +45,8 @@
 				return 'Prompt Library | Bearprompt';
 			case 'agents':
 				return 'Agent Library | Bearprompt';
+			case 'decisions':
+				return 'Decision Library | Bearprompt';
 			case 'tags':
 				return 'Tags | Bearprompt';
 			case 'help':

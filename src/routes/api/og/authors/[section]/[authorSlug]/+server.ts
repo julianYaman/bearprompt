@@ -2,12 +2,13 @@ import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { getSupabase } from '$lib/supabase';
 import { enforceOgRateLimit } from '$lib/server/og-rate-limit';
-import { renderAuthorOgImage } from '$lib/server/og';
+import { publicAuthorFromDecisionAuthor, renderAuthorOgImage } from '$lib/server/og';
+import { loadDecisionAuthor } from '$lib/server/decision-library';
 import { getAuthorBySlug } from '$lib/server/queries';
 import type { OgAuthorSection } from '$lib/seo';
 
 function isOgAuthorSection(value: string): value is OgAuthorSection {
-	return value === 'prompts' || value === 'agents';
+	return value === 'prompts' || value === 'agents' || value === 'decisions';
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -17,6 +18,15 @@ export const GET: RequestHandler = async (event) => {
 
 	if (!isOgAuthorSection(section)) {
 		throw error(404, 'Author page not found');
+	}
+
+	if (section === 'decisions') {
+		const data = await loadDecisionAuthor(authorSlug);
+		if (!data) {
+			throw error(404, 'Author not found');
+		}
+
+		return renderAuthorOgImage(publicAuthorFromDecisionAuthor(data.author), section);
 	}
 
 	const author = await getAuthorBySlug(supabase, authorSlug);

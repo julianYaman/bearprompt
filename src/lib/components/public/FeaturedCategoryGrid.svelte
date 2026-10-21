@@ -16,12 +16,14 @@
 		categories: PublicCategory[];
 		eyebrow?: string;
 		title?: string;
+		itemNoun?: string;
 	}
 
 	let {
 		categories,
 		eyebrow = 'Featured Prompts',
-		title = 'Browse by category'
+		title = 'Browse by category',
+		itemNoun = 'prompt'
 	}: Props = $props();
 	let systemPrefersDark = $state(false);
 	const isDark = $derived(resolveThemeIsDark($theme, systemPrefersDark));
@@ -136,7 +138,9 @@
 								</div>
 							{/if}
 							<span style="color: var(--color-text-primary);">
-								{category.externalUrl ? 'Explore prompts' : `${category.promptCount} prompt${category.promptCount === 1 ? '' : 's'}`}
+								{isExternalLink(category)
+									? `Explore ${itemNoun}s`
+									: `${category.promptCount} ${itemNoun}${category.promptCount === 1 ? '' : 's'}`}
 							</span>
 						</div>
 					</div>
