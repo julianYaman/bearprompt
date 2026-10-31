@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import AuthorLogo from '$lib/components/public/AuthorLogo.svelte';
 	import DecisionSpecCard from '$lib/components/public/DecisionSpecCard.svelte';
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
 	import { theme } from '$lib/stores';
@@ -78,10 +79,14 @@
 		</p>
 		<div class="flex flex-wrap items-center gap-3">
 			<div
-				class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+				class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full"
 				style={`background-color: color-mix(in srgb, ${categoryColor} 14%, transparent); color: ${categoryColor};`}
 			>
-				<Icon name={data.author.icon} size={22} />
+				<AuthorLogo
+					name={data.pack.name}
+					src={data.category.image_url ?? data.author.avatarUrl}
+					iconSize={22}
+				/>
 			</div>
 			<h1 class="text-3xl font-semibold" style={`color: ${categoryColor};`}>
 				{data.pack.name}
@@ -97,7 +102,12 @@
 		</div>
 		<div class="mt-2 flex flex-wrap items-center gap-2 text-sm" style="color: var(--color-text-primary);">
 			<a href={`/decisions/${data.author.slug}`} class="inline-flex items-center gap-1.5">
-				<Icon name={data.author.icon} size={14} />
+				<span
+					class="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full"
+					style="background-color: var(--color-bg-tertiary);"
+				>
+					<AuthorLogo name={data.author.name} src={data.author.avatarUrl} iconSize={12} />
+				</span>
 				{data.author.name}
 				{#if data.author.verified}
 					<VerifiedBadge size={12} />

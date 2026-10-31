@@ -1,7 +1,5 @@
 export type QuestionType = 'noul' | 'choice' | 'score';
 
-export type DecisionAuthorIcon = 'liquid' | 'typesafe';
-
 export type DecisionAuthor = {
 	name: string;
 	slug: string;
@@ -9,7 +7,7 @@ export type DecisionAuthor = {
 	link: string;
 	publicDescription: string;
 	modelFamily: readonly string[];
-	icon: DecisionAuthorIcon;
+	avatarUrl: string | null;
 };
 
 export type NoulQuestion = {

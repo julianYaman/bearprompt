@@ -10,6 +10,7 @@ export {
 	listPackCategories,
 	listPackCategoriesFromSpecs,
 	listResolvedSpecs,
+	overlayDecisionAuthor,
 	overlayPackCategory,
 	packAsCategory,
 	resolveSpec,

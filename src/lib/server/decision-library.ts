@@ -5,6 +5,7 @@ import {
 	listAuthorSpecs,
 	listPackCategoriesFromSpecs,
 	listResolvedSpecs,
+	overlayDecisionAuthor,
 	overlayPackCategory,
 	packAsCategory,
 	resolveSpec,
@@ -13,7 +14,7 @@ import {
 import { specsFromPrompts } from '$lib/decision-library/from-db';
 import type { DecisionAuthor, DecisionPack, ResolvedDecisionSpec } from '$lib/decision-library/types';
 import { getSupabase } from '$lib/supabase';
-import type { PublicCategory } from '$lib/types/public';
+import type { PublicAuthor, PublicCategory, PublicPrompt } from '$lib/types/public';
 import { getDecisionPackCategories, getDecisionPrompts } from './queries';
 
 export type DecisionLibrarySnapshot = {
@@ -33,13 +34,23 @@ function catalogSnapshot(chrome: PublicCategory[] = []): DecisionLibrarySnapshot
 	};
 }
 
+function authorsFromPrompts(prompts: PublicPrompt[]): Map<string, PublicAuthor> {
+	const authors = new Map<string, PublicAuthor>();
+	for (const prompt of prompts) {
+		if (prompt.author) authors.set(prompt.author.slug, prompt.author);
+	}
+	return authors;
+}
+
 function overlayResolvedSpec(
 	spec: ResolvedDecisionSpec,
-	chrome: PublicCategory[]
+	chrome: PublicCategory[],
+	authors: Map<string, PublicAuthor> = new Map()
 ): ResolvedDecisionSpec {
 	const category = chrome.find((entry) => entry.slug === spec.pack.slug);
 	return {
 		...spec,
+		author: overlayDecisionAuthor(spec.author, authors.get(spec.author.slug)),
 		pack: overlayPackCategory(spec.pack, category)
 	};
 }
@@ -56,10 +67,11 @@ async function snapshotFromSupabase(): Promise<DecisionLibrarySnapshot | null> {
 		getDecisionPrompts(supabase),
 		getDecisionPackCategories(supabase)
 	]);
+	const authors = authorsFromPrompts(prompts);
 	const specs = specsFromPrompts(prompts)
 		.map((spec) => {
 			try {
-				return overlayResolvedSpec(resolveSpec(spec), chrome);
+				return overlayResolvedSpec(resolveSpec(spec), chrome, authors);
 			} catch {
 				return null;
 			}

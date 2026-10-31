@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '../Icon.svelte';
+	import AuthorLogo from './AuthorLogo.svelte';
 	import VerifiedBadge from './VerifiedBadge.svelte';
 	import { questionTypeLabel } from '$lib/decision-library/format';
 	import type { ResolvedDecisionSpec } from '$lib/decision-library/types';
@@ -45,7 +46,12 @@
 
 	<div class="mt-4 flex items-center justify-between gap-2">
 		<div class="flex min-w-0 items-center gap-2">
-			<Icon name={spec.author.icon} size={14} />
+			<span
+				class="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full"
+				style="background-color: var(--color-bg-tertiary);"
+			>
+				<AuthorLogo name={spec.author.name} src={spec.author.avatarUrl} iconSize={12} />
+			</span>
 			<span class="truncate text-sm" style="color: var(--color-text-secondary);">
 				{spec.author.name}
 			</span>

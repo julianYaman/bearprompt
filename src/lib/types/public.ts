@@ -6,9 +6,7 @@ export type CategoryIconKey =
 	| 'briefcase'
 	| 'megaphone'
 	| 'code'
-	| 'square-check'
-	| 'liquid'
-	| 'typesafe';
+	| 'square-check';
 
 export interface PublicAuthor {
 	id: string;
