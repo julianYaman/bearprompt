@@ -10,11 +10,6 @@ export const DECISION_CATEGORY_ICON_KEY = 'sparkles';
 
 const SPECS: DecisionSpec[] = [...D1_ULTRA_SPECS, ...JEV_SPECS];
 
-const AUTHOR_AVATARS: Record<string, string> = {
-	'liquid-ai': 'https://img.logo.dev/liquid.ai?token=pk_Ss1kqMCwRdC9gAGPgJ4RTw&retina=true',
-	typesafe: 'https://img.logo.dev/typesafe.ai?token=pk_Ss1kqMCwRdC9gAGPgJ4RTw&retina=true'
-};
-
 const AUTHOR_COLORS: Record<string, { light: string; dark: string }> = {
 	'liquid-ai': { light: '#2563eb', dark: '#93c5fd' },
 	typesafe: { light: '#c2410c', dark: '#fdba74' }
@@ -54,7 +49,7 @@ function uniqueTagNames(): string[] {
 
 function authorSql(author: DecisionAuthor): string {
 	const colors = AUTHOR_COLORS[author.slug] ?? { light: '#2563eb', dark: '#93c5fd' };
-	const avatar = AUTHOR_AVATARS[author.slug] ?? null;
+	const avatar = author.avatarUrl;
 	const values = `
     ${sqlString(author.name)},
     ${sqlString(author.slug)},
@@ -89,6 +84,8 @@ WHERE slug = ${sqlString(author.slug)};`;
 function packSql(pack: DecisionPack, sortOrder: number): string {
 	const tagName = packTagName(pack);
 	const colorDark = AUTHOR_COLORS[pack.authorSlug]?.dark ?? '#93c5fd';
+	const imageUrl =
+		DECISION_AUTHORS.find((author) => author.slug === pack.authorSlug)?.avatarUrl ?? null;
 	return `-- Pack category: ${pack.name}
 INSERT INTO categories (
   slug, name, description, color, color_light, color_dark, icon_key, image_url,
@@ -102,7 +99,7 @@ SELECT
   ${sqlString(pack.color)},
   ${sqlString(colorDark)},
   ${sqlString(DECISION_CATEGORY_ICON_KEY)},
-  NULL,
+  ${imageUrl ? sqlString(imageUrl) : 'NULL'},
   ${sqlString(pack.sourceUrl)},
   ${sortOrder},
   ${sqlString(pack.newUntil)}
@@ -115,6 +112,7 @@ UPDATE categories SET
   color_light = ${sqlString(pack.color)},
   color_dark = ${sqlString(colorDark)},
   icon_key = ${sqlString(DECISION_CATEGORY_ICON_KEY)},
+  image_url = ${imageUrl ? sqlString(imageUrl) : 'NULL'},
   source_url = ${sqlString(pack.sourceUrl)},
   sort_order = ${sortOrder},
   new_until = ${sqlString(pack.newUntil)}
@@ -199,7 +197,7 @@ export function buildDecisionLibrarySql(): string {
 -- same authors / prompts / tags / categories tables as /prompts and /agents.
 -- Pack categories use sort_order ${DECISION_PACK_SORT_ORDER_MIN}+ so they do not
 -- appear under Prompt Guides (those use 1000–1999). icon_key stays sparkles;
--- the app maps vendor icons from the author slug.
+-- vendor logos live on authors.avatar_url and categories.image_url.
 
 -- 1. Allow type = 'decision' (enum or CHECK).
 -- ALTER TYPE ... ADD VALUE cannot run inside this DO block. If the notice

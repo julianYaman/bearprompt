@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import AuthorLogo from '$lib/components/public/AuthorLogo.svelte';
 	import DecisionSpecCard from '$lib/components/public/DecisionSpecCard.svelte';
 	import VerifiedBadge from '$lib/components/public/VerifiedBadge.svelte';
 	import { buildAuthorOgImageUrl } from '$lib/seo';
@@ -41,10 +42,10 @@
 	<header class="mb-8">
 		<div class="flex flex-wrap items-center gap-2">
 			<span
-				class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+				class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full"
 				style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);"
 			>
-				<Icon name={data.author.icon} size={22} />
+				<AuthorLogo name={data.author.name} src={data.author.avatarUrl} iconSize={22} />
 			</span>
 			<h1 class="text-3xl font-semibold" style="color: var(--color-text-primary);">
 				{data.author.name}

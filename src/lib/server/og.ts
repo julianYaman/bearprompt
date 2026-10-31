@@ -228,7 +228,7 @@ export function publicAuthorFromDecisionAuthor(author: DecisionAuthor): PublicAu
 		public_description: author.publicDescription,
 		link: author.link,
 		verified: true,
-		avatar_url: null,
+		avatar_url: author.avatarUrl,
 		highlighted: false,
 		featured_color_light: null,
 		featured_color_dark: null

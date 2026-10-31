@@ -8,7 +8,7 @@ import type {
 	DecisionSpec,
 	ResolvedDecisionSpec
 } from './types';
-import type { PublicCategory } from '$lib/types/public';
+import type { PublicAuthor, PublicCategory } from '$lib/types/public';
 
 const SPECS: DecisionSpec[] = [...D1_ULTRA_SPECS, ...JEV_SPECS];
 
@@ -112,10 +112,25 @@ export type DecisionPackCategoryChrome = Pick<
 	| 'color'
 	| 'color_light'
 	| 'color_dark'
+	| 'icon_key'
+	| 'image_url'
 	| 'source_url'
 	| 'new_until'
 	| 'sort_order'
 >;
+
+export type DecisionAuthorChrome = Pick<PublicAuthor, 'avatar_url'>;
+
+export function overlayDecisionAuthor(
+	author: DecisionAuthor,
+	chrome?: DecisionAuthorChrome | null
+): DecisionAuthor {
+	if (!chrome) return author;
+	return {
+		...author,
+		avatarUrl: chrome.avatar_url ?? author.avatarUrl
+	};
+}
 
 export function overlayPackCategory(
 	pack: DecisionPack,
@@ -148,7 +163,8 @@ export function packAsCategory(
 		color: overlaid.color,
 		color_light: chrome?.color_light ?? null,
 		color_dark: chrome?.color_dark ?? null,
-		icon_key: author?.icon ?? 'square-check',
+		icon_key: chrome?.icon_key ?? 'sparkles',
+		image_url: chrome?.image_url ?? author?.avatarUrl ?? null,
 		promptCount: specCount ?? listDecisionSpecs(overlaid.slug).length,
 		tags: author ? [{ id: author.slug, name: author.name }] : [],
 		source_url: overlaid.sourceUrl,

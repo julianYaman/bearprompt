@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { DECISION_AUTHOR_AVATARS } from './authors';
 import { D1_ULTRA_SPECS } from './specs-d1-ultra';
 import { JEV_SPECS } from './specs-jev';
 import {
+	getDecisionAuthor,
 	getDecisionSpec,
 	listDecisionPacks,
 	listPackCategories,
+	overlayDecisionAuthor,
 	packAsCategory,
 	listResolvedSpecs,
 	resolveSpec,
@@ -45,10 +48,14 @@ describe('decision catalog', () => {
 		const categories = listPackCategories();
 		expect(categories[0]?.externalUrl).toBe('/decisions/category/d1-ultra');
 		expect(categories[0]?.promptCount).toBeGreaterThan(0);
-		expect(categories.map((category) => category.icon_key)).toEqual(['liquid', 'typesafe']);
+		expect(categories.map((category) => category.icon_key)).toEqual(['sparkles', 'sparkles']);
+		expect(categories.map((category) => category.image_url)).toEqual([
+			DECISION_AUTHOR_AVATARS['liquid-ai'],
+			DECISION_AUTHOR_AVATARS.typesafe
+		]);
 	});
 
-	it('prefers Supabase category colors on pack cards', () => {
+	it('prefers Supabase category colors and logos on pack cards', () => {
 		const pack = listDecisionPacks().find((entry) => entry.slug === 'jev');
 		if (!pack) throw new Error('missing pack');
 		const category = packAsCategory(pack, 4, {
@@ -58,12 +65,27 @@ describe('decision catalog', () => {
 			description: pack.description,
 			color: '#E551BA',
 			color_light: '#E551BA',
-			color_dark: '#F9A8D4'
+			color_dark: '#F9A8D4',
+			icon_key: 'sparkles',
+			image_url: 'https://img.logo.dev/typesafe.ai?token=from-db'
 		});
 		expect(category.color).toBe('#E551BA');
 		expect(category.color_light).toBe('#E551BA');
 		expect(category.color_dark).toBe('#F9A8D4');
-		expect(category.icon_key).toBe('typesafe');
+		expect(category.icon_key).toBe('sparkles');
+		expect(category.image_url).toBe('https://img.logo.dev/typesafe.ai?token=from-db');
+	});
+
+	it('overlays vendor logos from the authors table', () => {
+		const author = getDecisionAuthor('liquid-ai');
+		if (!author) throw new Error('missing author');
+		expect(author.avatarUrl).toBe(DECISION_AUTHOR_AVATARS['liquid-ai']);
+
+		const overlaid = overlayDecisionAuthor(author, {
+			avatar_url: 'https://img.logo.dev/liquid.ai?token=from-db'
+		});
+		expect(overlaid.avatarUrl).toBe('https://img.logo.dev/liquid.ai?token=from-db');
+		expect(overlayDecisionAuthor(author, { avatar_url: null }).avatarUrl).toBe(author.avatarUrl);
 	});
 
 	it('searches titles and question instructions', () => {

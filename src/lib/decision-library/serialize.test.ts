@@ -75,6 +75,9 @@ describe('decision library SQL', () => {
 		expect(sql).toContain(`sort_order = ${DECISION_PACK_SORT_ORDER_MIN}`);
 		expect(sql).toContain("icon_key = 'sparkles'");
 		expect(sql).not.toContain("icon_key = 'liquid'");
+		expect(sql).toContain('https://img.logo.dev/liquid.ai');
+		expect(sql).toContain('https://img.logo.dev/typesafe.ai');
+		expect(sql).toContain('image_url =');
 		expect(sql).toContain('"tag-to-prompt"');
 		expect(sql).toContain('kind');
 		expect(sql).toContain('decision-spec');
