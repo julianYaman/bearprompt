@@ -1,7 +1,7 @@
 ---
 title: "Claude Fable 5.2: prompts from the guide"
 slug: "prompts-to-use-claude-fable-5-2"
-description: "A source-linked prompt draft and a practical starting point for evaluating Claude Fable 5.2."
+description: "Nine prompts for Claude Fable 5.2, including Anthropic’s complete guide examples and two guide-based prompts."
 publishedAt: "2026-11-09"
 author: "Bearprompt"
 tags:
@@ -10,7 +10,6 @@ tags:
   - fable
 category: "Prompt Guides"
 featured: false
-draft: true
 ---
 
 <div class="blog-ai-callout">This post was generated with AI.</div>
@@ -33,8 +32,8 @@ Check delegation rules and subagent costs. Trim stale cautions, and state approv
 
 For refusals, inspect the API response category. Use supported thinking displays for reasoning summaries.
 
-## Before publishing this pack
+## Evaluate the prompts on your tasks
 
 Review each entry alongside its linked section. Choose a representative task and record a baseline before changing instructions. Keep the task and acceptance criteria consistent across trials. A useful result should tell readers when an instruction helps, what it costs, and when to leave it out.
 
-This article and the prompt pack remain drafts pending review.
+[Browse the Claude Fable 5.2 pack](/prompts/category/claude-fable-5-2)
