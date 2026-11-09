@@ -3,8 +3,8 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { theme, mobileMenuOpen, sidebarOpen, loadPrompts, loadTags, loadFolders } from '$lib/stores';
-	import { exportLibrary, importLibrary, validateImportData } from '$lib/db';
-	import { downloadJson, buildExportFilename } from '$lib/utils';
+	import { importLibrary, validateImportData } from '$lib/db';
+	import { saveLibraryBackup } from '$lib/backup-reminders';
 	import { isFolderExportData } from '$lib/folder-export';
 	import type { ThemeMode } from '$lib/types';
 
@@ -68,8 +68,7 @@
 	async function handleSave() {
 		isExporting = true;
 		try {
-			const data = await exportLibrary();
-			downloadJson(data, buildExportFilename());
+			await saveLibraryBackup();
 		} catch (error) {
 			console.error('Export failed:', error);
 			alert('Failed to save library. Please try again.');

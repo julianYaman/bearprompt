@@ -1,5 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { backupReminderSettings, loadBackupReminderSettings, setBackupReminderSettings } from '$lib/backup-reminders';
+	let backupReminderError = $state('');
+	let savingBackupReminders = $state(false);
+	async function toggleBackupReminders(event: Event) {
+		const enabled = (event.currentTarget as HTMLInputElement).checked;
+		savingBackupReminders = true;
+		backupReminderError = '';
+		try {
+			await setBackupReminderSettings({ backupRemindersEnabled: enabled });
+		} catch {
+			backupReminderError = 'Could not save your preference. Please try again.';
+		} finally {
+			savingBackupReminders = false;
+		}
+	}
 	import { v4 as uuidv4 } from 'uuid';
 	import Icon from '$lib/components/Icon.svelte';
 	import {
@@ -15,6 +30,7 @@
 	import type { AiProviderConfig, ThemeMode } from '$lib/types';
 
 	onMount(() => {
+		void loadBackupReminderSettings().catch(() => { backupReminderError = 'Could not load backup settings. Please reload.'; });
 		if (window.location.hash !== '#ai-tools') return;
 		requestAnimationFrame(() => {
 			document.getElementById('ai-tools')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -224,6 +240,19 @@
 						</button>
 					{/each}
 				</div>
+			</div>
+		</section>
+
+		<section class="settings-section" id="backups">
+			<h2 class="section-title">Backups</h2>
+			<div class="section-card">
+				<label class="flex cursor-pointer items-center gap-3">
+					<input type="checkbox" class="cursor-pointer disabled:cursor-not-allowed" checked={$backupReminderSettings?.backupRemindersEnabled ?? true}
+						disabled={!$backupReminderSettings || savingBackupReminders} onchange={toggleBackupReminders} />
+					Remind me to back up my library
+				</label>
+				<p class="mt-2 text-sm" style="color: var(--color-text-secondary);">Show a reminder in My Library when you have no recorded backup or your last full-library backup was 30 days ago. You can snooze reminders for 7 days.</p>
+				{#if backupReminderError}<p role="alert">{backupReminderError}</p>{/if}
 			</div>
 		</section>
 

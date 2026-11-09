@@ -35,6 +35,9 @@ export interface AiProviderConfig {
 
 export interface Settings {
 	version: number;
+	backupRemindersEnabled: boolean;
+	lastBackupAt: number | null;
+	backupReminderSnoozedUntil: number | null;
 	theme: 'system' | 'light' | 'dark';
 	hasCompletedOnboarding: boolean;
 	/** Id of the What's New Highlight the user last acknowledged, or null if none. */

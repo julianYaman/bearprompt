@@ -8,6 +8,9 @@ function settings(overrides: Partial<Settings> = {}): Settings {
 		theme: 'system',
 		hasCompletedOnboarding: true,
 		lastSeenWhatsNewId: null,
+		backupRemindersEnabled: true,
+		lastBackupAt: null,
+		backupReminderSnoozedUntil: null,
 		ui: { cardSize: 'm' },
 		aiProviders: [],
 		...overrides
