@@ -36,9 +36,9 @@
 		<p class="font-semibold">Keep a backup of your library</p>
 		<p class="mt-1 text-sm" style="color: var(--color-text-secondary);">Your library is stored in this browser. Download a full backup regularly so you can restore it if browser data is cleared. Keep the downloaded file somewhere safe.</p>
 		<div class="mt-3 flex flex-wrap items-center gap-4 text-sm">
-			<button type="button" disabled={busy} onclick={() => act('backup')} class="rounded-lg px-3 py-2 font-medium disabled:opacity-50" style="background: var(--color-accent); color: white;">Back up now</button>
-			<button type="button" disabled={busy} onclick={() => act('snooze')} class="underline disabled:opacity-50">Remind me in 7 days</button>
-			<a href="/settings#backups" class="underline">Reminder settings</a>
+			<button type="button" disabled={busy} onclick={() => act('backup')} class="cursor-pointer rounded-lg px-3 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-50" style="background: var(--color-accent); color: white;">Back up now</button>
+			<button type="button" disabled={busy} onclick={() => act('snooze')} class="cursor-pointer underline disabled:cursor-not-allowed disabled:opacity-50">Remind me in 7 days</button>
+			<a href="/settings#backups" class="cursor-pointer underline">Reminder settings</a>
 		</div>
 		{#if error}<p role="alert" class="mt-2 text-sm">{error}</p>{/if}
 	</aside>

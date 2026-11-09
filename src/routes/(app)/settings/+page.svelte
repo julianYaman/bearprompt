@@ -246,8 +246,8 @@
 		<section class="settings-section" id="backups">
 			<h2 class="section-title">Backups</h2>
 			<div class="section-card">
-				<label class="flex items-center gap-3">
-					<input type="checkbox" checked={$backupReminderSettings?.backupRemindersEnabled ?? true}
+				<label class="flex cursor-pointer items-center gap-3">
+					<input type="checkbox" class="cursor-pointer disabled:cursor-not-allowed" checked={$backupReminderSettings?.backupRemindersEnabled ?? true}
 						disabled={!$backupReminderSettings || savingBackupReminders} onchange={toggleBackupReminders} />
 					Remind me to back up my library
 				</label>
