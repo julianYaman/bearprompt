@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { env as publicEnv } from '$env/dynamic/public';
+	import BackupReminder from '$lib/components/BackupReminder.svelte';
 	import PromptCard from '$lib/components/PromptCard.svelte';
 	import CreateCard from '$lib/components/CreateCard.svelte';
 	import PromptForm from '$lib/components/PromptForm.svelte';
@@ -1211,6 +1212,7 @@ Format the result so each prompt can be directly copied into a prompt library.`;
 	<PromptForm promptId={$editingPromptId} initialPrompt={newPromptPayload} onClose={handleCloseForm} />
 {:else}
 	<div class="h-full p-4 md:p-6">
+		<BackupReminder />
 		<!-- Headline / Breadcrumb -->
 		<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
 			{#if $activeFolderId === 'all'}

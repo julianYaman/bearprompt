@@ -325,6 +325,9 @@ export async function getFolderByName(name: string): Promise<Folder | undefined>
 // ============ SETTINGS ============
 
 const DEFAULT_SETTINGS: Settings = {
+	backupRemindersEnabled: true,
+	lastBackupAt: null,
+	backupReminderSnoozedUntil: null,
 	version: 1,
 	theme: 'system',
 	hasCompletedOnboarding: false,
